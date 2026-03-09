@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", sans-serif;
+  
+  --color-brand-teal: #008080;
+  --color-brand-coral: #FF7F50;
+  --color-brand-sand: #F4A460;
+  --color-brand-ocean: #0077BE;
+  --color-brand-white: #FFFFFF;
+  --color-brand-black: #121212;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-black text-brand-white font-sans antialiased;
+  }
+}
+
+.glass-nav {
+  @apply bg-brand-black/80 backdrop-blur-lg border-b border-white/10;
+}
+
+.btn-primary {
+  @apply px-8 py-3 bg-brand-teal text-white font-medium tracking-wide transition-all hover:bg-brand-teal/90 active:scale-95;
+}
+
+.btn-secondary {
+  @apply px-8 py-3 bg-brand-coral text-white font-medium tracking-wide transition-all hover:bg-brand-coral/90 active:scale-95;
+}
+
+.btn-outline {
+  @apply px-8 py-3 border border-white/20 text-white font-medium tracking-wide transition-all hover:bg-white hover:text-brand-black active:scale-95;
+}
+
+.card-gradient {
+  @apply bg-gradient-to-br from-white/10 to-transparent border border-white/5 rounded-2xl;
+}

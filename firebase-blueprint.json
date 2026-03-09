@@ -1,0 +1,27 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user membership and profile information.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The user's unique ID (UID from Firebase Auth)." },
+        "name": { "type": "string", "description": "The user's full name." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "tier": { "type": "string", "enum": ["Free Access", "Power Hour Member", "Elite Member", "Free", "Premium", "Elite"], "description": "The user's current membership tier." },
+        "joinedAt": { "type": "string", "format": "date-time", "description": "When the user joined the platform." },
+        "favorites": { "type": "array", "items": { "type": "string" }, "description": "List of favorited video IDs." },
+        "streak": { "type": "number", "description": "User's current workout streak." },
+        "workoutLogs": { "type": "array", "items": { "$ref": "WorkoutLog" }, "description": "History of logged workouts." },
+        "personalBests": { "type": "array", "items": { "$ref": "PersonalBest" }, "description": "User's personal best achievements." }
+      },
+      "required": ["id", "name", "email", "tier", "joinedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Individual user profile documents."
+    }
+  }
+}
