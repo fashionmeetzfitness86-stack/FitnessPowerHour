@@ -20,30 +20,7 @@ import {
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
 import { Video, Product, TrainingSession, Retreat, CollaborationBrand, UserProfile, Post, Comment, WorkoutLog, PersonalBest, Notification } from './types';
 
-import { db, auth, handleFirestoreError, OperationType } from './firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged,
-  updateProfile
-} from 'firebase/auth';
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  onSnapshot,
-  getDocFromServer,
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  addDoc,
-  getDocs,
-  writeBatch
-} from 'firebase/firestore';
+import { supabase } from './supabase';
 
 // --- Error Boundary ---
 interface ErrorBoundaryProps {
@@ -215,160 +192,173 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchUser = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    if (data) setUser(data as UserProfile);
+    else setUser(null);
+    if (error && error.code !== 'PGRST116') console.error('Fetch user error:', error);
+  };
+
+  const fetchNotifications = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (data) {
+      setNotifications(data.map((n: any) => ({
+        id: n.id,
+        userId: n.user_id,
+        type: n.type,
+        fromUserId: n.from_user_id,
+        fromUserName: n.from_user_name,
+        postId: n.post_id,
+        postContent: n.post_content,
+        createdAt: n.created_at,
+        isRead: n.is_read,
+      })));
+    }
+    if (error) console.error('Fetch notifications error:', error);
+  };
+
   useEffect(() => {
-    // Test connection to Firestore
-    const testConnection = async () => {
-      try {
-        await getDocFromServer(doc(db, 'test', 'connection'));
-      } catch (error) {
-        if (error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration.");
-        }
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchUser(session.user.id);
+        fetchNotifications(session.user.id);
       }
-    };
-    testConnection();
+      setLoading(false);
+    });
 
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const unsubDoc = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            setUser(docSnap.data() as UserProfile);
-          } else {
-            setUser(null);
-          }
-          setLoading(false);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
-        });
-
-        // Listen for notifications
-        const notifsQuery = query(
-          collection(db, 'notifications'),
-          where('userId', '==', firebaseUser.uid),
-          orderBy('createdAt', 'desc'),
-          limit(20)
-        );
-        const unsubNotifs = onSnapshot(notifsQuery, (snap) => {
-          const notifs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-          setNotifications(notifs);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.LIST, 'notifications');
-        });
-
-        return () => {
-          unsubDoc();
-          unsubNotifs();
-        };
+    // Listen to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUser(session.user.id);
+        fetchNotifications(session.user.id);
       } else {
         setUser(null);
         setNotifications([]);
-        setLoading(false);
       }
     });
 
-    return () => unsubscribe();
+    // Real-time subscription for user profile changes
+    const userChannel = supabase.channel('user-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
+        if (payload.new && (payload.new as any).id === user?.id) {
+          setUser(payload.new as UserProfile);
+        }
+      })
+      .subscribe();
+
+    // Real-time subscription for notifications
+    const notifChannel = supabase.channel('notif-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session?.user) fetchNotifications(session.user.id);
+        });
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(userChannel);
+      supabase.removeChannel(notifChannel);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
       console.error("Login error:", error);
       throw error;
     }
   };
 
   const signup = async (name: string, email: string, tier: string) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, 'temporaryPassword123!'); // In a real app, user provides password
-      const firebaseUser = userCredential.user;
-      
-      await updateProfile(firebaseUser, { displayName: name });
-
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: 'temporaryPassword123!', // In a real app, user provides password
+      options: { data: { display_name: name } }
+    });
+    if (error) throw error;
+    if (data.user) {
       const newUser: UserProfile = {
-        id: firebaseUser.uid,
+        id: data.user.id,
         name,
         email,
         tier,
-        joinedAt: new Date().toISOString()
+        joinedAt: new Date().toISOString(),
       };
-
-      await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'users');
+      const { error: insertError } = await supabase.from('users').insert(newUser);
+      if (insertError) throw insertError;
     }
   };
 
   const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("Logout error:", error);
   };
 
   const updateTier = async (tier: string) => {
-    if (user && auth.currentUser) {
-      try {
-        await updateDoc(doc(db, 'users', auth.currentUser.uid), { tier });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `users/${auth.currentUser.uid}`);
-      }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (user && session?.user) {
+      const { error } = await supabase.from('users').update({ tier }).eq('id', session.user.id);
+      if (error) console.error('Update tier error:', error);
+      else setUser({ ...user, tier });
     }
   };
 
   const addNotification = async (notif: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => {
-    try {
-      // Don't notify yourself
-      if (notif.userId === auth.currentUser?.uid) return;
-
-      await addDoc(collection(db, 'notifications'), {
-        ...notif,
-        createdAt: new Date().toISOString(),
-        isRead: false
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'notifications');
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (notif.userId === session?.user?.id) return;
+    const { error } = await supabase.from('notifications').insert({
+      user_id: notif.userId,
+      type: notif.type,
+      from_user_id: notif.fromUserId,
+      from_user_name: notif.fromUserName,
+      post_id: notif.postId,
+      post_content: notif.postContent,
+      created_at: new Date().toISOString(),
+      is_read: false,
+    });
+    if (error) console.error('Add notification error:', error);
   };
 
   const markAsRead = async (id: string) => {
-    try {
-      await updateDoc(doc(db, 'notifications', id), { isRead: true });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `notifications/${id}`);
-    }
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    if (error) console.error('Mark as read error:', error);
+    else setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
   const clearNotifications = async () => {
-    if (!auth.currentUser) return;
-    try {
-      const q = query(collection(db, 'notifications'), where('userId', '==', auth.currentUser.uid), where('isRead', '==', false));
-      const snap = await getDocs(q);
-      const batch = writeBatch(db);
-      snap.docs.forEach(doc => {
-        batch.update(doc.ref, { isRead: true });
-      });
-      await batch.commit();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'notifications');
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', session.user.id)
+      .eq('is_read', false);
+    if (error) console.error('Clear notifications error:', error);
+    else setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
   const toggleFavorite = async (videoId: string) => {
-    if (!user || !auth.currentUser) return;
-    try {
-      const currentFavorites = user.favorites || [];
-      const isFavorited = currentFavorites.includes(videoId);
-      const newFavorites = isFavorited 
-        ? currentFavorites.filter(id => id !== videoId)
-        : [...currentFavorites, videoId];
-      
-      await updateDoc(doc(db, 'users', auth.currentUser.uid), { favorites: newFavorites });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${auth.currentUser.uid}`);
-    }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!user || !session?.user) return;
+    const currentFavorites = user.favorites || [];
+    const isFavorited = currentFavorites.includes(videoId);
+    const newFavorites = isFavorited
+      ? currentFavorites.filter(id => id !== videoId)
+      : [...currentFavorites, videoId];
+    const { error } = await supabase.from('users').update({ favorites: newFavorites }).eq('id', session.user.id);
+    if (error) console.error('Toggle favorite error:', error);
+    else setUser({ ...user, favorites: newFavorites });
   };
 
   if (loading) {
@@ -380,15 +370,15 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      notifications, 
-      login, 
-      signup, 
-      logout, 
-      updateTier, 
-      addNotification, 
-      markAsRead, 
+    <AuthContext.Provider value={{
+      user,
+      notifications,
+      login,
+      signup,
+      logout,
+      updateTier,
+      addNotification,
+      markAsRead,
       clearNotifications,
       toggleFavorite
     }}>
