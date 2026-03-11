@@ -10,6 +10,8 @@ export interface Video {
   videoUrl?: string;
   sourceType?: 'youtube' | 'upload' | 'link';
   isPremium?: boolean;
+  instructor?: string;
+  instructorImage?: string;
 }
 
 export interface Product {
@@ -19,6 +21,9 @@ export interface Product {
   category: string;
   collection: string;
   image: string;
+  description?: string;
+  ingredients?: string[];
+  benefits?: string[];
 }
 
 export interface TrainingSession {

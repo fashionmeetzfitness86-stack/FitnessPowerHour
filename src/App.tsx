@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, 
@@ -83,12 +83,96 @@ class ErrorBoundary extends React.Component<any, any> {
 // --- Mock Data ---
 
 const VIDEOS: Video[] = [
-  { id: 'v1', title: 'Morning Activation', category: 'Mobility & Recovery', duration: '15 min', level: 'Beginner', thumbnail: 'https://picsum.photos/seed/fmf1/800/450', description: 'Wake up your joints and nervous system.', benefits: ['Improved mobility', 'Mental clarity', 'Joint health'], sourceType: 'youtube', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', isPremium: false },
-  { id: 'v2', title: 'Full Body Power', category: 'Full Body Workouts', duration: '45 min', level: 'Advanced', thumbnail: 'https://picsum.photos/seed/fmf2/800/450', description: 'High-intensity calisthenics for total strength.', benefits: ['Strength gains', 'Fat loss', 'Endurance'], sourceType: 'youtube', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', isPremium: true },
-  { id: 'v3', title: 'Core Strength Series', category: 'Core Strength', duration: '20 min', level: 'Intermediate', thumbnail: 'https://picsum.photos/seed/fmf3/800/450', description: 'Build a rock-solid foundation.', benefits: ['Postural support', 'Core stability', 'Power transfer'], sourceType: 'youtube', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', isPremium: true },
-  { id: 'v4', title: 'Mobility Flow', category: 'Mobility & Recovery', duration: '30 min', level: 'Beginner', thumbnail: 'https://picsum.photos/seed/fmf4/800/450', description: 'Fluid movements to restore range of motion.', benefits: ['Injury prevention', 'Flexibility', 'Recovery'], sourceType: 'youtube', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', isPremium: false },
-  { id: 'v5', title: 'Handstand Foundations', category: 'Advanced Training', duration: '40 min', level: 'Advanced', thumbnail: 'https://picsum.photos/seed/fmf5/800/450', description: 'Master the art of balance.', benefits: ['Shoulder strength', 'Balance', 'Focus'], sourceType: 'youtube', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', isPremium: true },
-  { id: 'v6', title: 'Pull-up Progression', category: 'Intermediate Training', duration: '25 min', level: 'Intermediate', thumbnail: 'https://picsum.photos/seed/fmf6/800/450', description: 'From zero to muscle-up.', benefits: ['Back strength', 'Grip strength', 'Pulling power'], sourceType: 'youtube', videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', isPremium: true },
+  {
+    id: 'v1',
+    title: 'Morning Activation',
+    category: 'Mobility & Recovery',
+    duration: '15 min',
+    level: 'Beginner',
+    thumbnail: 'https://picsum.photos/seed/fmf1/800/450',
+    description: 'Wake up your joints and nervous system with this comprehensive morning routine designed to improve mobility and mental clarity.',
+    benefits: ['Improved mobility', 'Mental clarity', 'Joint health'],
+    sourceType: 'youtube',
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    isPremium: false,
+    instructor: 'Marcus Thorne',
+    instructorImage: 'https://picsum.photos/seed/instructor1/200/200'
+  },
+  {
+    id: 'v2',
+    title: 'Full Body Power',
+    category: 'Full Body Workouts',
+    duration: '45 min',
+    level: 'Advanced',
+    thumbnail: 'https://picsum.photos/seed/fmf2/800/450',
+    description: 'High-intensity calisthenics for total strength. This session pushes your limits with explosive movements and high-volume sets.',
+    benefits: ['Strength gains', 'Fat loss', 'Endurance'],
+    sourceType: 'youtube',
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    isPremium: true,
+    instructor: 'Elena Rodriguez',
+    instructorImage: 'https://picsum.photos/seed/instructor2/200/200'
+  },
+  {
+    id: 'v3',
+    title: 'Core Strength Series',
+    category: 'Core Strength',
+    duration: '20 min',
+    level: 'Intermediate',
+    thumbnail: 'https://picsum.photos/seed/fmf3/800/450',
+    description: 'Build a rock-solid foundation with targeted core exercises that improve postural support and power transfer.',
+    benefits: ['Postural support', 'Core stability', 'Power transfer'],
+    sourceType: 'youtube',
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    isPremium: true,
+    instructor: 'Marcus Thorne',
+    instructorImage: 'https://picsum.photos/seed/instructor1/200/200'
+  },
+  {
+    id: 'v4',
+    title: 'Mobility Flow',
+    category: 'Mobility & Recovery',
+    duration: '30 min',
+    level: 'Beginner',
+    thumbnail: 'https://picsum.photos/seed/fmf4/800/450',
+    description: 'Fluid movements to restore range of motion and prevent injuries. Perfect for recovery days or as a cool-down.',
+    benefits: ['Injury prevention', 'Flexibility', 'Recovery'],
+    sourceType: 'youtube',
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    isPremium: false,
+    instructor: 'Elena Rodriguez',
+    instructorImage: 'https://picsum.photos/seed/instructor2/200/200'
+  },
+  {
+    id: 'v5',
+    title: 'Handstand Foundations',
+    category: 'Advanced Training',
+    duration: '40 min',
+    level: 'Advanced',
+    thumbnail: 'https://picsum.photos/seed/fmf5/800/450',
+    description: 'Master the art of balance. This session covers the technical foundations and strength requirements for a solid handstand.',
+    benefits: ['Shoulder strength', 'Balance', 'Focus'],
+    sourceType: 'youtube',
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    isPremium: true,
+    instructor: 'Marcus Thorne',
+    instructorImage: 'https://picsum.photos/seed/instructor1/200/200'
+  },
+  {
+    id: 'v6',
+    title: 'Pull-up Progression',
+    category: 'Intermediate Training',
+    duration: '25 min',
+    level: 'Intermediate',
+    thumbnail: 'https://picsum.photos/seed/fmf6/800/450',
+    description: 'From zero to muscle-up. Learn the specific drills and strength work needed to master the pull-up and beyond.',
+    benefits: ['Back strength', 'Grip strength', 'Pulling power'],
+    sourceType: 'youtube',
+    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    isPremium: true,
+    instructor: 'Elena Rodriguez',
+    instructorImage: 'https://picsum.photos/seed/instructor2/200/200'
+  },
 ];
 
 const PRODUCTS: Product[] = [
@@ -100,10 +184,70 @@ const PRODUCTS: Product[] = [
   { id: 'p6', title: 'FMF Training Cap', price: 30, category: 'Accessories', collection: 'FMF Lifestyle Collection', image: 'https://picsum.photos/seed/fmfp6/600/800' },
   { id: 'p7', title: 'Sorority Training Set', price: 95, category: 'Apparel', collection: 'FMF x Sorority Collection', image: 'https://picsum.photos/seed/sor1/600/800' },
   { id: 'p8', title: 'Sorority Performance Top', price: 48, category: 'Apparel', collection: 'FMF x Sorority Collection', image: 'https://picsum.photos/seed/sor2/600/800' },
-  { id: 'p9', title: 'Pier St Barth Swim Trunks', price: 110, category: 'Apparel', collection: 'Pier St Barth Collection', image: 'https://picsum.photos/seed/psb1/600/800' },
-  { id: 'p10', title: 'Pier St Barth Resort Shirt', price: 145, category: 'Apparel', collection: 'Pier St Barth Collection', image: 'https://picsum.photos/seed/psb2/600/800' },
+  {
+    id: 'p9',
+    title: 'Pier St Barth Swim Trunks',
+    price: 110,
+    category: 'Apparel',
+    collection: 'Pier St Barth Collection',
+    image: 'https://picsum.photos/seed/psb1/600/800',
+    description: 'Premium quick-dry swim trunks with a tailored fit. Designed for the transition from the ocean to the beach club.'
+  },
+  {
+    id: 'p10',
+    title: 'Pier St Barth Resort Shirt',
+    price: 145,
+    category: 'Apparel',
+    collection: 'Pier St Barth Collection',
+    image: 'https://picsum.photos/seed/psb2/600/800',
+    description: 'Lightweight linen-blend resort shirt with a relaxed silhouette. Perfect for tropical climates and sunset gatherings.'
+  },
   { id: 'p11', title: 'CLÉ Paris Signature Scent', price: 185, category: 'Fragrance', collection: 'CLÉ Paris Collection', image: 'https://picsum.photos/seed/cle1/600/800' },
   { id: 'p12', title: 'CLÉ Paris Lifestyle Candle', price: 75, category: 'Lifestyle', collection: 'CLÉ Paris Collection', image: 'https://picsum.photos/seed/cle2/600/800' },
+  {
+    id: 'p13',
+    title: 'Ginger Shot',
+    price: 6,
+    category: 'Nutrition',
+    collection: 'Mike Water Fitness',
+    image: 'https://picsum.photos/seed/ginger/600/800',
+    description: 'Our Mike Water Fitness Ginger Shot is a concentrated burst of natural power. Made with fresh ginger, green apple, and lime, this small but powerful shot is designed to support digestion, strengthen the immune system, and provide a natural metabolic boost.',
+    ingredients: ['Ginger', 'Green Apple', 'Lime'],
+    benefits: ['Supports digestion', 'Strengthens immune system', 'Metabolic boost']
+  },
+  {
+    id: 'p14',
+    title: 'FLOW',
+    price: 12,
+    category: 'Nutrition',
+    collection: 'Mike Water Fitness',
+    image: 'https://picsum.photos/seed/flow/600/800',
+    description: 'Flow is designed to support circulation, recovery, and overall vitality. Beets help improve blood flow and endurance, while turmeric and ginger provide powerful anti-inflammatory benefits.',
+    ingredients: ['Beets', 'Pineapple', 'Gala Apple', 'Turmeric', 'Peruvian Ginger', 'Elderberry', 'Sea Moss'],
+    benefits: ['Recovery & Immune Support', 'Supports circulation', 'Anti-inflammatory']
+  },
+  {
+    id: 'p15',
+    title: 'IGNITE',
+    price: 12,
+    category: 'Nutrition',
+    collection: 'Mike Water Fitness',
+    image: 'https://picsum.photos/seed/ignite/600/800',
+    description: 'Ignite delivers clean natural energy without caffeine. The citrus base combined with pineapple and apple provides natural sugars and vitamins, while ginger and turmeric stimulate metabolism and support digestion.',
+    ingredients: ['Organic Orange Juice', 'Pineapple', 'Gala Apple', 'Turmeric', 'Peruvian Ginger', 'Black Ginger', 'Elderberry'],
+    benefits: ['Natural Energy & Metabolism', 'Clean energy without caffeine', 'Stimulates metabolism']
+  },
+  {
+    id: 'p16',
+    title: 'BALANCE',
+    price: 12,
+    category: 'Nutrition',
+    collection: 'Mike Water Fitness',
+    image: 'https://picsum.photos/seed/balance/600/800',
+    description: 'Balance is our nutrient-dense green juice designed to support detoxification and daily wellness. Spinach and kale provide essential minerals and chlorophyll, while pineapple adds natural sweetness and digestive enzymes.',
+    ingredients: ['Spinach', 'Kale', 'Pineapple', 'Peruvian Ginger', 'Black Ginger', 'Elderberry', 'Sea Moss'],
+    benefits: ['Greens & Daily Detox', 'Supports immunity', 'Supports digestion']
+  },
 ];
 
 const COLLABORATIONS: CollaborationBrand[] = [
@@ -134,14 +278,23 @@ const COLLABORATIONS: CollaborationBrand[] = [
     link: '/store',
     buttonText: 'View Collection'
   },
-  { 
-    id: 'c4', 
-    name: 'CLÉ PARIS', 
-    category: 'Luxury Fragrance & Lifestyle', 
+  {
+    id: 'c4',
+    name: 'CLÉ PARIS',
+    category: 'Luxury Fragrance & Lifestyle',
     description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
     image: 'https://picsum.photos/seed/cleparis/800/600',
     link: '/store',
     buttonText: 'Explore Brand'
+  },
+  {
+    id: 'c5',
+    name: 'MIKE WATER FITNESS',
+    category: 'Functional Nutrition',
+    description: 'Cold-pressed functional juices designed for performance, recovery, and daily balance. Clean fuel for the body without additives or artificial sugars.',
+    image: 'https://picsum.photos/seed/mikewater/800/600',
+    link: '/store',
+    buttonText: 'Shop Juices'
   }
 ];
 
@@ -412,19 +565,11 @@ const ATHLETES: Athlete[] = [
   },
   {
     id: 'a2',
-    name: 'Sarah "Zen" Chen',
-    role: 'Mobility & Flow Specialist',
-    philosophy: 'Strength without mobility is a cage. True power is fluid.',
-    image: 'https://picsum.photos/seed/athlete-sarah/800/1000',
-    social: { instagram: '@sarah_zen', twitter: '@sarahchen' }
-  },
-  {
-    id: 'a3',
-    name: 'Marcus Thorne',
-    role: 'Elite Calisthenics Athlete',
-    philosophy: 'Gravity is just a suggestion. Your will is the only law.',
-    image: 'https://picsum.photos/seed/athlete-marcus/800/1000',
-    social: { instagram: '@marcus_cali', twitter: '@mthorne' }
+    name: 'Anderson Djeemo',
+    role: 'Elite Calisthenics Trainer',
+    philosophy: 'True strength is built from the ground up. Master the basics, and the impossible becomes routine.',
+    image: 'https://picsum.photos/seed/anderson/800/1000',
+    social: { instagram: '@anderson_djeemo', twitter: '@adjeemo' }
   }
 ];
 
@@ -1287,44 +1432,47 @@ const SystemSection = () => {
   );
 };
 
-const Program = () => (
-  <div className="pt-20">
-    <header className="py-32 px-6 bg-brand-black border-b border-white/5">
-      <div className="max-w-4xl mx-auto text-center space-y-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em] mb-4 block">Elite Performance</span>
-          <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-tighter leading-none">
-            The <span className="text-brand-teal">Program</span>
-          </h1>
-          <p className="mt-8 text-xl text-white/60 font-light leading-relaxed max-w-2xl mx-auto">
-            A structured calisthenics journey designed to transform your physical capability and mental discipline.
-          </p>
-        </motion.div>
-      </div>
-    </header>
-
-    <PhilosophySection />
-    <TrainerSection />
-    <SystemSection />
-
-    <section className="py-32 px-6 bg-brand-black text-center">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <h2 className="text-4xl font-bold uppercase tracking-tighter">Ready to Begin?</h2>
-        <p className="text-white/40 text-lg font-light">
-          Join the movement and start your 12-week transformation today.
-        </p>
-        <div className="flex justify-center gap-4">
-          <button className="btn-primary">Get Started</button>
-          <Link to="/videos" className="btn-outline inline-block">View Library</Link>
+const Program = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="pt-20">
+      <header className="py-32 px-6 bg-brand-black border-b border-white/5">
+        <div className="max-w-4xl mx-auto text-center space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em] mb-4 block">Elite Performance</span>
+            <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-tighter leading-none">
+              The <span className="text-brand-teal">Program</span>
+            </h1>
+            <p className="mt-8 text-xl text-white/60 font-light leading-relaxed max-w-2xl mx-auto">
+              A structured calisthenics journey designed to transform your physical capability and mental discipline.
+            </p>
+          </motion.div>
         </div>
-      </div>
-    </section>
-  </div>
-);
+      </header>
+
+      <PhilosophySection />
+      <TrainerSection />
+      <SystemSection />
+
+      <section className="py-32 px-6 bg-brand-black text-center">
+        <div className="max-w-2xl mx-auto space-y-8">
+          <h2 className="text-4xl font-bold uppercase tracking-tighter">Ready to Begin?</h2>
+          <p className="text-white/40 text-lg font-light">
+            Join the movement and start your 12-week transformation today.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button onClick={() => navigate('/membership')} className="btn-primary">Get Started</button>
+            <Link to="/videos" className="btn-outline inline-block">View Library</Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+};
 
 const VideoPlayer = ({ video, onClose }: { video: Video; onClose: () => void }) => {
   return (
@@ -1522,11 +1670,11 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
 
 const VideoLibrary = () => {
   const { user, toggleFavorite } = useAuth();
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLevel, setActiveLevel] = useState('All');
   const [activeDuration, setActiveDuration] = useState('All');
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [localVideos, setLocalVideos] = useState<Video[]>(VIDEOS);
 
@@ -1644,20 +1792,19 @@ const VideoLibrary = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className={`card-gradient overflow-hidden group cursor-pointer ${video.isPremium && (!user || user.tier === 'Free') ? 'opacity-80' : ''}`}
-                onClick={() => {
-                  if (video.isPremium && (!user || user.tier === 'Free')) {
-                    // Redirect to membership or show upgrade message
-                    window.location.hash = '#/membership';
-                    return;
-                  }
-                  setSelectedVideo(video);
-                }}
+                className={`card-gradient overflow-hidden group cursor-pointer ${video.isPremium && (!user || user.tier === 'Basic') ? 'opacity-80' : ''}`}
+                onClick={() => navigate(`/video/${video.id}`)}
               >
                 <div className="relative aspect-video">
                   <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+                  {video.isPremium && (
+                    <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
+                      <Zap size={10} fill="white" />
+                      Premium
+                    </div>
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    {video.isPremium && (!user || user.tier === 'Free') ? (
+                    {video.isPremium && (!user || user.tier === 'Basic') ? (
                       <div className="flex flex-col items-center gap-2">
                         <div className="w-12 h-12 bg-brand-black/80 rounded-full flex items-center justify-center shadow-2xl border border-brand-coral/50">
                           <Zap size={20} className="text-brand-coral" />
@@ -1723,7 +1870,6 @@ const VideoLibrary = () => {
       </div>
 
       <AnimatePresence>
-        {selectedVideo && <VideoPlayer video={selectedVideo} onClose={() => setSelectedVideo(null)} />}
         {isUploadModalOpen && <VideoUploadModal onClose={() => setIsUploadModalOpen(false)} onAdd={(v) => setLocalVideos([v, ...localVideos])} />}
       </AnimatePresence>
     </div>
@@ -2130,11 +2276,11 @@ const Store = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   
-  const isMember = user && user.tier !== 'Free';
+  const isMember = user && user.tier !== 'Basic';
   const discount = 0.3; // 30% discount for members
 
-  const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle'];
-  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection'];
+  const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle', 'Nutrition'];
+  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection', 'Mike Water Fitness'];
 
   const filteredProducts = useMemo(() => {
     let filtered = PRODUCTS;
@@ -2293,6 +2439,39 @@ const Store = () => {
                     <h2 className="text-4xl font-bold uppercase tracking-tighter leading-none">{selectedProduct.title}</h2>
                     <p className="text-white/40 text-xs uppercase tracking-widest">{selectedProduct.category}</p>
                   </div>
+
+                  {selectedProduct.description && (
+                    <p className="text-sm text-white/60 leading-relaxed font-light">
+                      {selectedProduct.description}
+                    </p>
+                  )}
+
+                  {selectedProduct.ingredients && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Ingredients</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedProduct.ingredients.map((ing, i) => (
+                          <span key={i} className="text-[10px] text-white/60 bg-white/5 px-2 py-1 rounded border border-white/5">
+                            {ing}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedProduct.benefits && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Key Benefits</p>
+                      <ul className="space-y-1">
+                        {selectedProduct.benefits.map((benefit, i) => (
+                          <li key={i} className="text-[10px] text-white/60 flex items-center gap-2">
+                            <div className="w-1 h-1 rounded-full bg-brand-teal" />
+                            {benefit}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     <div className="flex justify-between items-end">
@@ -2461,9 +2640,9 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
 
   const tiers = [
     {
-      name: 'Free',
-      price: '$0',
-      period: 'forever',
+      name: 'Basic',
+      price: '$19.99',
+      period: 'per month',
       features: [
         'Access to basic workouts',
         'Limited training content',
@@ -2505,6 +2684,59 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       button: 'Go Elite',
       highlight: false,
       badge: 'Priority Access'
+    },
+    {
+      name: 'Local Collective',
+      price: '$299',
+      period: 'per month',
+      features: [
+        'Full training system',
+        'Retreat priority access',
+        'Exclusive content',
+        'Special product drops',
+        '1-on-1 mindset coaching',
+        'Personalized nutrition plan',
+        'Direct trainer messaging',
+        '1x Free Cold-Pressed Juice / mo',
+        '1x Free Ginger Shot / mo',
+        '1x Free Beverage of choice / mo'
+      ],
+      button: 'Join Locally',
+      highlight: false,
+      badge: 'Local Only'
+    }
+  ];
+
+  const localPasses = [
+    {
+      name: '3-Day Local Pass',
+      price: '$59',
+      period: 'one-time',
+      features: [
+        '3 Days Full Access',
+        'Physical Local Pass',
+        '1x Free Cold-Pressed Juice',
+        '1x Free Ginger Shot',
+        '1x Free Beverage of choice'
+      ],
+      button: 'Purchase Pass',
+      highlight: false,
+      badge: 'Limited Time'
+    },
+    {
+      name: '7-Day Local Pass',
+      price: '$89',
+      period: 'one-time',
+      features: [
+        '7 Days Full Access',
+        'Physical Local Pass',
+        '1x Free Cold-Pressed Juice',
+        '1x Free Ginger Shot',
+        '1x Free Beverage of choice'
+      ],
+      button: 'Purchase Pass',
+      highlight: false,
+      badge: 'Best Value'
     }
   ];
 
@@ -2532,7 +2764,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           showToast('Passwords do not match', 'error');
           return;
         }
-        await signup(formData.name, formData.email, selectedTier?.name || 'Free');
+        await signup(formData.name, formData.email, selectedTier?.name || 'Basic');
         showToast(`Welcome to the Collective, ${formData.name}!`);
       }
       
@@ -2570,7 +2802,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {tiers.map((tier, i) => (
             <div 
               key={i} 
@@ -2620,6 +2852,51 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           ))}
         </div>
 
+        {/* Local Passes Section */}
+        <section className="mt-40">
+          <div className="text-center mb-16 space-y-4">
+            <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Physical Passes</span>
+            <h2 className="text-4xl font-bold uppercase tracking-tighter">Miami <span className="text-brand-teal italic">Local Passes</span></h2>
+            <p className="text-white/40 text-xs uppercase tracking-widest max-w-xl mx-auto">Short-term access for visitors and locals. Includes our signature recovery beverages.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {localPasses.map((pass, i) => (
+              <div
+                key={i}
+                className="card-gradient p-12 flex flex-col space-y-8 relative overflow-hidden border-brand-teal/20"
+              >
+                {pass.badge && (
+                  <div className="absolute top-6 right-6 bg-brand-teal text-black text-[8px] font-bold px-2 py-1 uppercase tracking-widest rounded">
+                    {pass.badge}
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-2xl font-bold uppercase tracking-tighter mb-2">{pass.name}</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold">{pass.price}</span>
+                    <span className="text-xs text-white/40 uppercase tracking-widest">{pass.period}</span>
+                  </div>
+                </div>
+                <ul className="space-y-4 flex-grow">
+                  {pass.features.map((feature, j) => (
+                    <li key={j} className="flex items-center gap-3 text-sm text-white/60">
+                      <Check size={16} className="text-brand-teal" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => handleJoin(pass)}
+                  className="w-full py-4 bg-brand-teal text-black uppercase tracking-widest text-[10px] font-bold hover:bg-white transition-all"
+                >
+                  {pass.button}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Tier Comparison Table */}
         <section className="mt-40 py-24 border-t border-white/5">
           <div className="text-center mb-16 space-y-4">
@@ -2632,30 +2909,30 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
               <thead>
                 <tr className="border-b border-white/10">
                   <th className="py-6 text-[10px] uppercase tracking-widest text-white/40 font-medium">Feature</th>
-                  <th className="py-6 text-[10px] uppercase tracking-widest text-white font-bold text-center">Free</th>
+                  <th className="py-6 text-[10px] uppercase tracking-widest text-white font-bold text-center">Basic</th>
                   <th className="py-6 text-[10px] uppercase tracking-widest text-brand-teal font-bold text-center">Premium</th>
                   <th className="py-6 text-[10px] uppercase tracking-widest text-brand-coral font-bold text-center">Elite</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {[
-                  { name: 'Basic Workouts', free: true, premium: true, elite: true },
-                  { name: 'Full Video Library', free: false, premium: true, elite: true },
-                  { name: 'Structured Programs', free: false, premium: true, elite: true },
-                  { name: 'Training Calendar', free: false, premium: true, elite: true },
-                  { name: '30% Store Discount', free: false, premium: true, elite: true },
-                  { name: 'Community Forum', free: true, premium: true, elite: true },
-                  { name: 'Exclusive Mobility Flows', free: false, premium: true, elite: true },
-                  { name: 'Monthly Live Q&A', free: false, premium: true, elite: true },
-                  { name: 'Retreat Priority Access', free: false, premium: false, elite: true },
-                  { name: '1-on-1 Mindset Coaching', free: false, premium: false, elite: true },
-                  { name: 'Personalized Nutrition', free: false, premium: false, elite: true },
-                  { name: 'Direct Trainer Messaging', free: false, premium: false, elite: true },
+                  { name: 'Basic Workouts', basic: true, premium: true, elite: true },
+                  { name: 'Full Video Library', basic: false, premium: true, elite: true },
+                  { name: 'Structured Programs', basic: false, premium: true, elite: true },
+                  { name: 'Training Calendar', basic: false, premium: true, elite: true },
+                  { name: '30% Store Discount', basic: false, premium: true, elite: true },
+                  { name: 'Community Forum', basic: true, premium: true, elite: true },
+                  { name: 'Exclusive Mobility Flows', basic: false, premium: true, elite: true },
+                  { name: 'Monthly Live Q&A', basic: false, premium: true, elite: true },
+                  { name: 'Retreat Priority Access', basic: false, premium: false, elite: true },
+                  { name: '1-on-1 Mindset Coaching', basic: false, premium: false, elite: true },
+                  { name: 'Personalized Nutrition', basic: false, premium: false, elite: true },
+                  { name: 'Direct Trainer Messaging', basic: false, premium: false, elite: true },
                 ].map((row, idx) => (
                   <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                     <td className="py-6 text-white/60 font-light">{row.name}</td>
                     <td className="py-6 text-center">
-                      {row.free ? <Check size={18} className="mx-auto text-white/40" /> : <X size={18} className="mx-auto text-white/10" />}
+                      {row.basic ? <Check size={18} className="mx-auto text-white/40" /> : <X size={18} className="mx-auto text-white/10" />}
                     </td>
                     <td className="py-6 text-center">
                       {row.premium ? <Check size={18} className="mx-auto text-brand-teal" /> : <X size={18} className="mx-auto text-white/10" />}
@@ -2705,9 +2982,9 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                 ))}
               </div>
 
-              {(!user || user.tier === 'Free') && (
+              {(!user || user.tier === 'Basic') && (
                 <div className="pt-8">
-                  <button 
+                  <button
                     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     className="btn-primary inline-flex items-center gap-3"
                   >
@@ -2727,9 +3004,9 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
               <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent" />
               <div className="absolute bottom-12 left-12 right-12 p-8 card-gradient backdrop-blur-md rounded-2xl border border-white/10">
                 <p className="text-white text-sm font-light italic leading-relaxed">
-                  "Being a Power Hour member isn't just about the workouts; it's about the standard you set for your life. The privileges are just a reflection of that commitment."
+                  "Being a Fitness Power Hour member isn't just about the workouts; it's about the standard you set for your life. The privileges are just a reflection of that commitment."
                 </p>
-                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">— Michael Power, Founder</p>
+                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">— Michael L, Founder</p>
               </div>
             </div>
           </div>
@@ -2858,7 +3135,7 @@ const Profile = () => {
   }
 
   const perks = {
-    Free: [
+    Basic: [
       'Access to basic workouts',
       'Limited training content',
       'Community forum access',
@@ -2886,7 +3163,7 @@ const Profile = () => {
     ]
   };
 
-  const currentPerks = perks[user.tier as keyof typeof perks] || perks.Free;
+  const currentPerks = perks[user.tier as keyof typeof perks] || perks.Basic;
 
   const mockOrders = [
     { id: 'ORD-7721', date: '2026-02-15', total: 124.50, items: ['FMF Training Tee', 'Resistance Band Set'], status: 'Delivered' },
@@ -2910,7 +3187,6 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<'perks' | 'orders' | 'progress' | 'favorites'>('progress');
   const [isLoggingWorkout, setIsLoggingWorkout] = useState(false);
   const [isLoggingPB, setIsLoggingPB] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
 
   const [logs, setLogs] = useState<WorkoutLog[]>(user.workoutLogs || mockLogs);
   const [pbs, setPbs] = useState<PersonalBest[]>(user.personalBests || mockPBs);
@@ -3101,10 +3377,16 @@ const Profile = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="card-gradient overflow-hidden group cursor-pointer"
-                      onClick={() => setSelectedVideo(video)}
+                      onClick={() => navigate(`/video/${video.id}`)}
                     >
                       <div className="relative aspect-video">
                         <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+                        {video.isPremium && (
+                          <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
+                            <Zap size={10} fill="white" />
+                            Premium
+                          </div>
+                        )}
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="w-12 h-12 bg-brand-teal/80 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-2xl">
                             <Play fill="white" size={20} className="translate-x-0.5" />
@@ -3343,9 +3625,6 @@ const Profile = () => {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {selectedVideo && <VideoPlayer video={selectedVideo} onClose={() => setSelectedVideo(null)} />}
-      </AnimatePresence>
     </div>
   );
 };
@@ -4114,6 +4393,178 @@ const FAQItem = ({ question, answer }: { question: string; answer: string }) => 
   );
 };
 
+const VideoDetail = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, toggleFavorite } = useAuth();
+  const video = VIDEOS.find(v => v.id === id);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
+
+  if (!video) {
+    return (
+      <div className="pt-40 pb-32 px-6 text-center">
+        <h1 className="text-4xl font-bold uppercase tracking-tighter mb-8">Video Not Found</h1>
+        <Link to="/videos" className="btn-primary inline-block">Back to Library</Link>
+      </div>
+    );
+  }
+
+  const isLocked = video.isPremium && (!user || user.tier === 'Basic');
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="pt-40 pb-32 px-6"
+    >
+      <div className="max-w-7xl mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-white/40 hover:text-white transition-colors uppercase tracking-widest text-[10px] mb-12"
+        >
+          <ChevronLeft size={16} /> Back
+        </button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+          <div className="lg:col-span-2 space-y-12">
+            <div className="relative aspect-video rounded-3xl overflow-hidden card-gradient shadow-2xl">
+              {isLocked ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-10 text-center p-12">
+                  <Zap size={48} className="text-brand-coral mb-6 animate-pulse" />
+                  <h2 className="text-3xl font-bold uppercase tracking-tighter mb-4">Premium Content</h2>
+                  <p className="text-white/60 max-w-md mx-auto mb-8 uppercase tracking-widest text-xs leading-relaxed">
+                    This masterclass is exclusive to Power Hour members. Upgrade your account to unlock our full training library.
+                  </p>
+                  <Link to="/membership" className="btn-primary px-12">Upgrade Now</Link>
+                </div>
+              ) : (
+                <iframe
+                  src={video.videoUrl?.replace('watch?v=', 'embed/')}
+                  title={video.title}
+                  className="w-full h-full"
+                  allowFullScreen
+                />
+              )}
+              <img src={video.thumbnail} alt={video.title} className="absolute inset-0 w-full h-full object-cover -z-10 opacity-40" />
+            </div>
+
+            <div className="space-y-8">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <span className="text-brand-teal text-[10px] uppercase tracking-[0.4em] font-bold">{video.category}</span>
+                    <span className="text-brand-coral text-[10px] uppercase tracking-widest border border-brand-coral/20 px-2 py-0.5 rounded">{video.level}</span>
+                  </div>
+                  <h1 className="text-5xl font-bold uppercase tracking-tighter leading-none">{video.title}</h1>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => toggleFavorite(video.id)}
+                    className={`p-4 rounded-full backdrop-blur-md transition-all ${
+                      user?.favorites?.includes(video.id)
+                        ? 'bg-brand-coral text-white'
+                        : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    <Heart size={20} className={user?.favorites?.includes(video.id) ? 'fill-white' : ''} />
+                  </button>
+                  <button className="p-4 rounded-full bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10 transition-all">
+                    <Share2 size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="prose prose-invert max-w-none">
+                <p className="text-white/60 text-lg leading-relaxed uppercase tracking-wide">
+                  {video.description}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-12 border-t border-white/5">
+                <div className="space-y-6">
+                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-brand-teal">Key Benefits</h3>
+                  <div className="space-y-4">
+                    {video.benefits.map((benefit, i) => (
+                      <div key={i} className="flex items-center gap-4 group">
+                        <div className="w-2 h-2 rounded-full bg-brand-teal group-hover:scale-150 transition-transform" />
+                        <span className="text-xs uppercase tracking-widest text-white/80">{benefit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-6">
+                  <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-brand-coral">Details</h3>
+                  <div className="space-y-4">
+                    <div className="flex justify-between py-3 border-b border-white/5">
+                      <span className="text-[10px] uppercase tracking-widest text-white/20">Duration</span>
+                      <span className="text-[10px] uppercase tracking-widest font-bold">{video.duration}</span>
+                    </div>
+                    <div className="flex justify-between py-3 border-b border-white/5">
+                      <span className="text-[10px] uppercase tracking-widest text-white/20">Intensity</span>
+                      <span className="text-[10px] uppercase tracking-widest font-bold">{video.level}</span>
+                    </div>
+                    <div className="flex justify-between py-3 border-b border-white/5">
+                      <span className="text-[10px] uppercase tracking-widest text-white/20">Equipment</span>
+                      <span className="text-[10px] uppercase tracking-widest font-bold">Bodyweight</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-12">
+            <div className="card-gradient p-10 space-y-8">
+              <h3 className="text-sm font-bold uppercase tracking-[0.2em]">Instructor</h3>
+              <div className="flex items-center gap-6">
+                <img
+                  src={video.instructorImage}
+                  alt={video.instructor}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-brand-teal/30"
+                />
+                <div>
+                  <h4 className="text-xl font-bold uppercase tracking-tighter">{video.instructor}</h4>
+                  <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold">Master Trainer</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-white/40 uppercase tracking-widest leading-relaxed">
+                Expert in functional movement and high-performance calisthenics. Marcus has trained thousands of athletes worldwide.
+              </p>
+              <button className="w-full py-4 border border-white/10 rounded-full text-[10px] uppercase tracking-widest font-bold hover:bg-white/5 transition-all">
+                View Trainer Profile
+              </button>
+            </div>
+
+            <div className="card-gradient p-10 space-y-8">
+              <h3 className="text-sm font-bold uppercase tracking-[0.2em]">Next Session</h3>
+              <div className="space-y-6">
+                {VIDEOS.filter(v => v.id !== video.id).slice(0, 2).map(v => (
+                  <Link key={v.id} to={`/video/${v.id}`} className="flex gap-4 group">
+                    <div className="w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0">
+                      <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-[10px] font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{v.title}</h4>
+                      <p className="text-[8px] text-white/40 uppercase tracking-widest">{v.duration}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <Link to="/videos" className="block text-center text-[10px] uppercase tracking-widest text-brand-teal font-bold hover:underline">
+                View All Workouts
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
 const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
@@ -4576,6 +5027,7 @@ export default function App() {
                   <Route path="/" element={<Home />} />
                   <Route path="/program" element={<Program />} />
                   <Route path="/videos" element={<VideoLibrary />} />
+                  <Route path="/video/:id" element={<VideoDetail />} />
                   <Route path="/athletes" element={<Athletes />} />
                   <Route path="/membership" element={<Membership showToast={showToast} />} />
                   <Route path="/community" element={<Community />} />
