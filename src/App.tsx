@@ -94,13 +94,13 @@ class ErrorBoundary extends React.Component<any, any> {
       return (
         <div className="min-h-screen flex items-center justify-center bg-brand-black p-6 text-center">
           <div className="card-gradient p-12 max-w-md space-y-6">
-            <div className="w-16 h-16 bg-brand-coral/20 rounded-full flex items-center justify-center mx-auto text-brand-coral">
-              <AlertCircle size={32} />
+            <div className="w-16 h-16 bg-brand-teal/20 rounded-full flex items-center justify-center mx-auto text-brand-teal">
+              <Clock size={32} />
             </div>
             <h2 className="text-2xl font-bold uppercase tracking-tighter">Coming Soon</h2>
             <p className="text-white/40 text-sm leading-relaxed">This feature is currently under development. Stay tuned!</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => { window.location.href = window.location.origin + window.location.pathname + '#/'; }}
               className="btn-primary w-full"
             >
               Go Back
