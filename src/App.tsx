@@ -147,21 +147,25 @@ const VIDEOS: Video[] = [
   },
 ];
 
+// Branded placeholder generator — replace with real product photos later
+const placeholder = (label: string, color: string = '2dd4a8') =>
+  `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect fill="#0a0a0a" width="600" height="800"/><rect fill="#${color}" opacity="0.15" width="600" height="800"/><text x="300" y="370" text-anchor="middle" fill="#${color}" font-family="sans-serif" font-size="20" font-weight="bold" letter-spacing="4">${label.toUpperCase()}</text><text x="300" y="410" text-anchor="middle" fill="#ffffff" opacity="0.3" font-family="sans-serif" font-size="12" letter-spacing="6">COMING SOON</text></svg>`)}`;
+
 const PRODUCTS: Product[] = [
   { 
     id: 'p1', 
     brand_id: 'fmf',
     category_id: 'apparel',
-    name: 'FMF Training Shirt', 
+    name: 'FMF Training Shirt',
     slug: 'fmf-training-shirt',
     description: 'High-performance training shirt.',
-    price: 45, 
+    price: 45,
     compare_at_price: 55,
     sku: 'TSH-001',
     inventory_count: 100,
     status: 'active',
-    featured_image: 'https://picsum.photos/seed/fmfp1/600/800',
-    images: ['https://picsum.photos/seed/fmfp1/600/800'],
+    featured_image: placeholder('FMF Training Shirt'),
+    images: [placeholder('FMF Training Shirt')],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
@@ -169,16 +173,16 @@ const PRODUCTS: Product[] = [
     id: 'p2', 
     brand_id: 'fmf',
     category_id: 'gear',
-    name: 'FMF Power Band Set', 
+    name: 'FMF Power Band Set',
     slug: 'fmf-power-band-set',
     description: 'A complete set of resistance bands for calisthenics progression.',
-    price: 65, 
+    price: 65,
     compare_at_price: 80,
     sku: 'GBD-001',
     inventory_count: 50,
     status: 'active',
-    featured_image: 'https://picsum.photos/seed/fmfp2/600/800',
-    images: ['https://picsum.photos/seed/fmfp2/600/800'],
+    featured_image: placeholder('Power Band Set'),
+    images: [placeholder('Power Band Set')],
     benefits: ['Increased Resistance', 'Portability', 'Versatility'],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -187,16 +191,16 @@ const PRODUCTS: Product[] = [
     id: 'p3', 
     brand_id: 'cle-paris',
     category_id: 'fragrance',
-    name: 'CLÉ PARIS L’EAU', 
+    name: "CLÉ PARIS L'EAU",
     slug: 'cle-paris-leau',
     description: 'A fresh, sophisticated fragrance for the modern athlete.',
-    price: 120, 
+    price: 120,
     compare_at_price: 150,
     sku: 'FRG-001',
     inventory_count: 30,
     status: 'active',
-    featured_image: 'https://picsum.photos/seed/fmfp3/600/800',
-    images: ['https://picsum.photos/seed/fmfp3/600/800'],
+    featured_image: placeholder('Clé Paris', 'c4a265'),
+    images: [placeholder('Clé Paris', 'c4a265')],
     ingredients: ['Bergamot', 'Sandalwood', 'Marine Accord'],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -205,16 +209,16 @@ const PRODUCTS: Product[] = [
     id: 'p4', 
     brand_id: 'mike-water',
     category_id: 'nutrition',
-    name: 'Recovery Green Juice', 
+    name: 'Recovery Green Juice',
     slug: 'recovery-green-juice',
     description: 'Cold-pressed functional juice for post-workout recovery.',
-    price: 12, 
+    price: 12,
     compare_at_price: 15,
     sku: 'NUT-001',
     inventory_count: 200,
     status: 'active',
-    featured_image: 'https://picsum.photos/seed/fmfp4/600/800',
-    images: ['https://picsum.photos/seed/fmfp4/600/800'],
+    featured_image: placeholder('Green Juice', '4ade80'),
+    images: [placeholder('Green Juice', '4ade80')],
     ingredients: ['Kale', 'Spinach', 'Cucumber', 'Lemon', 'Ginger'],
     benefits: ['Hydration', 'Anti-inflammatory', 'Vitamin Rich'],
     created_at: new Date().toISOString(),
@@ -226,9 +230,9 @@ const COLLABORATIONS: CollaborationBrand[] = [
   { 
     id: 'c1', 
     name: 'SORORITY', 
-    category: 'Women’s Fitness Lifestyle', 
+    category: "Women's Fitness Lifestyle",
     description: 'Exclusive women-focused brand dedicated to empowerment through fitness, confidence, and community. Strength, femininity, and performance.',
-    image: 'https://picsum.photos/seed/sorority/800/600',
+    image: placeholder('Sorority', 'e87461'),
     link: '/store',
     buttonText: 'View Collection'
   },
@@ -237,7 +241,7 @@ const COLLABORATIONS: CollaborationBrand[] = [
     name: 'FLEX MOB 305', 
     category: 'Recovery & Mobility', 
     description: 'Specializing in professional assisted stretching and muscle recovery designed to support athletes and optimize performance.',
-    image: 'https://picsum.photos/seed/flexmob/800/600',
+    image: placeholder('Flex Mob 305'),
     link: '/recovery',
     buttonText: 'Learn More'
   },
@@ -246,7 +250,7 @@ const COLLABORATIONS: CollaborationBrand[] = [
     name: 'PIER ST BARTH', 
     category: 'Luxury Resort Fitness', 
     description: 'Luxury resort-inspired fitness and swimwear brand blending beach aesthetics with fitness culture and premium performance.',
-    image: 'https://picsum.photos/seed/pierstbarth/800/600',
+    image: placeholder('Pier St Barth', '60a5fa'),
     link: '/store',
     buttonText: 'View Collection'
   },
@@ -255,7 +259,7 @@ const COLLABORATIONS: CollaborationBrand[] = [
     name: 'CLÉ PARIS', 
     category: 'Luxury Fragrance & Lifestyle', 
     description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
-    image: 'https://picsum.photos/seed/cleparis/800/600',
+    image: placeholder('Clé Paris', 'c4a265'),
     link: '/store',
     buttonText: 'Explore Brand'
   },
@@ -264,7 +268,7 @@ const COLLABORATIONS: CollaborationBrand[] = [
     name: 'MIKE WATER FITNESS', 
     category: 'Functional Nutrition', 
     description: 'Cold-pressed functional juices designed for performance, recovery, and daily balance. Clean fuel for the body without additives or artificial sugars.',
-    image: 'https://picsum.photos/seed/mikewater/800/600',
+    image: placeholder('Mike Water', '4ade80'),
     link: '/store',
     buttonText: 'Shop Juices'
   }
@@ -3036,7 +3040,7 @@ const Store = () => {
                   Power Hour <br /> <span className="text-brand-coral">Member Privileges</span>
                 </h2>
                 <p className="text-white/40 text-lg font-light leading-relaxed">
-                  Power Hour Members receive preferred pricing and exclusive access across the Fashion Meets Fitness platform. We’ve built an inner circle for those dedicated to the lifestyle.
+                  Power Hour Members receive preferred pricing and exclusive access across the Fashion Meets Fitness platform. We've built an inner circle for those dedicated to the lifestyle.
                 </p>
               </div>
               
@@ -3072,7 +3076,7 @@ const Store = () => {
 
             <div className="mt-32 p-12 md:p-24 rounded-[3rem] bg-gradient-to-br from-brand-black via-brand-black to-brand-teal/10 border border-white/5 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
-                <img src="https://picsum.photos/seed/cle-lifestyle/800/1200" className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
+                <img src={placeholder('Clé Paris', 'c4a265')} className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
               </div>
               <div className="relative z-10 max-w-xl space-y-8">
                 <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
@@ -5702,7 +5706,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                   Power Hour <br /> <span className="text-brand-coral">Member Privileges</span>
                 </h2>
                 <p className="text-white/40 text-lg font-light leading-relaxed">
-                  Power Hour Members receive preferred pricing and exclusive access across the Fashion Meets Fitness platform. We’ve built an inner circle for those dedicated to the lifestyle.
+                  Power Hour Members receive preferred pricing and exclusive access across the Fashion Meets Fitness platform. We've built an inner circle for those dedicated to the lifestyle.
                 </p>
               </div>
               
@@ -7851,7 +7855,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
         <h2 className="text-4xl font-bold uppercase tracking-tighter mb-16 text-center">The <span className="text-brand-teal">Collective</span> Voice</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { name: 'James Wilson', role: 'Entrepreneur', text: 'The FMF retreat in Miami changed my entire perspective on discipline. It’s not just about the training; it’s about the mindset you carry into your business and life.' },
+            { name: 'James Wilson', role: 'Entrepreneur', text: "The FMF retreat in Miami changed my entire perspective on discipline. It's not just about the training; it's about the mindset you carry into your business and life." },
             { name: 'Elena Rodriguez', role: 'Creative Director', text: 'Mastering my body through calisthenics on the Miami coast was a spiritual experience. The community Michael has built is unmatched.' },
             { name: 'David Park', role: 'Professional Athlete', text: 'Even as a pro, the intensity and focus of the mindset workshops pushed me to a new level. Fashion meetz Fitness is the gold standard.' }
           ].map((t, i) => (
