@@ -97,13 +97,13 @@ class ErrorBoundary extends React.Component<any, any> {
             <div className="w-16 h-16 bg-brand-coral/20 rounded-full flex items-center justify-center mx-auto text-brand-coral">
               <AlertCircle size={32} />
             </div>
-            <h2 className="text-2xl font-bold uppercase tracking-tighter">System Error</h2>
-            <p className="text-white/40 text-sm leading-relaxed">{errorMessage}</p>
-            <button 
-              onClick={() => window.location.reload()} 
+            <h2 className="text-2xl font-bold uppercase tracking-tighter">Coming Soon</h2>
+            <p className="text-white/40 text-sm leading-relaxed">This feature is currently under development. Stay tuned!</p>
+            <button
+              onClick={() => window.location.reload()}
               className="btn-primary w-full"
             >
-              Reload Application
+              Go Back
             </button>
           </div>
         </div>
@@ -8160,6 +8160,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
+        <CartProvider>
         <Router>
           <div className="min-h-screen bg-brand-black text-brand-white font-sans selection:bg-brand-teal selection:text-white">
             <Navbar />
@@ -8217,6 +8218,7 @@ export default function App() {
             </AnimatePresence>
           </div>
         </Router>
+        </CartProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
