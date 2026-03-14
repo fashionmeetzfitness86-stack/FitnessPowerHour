@@ -8,17 +8,51 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { 
-  Menu, X, Instagram, Twitter, Facebook, ArrowRight, 
+  Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
   Dumbbell, Zap, Heart, MapPin, Clock, Star, AlertCircle,
-  Filter, Search, User, Quote, Plus, Upload, Link2, Send, Bell, Trash2,
-  Youtube, ExternalLink, Share2, Trophy, Check, Users
+  Filter, Search, User, Quote, Plus, Minus, Upload, Link2, Send, Bell, Trash2,
+  Youtube, ExternalLink, Share2, Trophy, Check, Users, Power, Ban, Layout, Globe,
+  Edit2, Truck, Eye, Printer, UserPlus, UserMinus, MoreHorizontal,
+  LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award
 } from 'lucide-react';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
-import { Video, Product, TrainingSession, Retreat, CollaborationBrand, UserProfile, Post, Comment, WorkoutLog, PersonalBest, Notification } from './types';
+import { 
+  Video, 
+  VideoCategory,
+  UserVideoUpload,
+  Package, 
+  Athlete, 
+  Program, 
+  ProgramAssignment,
+  Retreat, 
+  Community, 
+  CommunityPost,
+  CommunityComment,
+  Brand,
+  Product, 
+  ProductCategory,
+  CartItem,
+  Cart,
+  OrderItem,
+  Order, 
+  UserProfile, 
+  Notification,
+  ActivityLog,
+  RetreatApplication,
+  Booking,
+  FlexMobService,
+  CollaborationBrand,
+  TrainingSession,
+  WorkoutLog,
+  PersonalBest,
+  Post,
+  ProgramType,
+  CommunityType
+} from './types';
 
 import { supabase } from './supabase';
 
@@ -83,170 +117,108 @@ class ErrorBoundary extends React.Component<any, any> {
 // --- Mock Data ---
 
 const VIDEOS: Video[] = [
-  {
-    id: 'v1',
-    title: 'Morning Activation',
-    category: 'Mobility & Recovery',
-    duration: '15 min',
-    level: 'Beginner',
-    thumbnail: 'https://picsum.photos/seed/fmf1/800/450',
-    description: 'Wake up your joints and nervous system with this comprehensive morning routine designed to improve mobility and mental clarity.',
-    benefits: ['Improved mobility', 'Mental clarity', 'Joint health'],
-    sourceType: 'youtube',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    isPremium: false,
-    instructor: 'Marcus Thorne',
-    instructorImage: 'https://picsum.photos/seed/instructor1/200/200'
+  { 
+    id: 'v1', 
+    title: 'Morning Activation', 
+    description: 'Wake up your joints and nervous system with this comprehensive morning routine designed to improve mobility and mental clarity.', 
+    thumbnail_url: 'https://picsum.photos/seed/fmf1/800/450', 
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', 
+    duration: '15 min', 
+    category_id: 'mobility',
+    visibility_status: 'published',
+    allowed_packages: ['basic', 'premium', 'elite'],
+    created_by: 'admin',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
-  {
-    id: 'v2',
-    title: 'Full Body Power',
-    category: 'Full Body Workouts',
-    duration: '45 min',
-    level: 'Advanced',
-    thumbnail: 'https://picsum.photos/seed/fmf2/800/450',
-    description: 'High-intensity calisthenics for total strength. This session pushes your limits with explosive movements and high-volume sets.',
-    benefits: ['Strength gains', 'Fat loss', 'Endurance'],
-    sourceType: 'youtube',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    isPremium: true,
-    instructor: 'Elena Rodriguez',
-    instructorImage: 'https://picsum.photos/seed/instructor2/200/200'
-  },
-  {
-    id: 'v3',
-    title: 'Core Strength Series',
-    category: 'Core Strength',
-    duration: '20 min',
-    level: 'Intermediate',
-    thumbnail: 'https://picsum.photos/seed/fmf3/800/450',
-    description: 'Build a rock-solid foundation with targeted core exercises that improve postural support and power transfer.',
-    benefits: ['Postural support', 'Core stability', 'Power transfer'],
-    sourceType: 'youtube',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    isPremium: true,
-    instructor: 'Marcus Thorne',
-    instructorImage: 'https://picsum.photos/seed/instructor1/200/200'
-  },
-  {
-    id: 'v4',
-    title: 'Mobility Flow',
-    category: 'Mobility & Recovery',
-    duration: '30 min',
-    level: 'Beginner',
-    thumbnail: 'https://picsum.photos/seed/fmf4/800/450',
-    description: 'Fluid movements to restore range of motion and prevent injuries. Perfect for recovery days or as a cool-down.',
-    benefits: ['Injury prevention', 'Flexibility', 'Recovery'],
-    sourceType: 'youtube',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    isPremium: false,
-    instructor: 'Elena Rodriguez',
-    instructorImage: 'https://picsum.photos/seed/instructor2/200/200'
-  },
-  {
-    id: 'v5',
-    title: 'Handstand Foundations',
-    category: 'Advanced Training',
-    duration: '40 min',
-    level: 'Advanced',
-    thumbnail: 'https://picsum.photos/seed/fmf5/800/450',
-    description: 'Master the art of balance. This session covers the technical foundations and strength requirements for a solid handstand.',
-    benefits: ['Shoulder strength', 'Balance', 'Focus'],
-    sourceType: 'youtube',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    isPremium: true,
-    instructor: 'Marcus Thorne',
-    instructorImage: 'https://picsum.photos/seed/instructor1/200/200'
-  },
-  {
-    id: 'v6',
-    title: 'Pull-up Progression',
-    category: 'Intermediate Training',
-    duration: '25 min',
-    level: 'Intermediate',
-    thumbnail: 'https://picsum.photos/seed/fmf6/800/450',
-    description: 'From zero to muscle-up. Learn the specific drills and strength work needed to master the pull-up and beyond.',
-    benefits: ['Back strength', 'Grip strength', 'Pulling power'],
-    sourceType: 'youtube',
-    videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    isPremium: true,
-    instructor: 'Elena Rodriguez',
-    instructorImage: 'https://picsum.photos/seed/instructor2/200/200'
+  { 
+    id: 'v2', 
+    title: 'Full Body Power', 
+    description: 'High-intensity calisthenics for total strength. This session pushes your limits with explosive movements and high-volume sets.', 
+    thumbnail_url: 'https://picsum.photos/seed/fmf2/800/450', 
+    video_url: 'https://www.w3schools.com/html/mov_bbb.mp4', 
+    duration: '45 min', 
+    category_id: 'strength',
+    visibility_status: 'published',
+    allowed_packages: ['premium', 'elite'],
+    created_by: 'admin',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
 ];
 
 const PRODUCTS: Product[] = [
-  { id: 'p1', title: 'FMF Training Shirt', price: 45, category: 'Apparel', collection: 'FMF Training Collection', image: 'https://picsum.photos/seed/fmfp1/600/800' },
-  { id: 'p2', title: 'Performance Shorts', price: 55, category: 'Apparel', collection: 'FMF Training Collection', image: 'https://picsum.photos/seed/fmfp2/600/800' },
-  { id: 'p3', title: 'FMF Signature Hoodie', price: 85, category: 'Apparel', collection: 'FMF Lifestyle Collection', image: 'https://picsum.photos/seed/fmfp3/600/800' },
-  { id: 'p4', title: 'Pro Workout Mat', price: 120, category: 'Gear', collection: 'FMF Training Collection', image: 'https://picsum.photos/seed/fmfp4/600/800' },
-  { id: 'p5', title: 'Resistance Band Set', price: 35, category: 'Gear', collection: 'FMF Training Collection', image: 'https://picsum.photos/seed/fmfp5/600/800' },
-  { id: 'p6', title: 'FMF Training Cap', price: 30, category: 'Accessories', collection: 'FMF Lifestyle Collection', image: 'https://picsum.photos/seed/fmfp6/600/800' },
-  { id: 'p7', title: 'Sorority Training Set', price: 95, category: 'Apparel', collection: 'FMF x Sorority Collection', image: 'https://picsum.photos/seed/sor1/600/800' },
-  { id: 'p8', title: 'Sorority Performance Top', price: 48, category: 'Apparel', collection: 'FMF x Sorority Collection', image: 'https://picsum.photos/seed/sor2/600/800' },
-  {
-    id: 'p9',
-    title: 'Pier St Barth Swim Trunks',
-    price: 110,
-    category: 'Apparel',
-    collection: 'Pier St Barth Collection',
-    image: 'https://picsum.photos/seed/psb1/600/800',
-    description: 'Premium quick-dry swim trunks with a tailored fit. Designed for the transition from the ocean to the beach club.'
+  { 
+    id: 'p1', 
+    brand_id: 'fmf',
+    category_id: 'apparel',
+    name: 'FMF Training Shirt', 
+    slug: 'fmf-training-shirt',
+    description: 'High-performance training shirt.',
+    price: 45, 
+    compare_at_price: 55,
+    sku: 'TSH-001',
+    inventory_count: 100,
+    status: 'active',
+    featured_image: 'https://picsum.photos/seed/fmfp1/600/800',
+    images: ['https://picsum.photos/seed/fmfp1/600/800'],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
-  {
-    id: 'p10',
-    title: 'Pier St Barth Resort Shirt',
-    price: 145,
-    category: 'Apparel',
-    collection: 'Pier St Barth Collection',
-    image: 'https://picsum.photos/seed/psb2/600/800',
-    description: 'Lightweight linen-blend resort shirt with a relaxed silhouette. Perfect for tropical climates and sunset gatherings.'
+  { 
+    id: 'p2', 
+    brand_id: 'fmf',
+    category_id: 'gear',
+    name: 'FMF Power Band Set', 
+    slug: 'fmf-power-band-set',
+    description: 'A complete set of resistance bands for calisthenics progression.',
+    price: 65, 
+    compare_at_price: 80,
+    sku: 'GBD-001',
+    inventory_count: 50,
+    status: 'active',
+    featured_image: 'https://picsum.photos/seed/fmfp2/600/800',
+    images: ['https://picsum.photos/seed/fmfp2/600/800'],
+    benefits: ['Increased Resistance', 'Portability', 'Versatility'],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
-  { id: 'p11', title: 'CLÉ Paris Signature Scent', price: 185, category: 'Fragrance', collection: 'CLÉ Paris Collection', image: 'https://picsum.photos/seed/cle1/600/800' },
-  { id: 'p12', title: 'CLÉ Paris Lifestyle Candle', price: 75, category: 'Lifestyle', collection: 'CLÉ Paris Collection', image: 'https://picsum.photos/seed/cle2/600/800' },
-  {
-    id: 'p13',
-    title: 'Ginger Shot',
-    price: 6,
-    category: 'Nutrition',
-    collection: 'Mike Water Fitness',
-    image: 'https://picsum.photos/seed/ginger/600/800',
-    description: 'Our Mike Water Fitness Ginger Shot is a concentrated burst of natural power. Made with fresh ginger, green apple, and lime, this small but powerful shot is designed to support digestion, strengthen the immune system, and provide a natural metabolic boost.',
-    ingredients: ['Ginger', 'Green Apple', 'Lime'],
-    benefits: ['Supports digestion', 'Strengthens immune system', 'Metabolic boost']
+  { 
+    id: 'p3', 
+    brand_id: 'cle-paris',
+    category_id: 'fragrance',
+    name: 'CLÉ PARIS L’EAU', 
+    slug: 'cle-paris-leau',
+    description: 'A fresh, sophisticated fragrance for the modern athlete.',
+    price: 120, 
+    compare_at_price: 150,
+    sku: 'FRG-001',
+    inventory_count: 30,
+    status: 'active',
+    featured_image: 'https://picsum.photos/seed/fmfp3/600/800',
+    images: ['https://picsum.photos/seed/fmfp3/600/800'],
+    ingredients: ['Bergamot', 'Sandalwood', 'Marine Accord'],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
-  {
-    id: 'p14',
-    title: 'FLOW',
-    price: 12,
-    category: 'Nutrition',
-    collection: 'Mike Water Fitness',
-    image: 'https://picsum.photos/seed/flow/600/800',
-    description: 'Flow is designed to support circulation, recovery, and overall vitality. Beets help improve blood flow and endurance, while turmeric and ginger provide powerful anti-inflammatory benefits.',
-    ingredients: ['Beets', 'Pineapple', 'Gala Apple', 'Turmeric', 'Peruvian Ginger', 'Elderberry', 'Sea Moss'],
-    benefits: ['Recovery & Immune Support', 'Supports circulation', 'Anti-inflammatory']
-  },
-  {
-    id: 'p15',
-    title: 'IGNITE',
-    price: 12,
-    category: 'Nutrition',
-    collection: 'Mike Water Fitness',
-    image: 'https://picsum.photos/seed/ignite/600/800',
-    description: 'Ignite delivers clean natural energy without caffeine. The citrus base combined with pineapple and apple provides natural sugars and vitamins, while ginger and turmeric stimulate metabolism and support digestion.',
-    ingredients: ['Organic Orange Juice', 'Pineapple', 'Gala Apple', 'Turmeric', 'Peruvian Ginger', 'Black Ginger', 'Elderberry'],
-    benefits: ['Natural Energy & Metabolism', 'Clean energy without caffeine', 'Stimulates metabolism']
-  },
-  {
-    id: 'p16',
-    title: 'BALANCE',
-    price: 12,
-    category: 'Nutrition',
-    collection: 'Mike Water Fitness',
-    image: 'https://picsum.photos/seed/balance/600/800',
-    description: 'Balance is our nutrient-dense green juice designed to support detoxification and daily wellness. Spinach and kale provide essential minerals and chlorophyll, while pineapple adds natural sweetness and digestive enzymes.',
-    ingredients: ['Spinach', 'Kale', 'Pineapple', 'Peruvian Ginger', 'Black Ginger', 'Elderberry', 'Sea Moss'],
-    benefits: ['Greens & Daily Detox', 'Supports immunity', 'Supports digestion']
+  { 
+    id: 'p4', 
+    brand_id: 'mike-water',
+    category_id: 'nutrition',
+    name: 'Recovery Green Juice', 
+    slug: 'recovery-green-juice',
+    description: 'Cold-pressed functional juice for post-workout recovery.',
+    price: 12, 
+    compare_at_price: 15,
+    sku: 'NUT-001',
+    inventory_count: 200,
+    status: 'active',
+    featured_image: 'https://picsum.photos/seed/fmfp4/600/800',
+    images: ['https://picsum.photos/seed/fmfp4/600/800'],
+    ingredients: ['Kale', 'Spinach', 'Cucumber', 'Lemon', 'Ginger'],
+    benefits: ['Hydration', 'Anti-inflammatory', 'Vitamin Rich'],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
 ];
 
@@ -278,19 +250,19 @@ const COLLABORATIONS: CollaborationBrand[] = [
     link: '/store',
     buttonText: 'View Collection'
   },
-  {
-    id: 'c4',
-    name: 'CLÉ PARIS',
-    category: 'Luxury Fragrance & Lifestyle',
+  { 
+    id: 'c4', 
+    name: 'CLÉ PARIS', 
+    category: 'Luxury Fragrance & Lifestyle', 
     description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
     image: 'https://picsum.photos/seed/cleparis/800/600',
     link: '/store',
     buttonText: 'Explore Brand'
   },
-  {
-    id: 'c5',
-    name: 'MIKE WATER FITNESS',
-    category: 'Functional Nutrition',
+  { 
+    id: 'c5', 
+    name: 'MIKE WATER FITNESS', 
+    category: 'Functional Nutrition', 
     description: 'Cold-pressed functional juices designed for performance, recovery, and daily balance. Clean fuel for the body without additives or artificial sugars.',
     image: 'https://picsum.photos/seed/mikewater/800/600',
     link: '/store',
@@ -299,21 +271,29 @@ const COLLABORATIONS: CollaborationBrand[] = [
 ];
 
 const SESSIONS: TrainingSession[] = [
-  { id: 's1', title: 'Sunrise Calisthenics', time: '06:00 AM', trainer: 'Alex Rivera', spots: 5, type: 'Beach Training' },
+  { id: 's1', title: 'Sunrise Calisthenics', time: '06:00 AM', trainer: 'Anderson Djeemo', spots: 5, type: 'Beach Training' },
   { id: 's2', title: 'Power Hour Intensity', time: '09:00 AM', trainer: 'Sarah Chen', spots: 2, type: 'Strength' },
   { id: 's3', title: 'Mobility & Flow', time: '11:00 AM', trainer: 'Marcus Thorne', spots: 10, type: 'Recovery' },
-  { id: 's4', title: 'Sunset Core Blast', time: '05:30 PM', trainer: 'Alex Rivera', spots: 8, type: 'Mindset & Core' },
+  { id: 's4', title: 'Sunset Core Blast', time: '05:30 PM', trainer: 'Anderson Djeemo', spots: 8, type: 'Mindset & Core' },
 ];
 
 const RETREATS: Retreat[] = [
   { 
     id: 'r1', 
     title: 'Miami Beach Immersion', 
+    description: 'Our exclusive flagship experience. Miami Beach is currently our only retreat location, focusing on high-intensity calisthenics, mindset workshops, and luxury wellness on the Florida coast.',
+    cover_image: 'https://picsum.photos/seed/fmfr1/1200/600', 
+    start_date: '2026-06-15T09:00:00Z',
+    end_date: '2026-06-20T17:00:00Z',
     location: 'Miami Beach, FL', 
-    date: 'June 15-20, 2026', 
-    price: '$2,499', 
-    image: 'https://picsum.photos/seed/fmfr1/1200/600', 
-    description: 'Our exclusive flagship experience. Miami Beach is currently our only retreat location, focusing on high-intensity calisthenics, mindset workshops, and luxury wellness on the Florida coast.' 
+    visibility_status: 'published',
+    access_type: 'package_based',
+    allowed_packages: ['elite'],
+    allowed_users: [],
+    preview_enabled: true,
+    created_by: 'admin',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
 ];
 
@@ -323,7 +303,7 @@ interface AuthContextType {
   user: UserProfile | null;
   notifications: Notification[];
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, tier: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, tier: string) => Promise<void>;
   logout: () => void;
   updateTier: (tier: string) => void;
   addNotification: (notif: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => Promise<void>;
@@ -340,47 +320,98 @@ const useAuth = () => {
   return context;
 };
 
+interface CartContextType {
+  cart: CartItem[];
+  addToCart: (product: Product) => void;
+  removeFromCart: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  totalItems: number;
+  totalPrice: number;
+}
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) throw new Error('useCart must be used within a CartProvider');
+  return context;
+};
+
+interface CartItemWithProduct {
+  product: Product;
+  quantity: number;
+}
+
+const CartProvider = ({ children }: { children: ReactNode }) => {
+  const [cart, setCart] = useState<CartItemWithProduct[]>(() => {
+    const saved = localStorage.getItem('fmf_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fmf_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === product.id);
+      if (existing) {
+        return prev.map(item => 
+          item.product.id === product.id 
+            ? { ...item, quantity: item.quantity + 1 } 
+            : item
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.product.id !== productId));
+  };
+
+  const updateQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart(prev => prev.map(item => 
+      item.product.id === productId ? { ...item, quantity } : item
+    ));
+  };
+
+  const clearCart = () => setCart([]);
+
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
+  return (
+    <CartContext.Provider value={{ cart: cart as any, addToCart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice }}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
     if (data) setUser(data as UserProfile);
     else setUser(null);
     if (error && error.code !== 'PGRST116') console.error('Fetch user error:', error);
   };
 
   const fetchNotifications = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(20);
-    if (data) {
-      setNotifications(data.map((n: any) => ({
-        id: n.id,
-        userId: n.user_id,
-        type: n.type,
-        fromUserId: n.from_user_id,
-        fromUserName: n.from_user_name,
-        postId: n.post_id,
-        postContent: n.post_content,
-        createdAt: n.created_at,
-        isRead: n.is_read,
-      })));
-    }
+    const { data, error } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20);
+    if (data) setNotifications(data as Notification[]);
     if (error) console.error('Fetch notifications error:', error);
   };
 
   useEffect(() => {
-    // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         fetchUser(session.user.id);
@@ -389,7 +420,6 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    // Listen to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         fetchUser(session.user.id);
@@ -400,118 +430,120 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    // Real-time subscription for user profile changes
-    const userChannel = supabase.channel('user-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, (payload) => {
-        if (payload.new && (payload.new as any).id === user?.id) {
-          setUser(payload.new as UserProfile);
-        }
-      })
-      .subscribe();
-
-    // Real-time subscription for notifications
-    const notifChannel = supabase.channel('notif-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) fetchNotifications(session.user.id);
-        });
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-      supabase.removeChannel(userChannel);
-      supabase.removeChannel(notifChannel);
-    };
+    return () => { subscription.unsubscribe(); };
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (error) {
       console.error("Login error:", error);
       throw error;
     }
   };
 
-  const signup = async (name: string, email: string, tier: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: 'temporaryPassword123!', // In a real app, user provides password
-      options: { data: { display_name: name } }
-    });
-    if (error) throw error;
-    if (data.user) {
-      const newUser: UserProfile = {
-        id: data.user.id,
-        name,
-        email,
-        tier,
-        joinedAt: new Date().toISOString(),
-      };
-      const { error: insertError } = await supabase.from('users').insert(newUser);
-      if (insertError) throw insertError;
+  const signup = async (name: string, email: string, password: string, tier: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { display_name: name } }
+      });
+      if (error) throw error;
+
+      if (data.user) {
+        const newUser: UserProfile = {
+          id: data.user.id,
+          full_name: name,
+          email,
+          role: email === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
+          signup_date: new Date().toISOString(),
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        await supabase.from('users').insert(newUser);
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
     }
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error("Logout error:", error);
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const updateTier = async (tier: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (user && session?.user) {
-      const { error } = await supabase.from('users').update({ tier }).eq('id', session.user.id);
-      if (error) console.error('Update tier error:', error);
-      else setUser({ ...user, tier });
+    if (!user) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      await supabase.from('users').update({ tier }).eq('id', session.user.id);
+      fetchUser(session.user.id);
+    } catch (error) {
+      console.error('Error updating tier:', error);
     }
   };
 
   const addNotification = async (notif: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (notif.userId === session?.user?.id) return;
-    const { error } = await supabase.from('notifications').insert({
-      user_id: notif.userId,
-      type: notif.type,
-      from_user_id: notif.fromUserId,
-      from_user_name: notif.fromUserName,
-      post_id: notif.postId,
-      post_content: notif.postContent,
-      created_at: new Date().toISOString(),
-      is_read: false,
-    });
-    if (error) console.error('Add notification error:', error);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      // Don't notify yourself
+      if (notif.user_id === session?.user?.id) return;
+
+      await supabase.from('notifications').insert({
+        ...notif,
+        created_at: new Date().toISOString(),
+        status: 'sent'
+      });
+    } catch (error) {
+      console.error('Error adding notification:', error);
+    }
   };
 
   const markAsRead = async (id: string) => {
-    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    if (error) console.error('Mark as read error:', error);
-    else setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    try {
+      await supabase.from('notifications').update({ status: 'read' }).eq('id', id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) fetchNotifications(session.user.id);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   const clearNotifications = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', session.user.id)
-      .eq('is_read', false);
-    if (error) console.error('Clear notifications error:', error);
-    else setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      await supabase.from('notifications').update({ status: 'read' }).eq('user_id', session.user.id).neq('status', 'read');
+      fetchNotifications(session.user.id);
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+    }
   };
 
   const toggleFavorite = async (videoId: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!user || !session?.user) return;
-    const currentFavorites = user.favorites || [];
-    const isFavorited = currentFavorites.includes(videoId);
-    const newFavorites = isFavorited
-      ? currentFavorites.filter(id => id !== videoId)
-      : [...currentFavorites, videoId];
-    const { error } = await supabase.from('users').update({ favorites: newFavorites }).eq('id', session.user.id);
-    if (error) console.error('Toggle favorite error:', error);
-    else setUser({ ...user, favorites: newFavorites });
+    if (!user) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const currentFavorites = user.favorites || [];
+      const isFavorited = currentFavorites.includes(videoId);
+      const newFavorites = isFavorited
+        ? currentFavorites.filter(id => id !== videoId)
+        : [...currentFavorites, videoId];
+
+      await supabase.from('users').update({ favorites: newFavorites }).eq('id', session.user.id);
+      fetchUser(session.user.id);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
   };
 
   if (loading) {
@@ -523,15 +555,15 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      notifications,
-      login,
-      signup,
-      logout,
-      updateTier,
-      addNotification,
-      markAsRead,
+    <AuthContext.Provider value={{ 
+      user, 
+      notifications, 
+      login, 
+      signup, 
+      logout, 
+      updateTier, 
+      addNotification, 
+      markAsRead, 
       clearNotifications,
       toggleFavorite
     }}>
@@ -542,7 +574,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 // --- Components ---
 
-interface Athlete {
+interface LandingAthlete {
   id: string;
   name: string;
   role: string;
@@ -554,7 +586,7 @@ interface Athlete {
   };
 }
 
-const ATHLETES: Athlete[] = [
+const LANDING_ATHLETES: LandingAthlete[] = [
   {
     id: 'a1',
     name: 'Michael Leggett',
@@ -576,7 +608,7 @@ const ATHLETES: Athlete[] = [
 const NotificationBell = () => {
   const { notifications, markAsRead, clearNotifications } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter(n => n.status !== 'read').length;
 
   return (
     <div className="relative">
@@ -630,7 +662,7 @@ const NotificationBell = () => {
                         markAsRead(notif.id);
                         // In a real app, navigate to the post
                       }}
-                      className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer ${!notif.isRead ? 'bg-brand-teal/5' : ''}`}
+                      className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer ${notif.status !== 'read' ? 'bg-brand-teal/5' : ''}`}
                     >
                       <div className="flex gap-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${notif.type === 'like' ? 'bg-brand-coral/20 text-brand-coral' : 'bg-brand-teal/20 text-brand-teal'}`}>
@@ -641,9 +673,9 @@ const NotificationBell = () => {
                             <span className="font-bold text-white">{notif.fromUserName}</span> {notif.type === 'like' ? 'liked' : 'commented on'} your post:
                           </p>
                           <p className="text-[10px] text-white/40 italic truncate max-w-[180px]">"{notif.postContent}"</p>
-                          <p className="text-[8px] text-white/20 uppercase tracking-widest">{new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className="text-[8px] text-white/20 uppercase tracking-widest">{new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
-                        {!notif.isRead && (
+                        {notif.status !== 'read' && (
                           <div className="w-1.5 h-1.5 rounded-full bg-brand-teal mt-1" />
                         )}
                       </div>
@@ -659,6 +691,14 @@ const NotificationBell = () => {
   );
 };
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -666,13 +706,13 @@ const Navbar = () => {
 
   const navLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Program', path: '/program' },
-    { name: 'Videos', path: '/videos' },
+    { name: 'Philosophy', path: '/philosophy' },
     { name: 'Athletes', path: '/athletes' },
-    { name: 'Membership', path: '/membership' },
     { name: 'Community', path: '/community' },
-    { name: 'Store', path: '/store' },
+    { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },
+    { name: 'Services', path: '/services' },
+    { name: 'Membership', path: '/membership' },
   ];
 
   return (
@@ -698,12 +738,21 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-6">
+          {user?.role === 'admin' && (
+            <Link to="/admin" className="hidden lg:flex items-center space-x-2 text-xs uppercase tracking-widest text-brand-teal hover:text-white transition-colors">
+              <Zap size={16} />
+              <span>Admin</span>
+            </Link>
+          )}
           {user ? (
             <div className="hidden lg:flex items-center space-x-4">
               <NotificationBell />
               <Link to="/profile" className="flex flex-col items-end group">
-                <span className="text-[10px] uppercase tracking-widest font-bold text-brand-teal group-hover:text-white transition-colors">{user.name}</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-brand-teal group-hover:text-white transition-colors">{user.full_name}</span>
                 <span className="text-[8px] uppercase tracking-widest text-white/40">{user.tier}</span>
+              </Link>
+              <Link to="/order-history" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Order History">
+                <ShoppingBag size={18} />
               </Link>
               <button 
                 onClick={logout}
@@ -755,7 +804,7 @@ const Navbar = () => {
                           onClick={() => setIsOpen(false)}
                           className="flex flex-col"
                         >
-                          <span className="text-sm font-bold text-brand-teal uppercase tracking-widest">{user.name}</span>
+                          <span className="text-sm font-bold text-brand-teal uppercase tracking-widest">{user.full_name}</span>
                           <span className="text-[10px] text-white/40 uppercase tracking-widest">{user.tier}</span>
                         </Link>
                       </div>
@@ -766,6 +815,13 @@ const Navbar = () => {
                         Logout
                       </button>
                     </div>
+                    <Link 
+                      to="/order-history" 
+                      onClick={() => setIsOpen(false)}
+                      className="text-white/60 text-xs uppercase tracking-widest hover:text-brand-teal transition-colors"
+                    >
+                      Order History
+                    </Link>
                   </div>
                 ) : (
                   <Link 
@@ -786,7 +842,7 @@ const Navbar = () => {
   );
 };
 
-const Footer = () => (
+const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'error') => void }) => (
   <footer className="bg-brand-black border-t border-white/10 pt-24 pb-12 px-6">
     <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
       <div className="space-y-6">
@@ -827,14 +883,28 @@ const Footer = () => (
       <div>
         <h3 className="text-white text-xs uppercase tracking-widest mb-8">Join the Community</h3>
         <p className="text-white/40 text-sm mb-6">Subscribe for training tips and exclusive drops.</p>
-        <div className="flex border-b border-white/20 pb-2">
-          <input
-            type="email"
-            placeholder="EMAIL ADDRESS"
-            className="bg-transparent border-none text-xs tracking-widest text-white focus:outline-none w-full"
-          />
-          <ArrowRight size={16} className="text-brand-teal" />
-        </div>
+        <form className="space-y-4" onSubmit={(e) => { 
+          e.preventDefault(); 
+          if (showToast) showToast('Thank you for subscribing!', 'success');
+        }}>
+          <div className="flex flex-col space-y-3">
+            <input
+              type="email"
+              placeholder="YOUR EMAIL ADDRESS"
+              className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-brand-teal transition-colors"
+              required
+            />
+            <button 
+              type="submit"
+              className="w-full bg-brand-teal text-black text-[10px] font-bold uppercase tracking-[0.2em] py-3 rounded-lg hover:bg-brand-teal/90 transition-all"
+            >
+              Subscribe Now
+            </button>
+          </div>
+          <p className="text-[10px] text-white/20 uppercase tracking-[0.2em] leading-relaxed">
+            By subscribing, you agree to our <a href="#" className="text-white/40 hover:text-white underline underline-offset-4">Privacy Policy</a>.
+          </p>
+        </form>
       </div>
     </div>
     <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 text-[10px] uppercase tracking-[0.3em] text-white/20 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -851,6 +921,29 @@ const Home = () => {
   const heroRef = useRef(null);
   const philosophyRef = useRef(null);
   const retreatRef = useRef(null);
+  const [featuredVideos, setFeaturedVideos] = useState<Video[]>([]);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('videos')
+          .select('*')
+          .eq('visibility_status', 'published')
+          .limit(3);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setFeaturedVideos(data as Video[]);
+        } else {
+          setFeaturedVideos(VIDEOS.slice(0, 3));
+        }
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+        setFeaturedVideos(VIDEOS.slice(0, 3));
+      }
+    };
+    fetchVideos();
+  }, []);
 
   const { scrollYProgress: heroScroll } = useScroll({
     target: heroRef,
@@ -907,9 +1000,9 @@ const Home = () => {
               Train Your Body. Train Your Mind. A premium calisthenics training program designed to build strength, discipline, and energy.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button onClick={() => navigate('/program')} className="btn-primary">Start Training</button>
+              <button onClick={() => navigate('/membership')} className="btn-primary">Get Started</button>
               <button onClick={() => navigate('/videos')} className="btn-outline">Explore Program</button>
-              <button onClick={() => navigate('/store')} className="btn-secondary">Shop Collection</button>
+              <button onClick={() => navigate('/shop')} className="btn-secondary">Shop Collection</button>
             </div>
           </motion.div>
         </div>
@@ -946,6 +1039,16 @@ const Home = () => {
                 <Zap className="text-brand-teal" size={32} />
                 <h4 className="font-bold uppercase text-sm">Movement</h4>
                 <p className="text-xs text-white/40">The body was designed to move freely and powerfully.</p>
+              </div>
+              <div className="space-y-2">
+                <Heart className="text-brand-coral" size={32} />
+                <h4 className="font-bold uppercase text-sm">Energy</h4>
+                <p className="text-xs text-white/40">Training fuels the mind and body for peak performance.</p>
+              </div>
+              <div className="space-y-2">
+                <Star className="text-brand-teal" size={32} />
+                <h4 className="font-bold uppercase text-sm">Lifestyle</h4>
+                <p className="text-xs text-white/40">Fitness becomes an essential part of how you live.</p>
               </div>
             </div>
           </motion.div>
@@ -1018,6 +1121,50 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Local Pass Promotion */}
+      <section className="py-32 px-6 bg-brand-teal/5 border-y border-brand-teal/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="space-y-8">
+              <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Miami Local</span>
+              <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-none">
+                Physical <br /> <span className="text-brand-coral italic">Local Passes</span>
+              </h2>
+              <p className="text-white/50 text-lg font-light leading-relaxed">
+                Visiting Miami or just want to experience the Power Hour locally? Our physical passes give you full access to the FMF ecosystem for a limited time, including our signature recovery beverages.
+              </p>
+              <div className="flex flex-wrap gap-8">
+                <div className="space-y-2">
+                  <p className="text-3xl font-bold text-white">$59</p>
+                  <p className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">3-Day Pass</p>
+                </div>
+                <div className="w-px h-12 bg-white/10 hidden md:block" />
+                <div className="space-y-2">
+                  <p className="text-3xl font-bold text-white">$89</p>
+                  <p className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">7-Day Pass</p>
+                </div>
+              </div>
+              <button onClick={() => navigate('/membership')} className="btn-primary">Get Your Pass</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { title: 'Cold-Pressed Juice', icon: <Zap size={20} /> },
+                { title: 'Ginger Shot', icon: <Zap size={20} /> },
+                { title: 'Beverage of Choice', icon: <Zap size={20} /> }
+              ].map((item, i) => (
+                <div key={i} className="card-gradient p-6 text-center space-y-4">
+                  <div className="w-12 h-12 bg-brand-teal/20 rounded-full flex items-center justify-center text-brand-teal mx-auto">
+                    {item.icon}
+                  </div>
+                  <p className="text-[10px] uppercase tracking-widest font-bold leading-tight">{item.title}</p>
+                  <p className="text-[8px] text-white/40 uppercase tracking-widest">Included Free</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Video Preview */}
       <section className="py-32 bg-white/5">
         <div className="max-w-7xl mx-auto px-6">
@@ -1032,14 +1179,21 @@ const Home = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {VIDEOS.slice(0, 3).map((video) => (
+            {featuredVideos.map((video) => (
               <motion.div
                 key={video.id}
                 whileHover={{ y: -10 }}
                 className="card-gradient overflow-hidden group cursor-pointer"
+                onClick={() => navigate(`/video/${video.id}`)}
               >
                 <div className="relative aspect-video">
-                  <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+                  <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+                  {video.isPremium && (
+                    <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
+                      <Zap size={10} fill="white" />
+                      Premium
+                    </div>
+                  )}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-16 h-16 bg-brand-teal rounded-full flex items-center justify-center shadow-2xl">
                       <Play fill="white" size={24} className="translate-x-0.5" />
@@ -1107,7 +1261,7 @@ const Home = () => {
             "Discipline is the bridge between goals and accomplishment. Fitness Power Hour is where that bridge is built."
           </motion.h2>
           <div className="space-y-2">
-            <div className="text-brand-coral font-bold uppercase tracking-[0.3em] text-sm">Alex Rivera</div>
+            <div className="text-brand-coral font-bold uppercase tracking-[0.3em] text-sm">Anderson Djeemo</div>
             <div className="text-white/20 text-[10px] uppercase tracking-[0.5em]">Founder, FMF</div>
           </div>
         </div>
@@ -1287,7 +1441,7 @@ const TrainerSection = () => {
             <div className="pt-8 border-t border-white/10">
               <Quote className="text-brand-coral mb-4 opacity-40" size={32} />
               <p className="text-2xl italic font-light text-white/80 leading-tight">
-                “Your body is the first tool you were given. Learning how to control it changes everything.”
+                “Your body is the first tool you were given. Learning how to use it changes everything.”
               </p>
               <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">— Michael Leggett</p>
             </div>
@@ -1432,7 +1586,7 @@ const SystemSection = () => {
   );
 };
 
-const Program = () => {
+const ProgramPage = () => {
   const navigate = useNavigate();
   return (
     <div className="pt-20">
@@ -1489,47 +1643,67 @@ const VideoPlayer = ({ video, onClose }: { video: Video; onClose: () => void }) 
         <X size={32} />
       </button>
 
-      <div className="w-full max-w-6xl aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl relative">
-        {video.sourceType === 'youtube' ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${video.videoUrl?.split('v=')[1]}?autoplay=1`}
-            className="w-full h-full border-none"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : video.sourceType === 'upload' ? (
-          <div className="w-full h-full flex items-center justify-center bg-brand-teal/5">
-            <div className="text-center space-y-4">
-              <Upload size={48} className="text-brand-teal mx-auto" />
-              <p className="text-white/60 uppercase tracking-widest text-sm">Simulated Video Playback</p>
-              <p className="text-white/20 text-xs">File: {video.videoUrl}</p>
+      <div className="w-full max-w-6xl space-y-8">
+        <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl relative">
+          {video.source_type === 'youtube' ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${video.video_url?.split('v=')[1]}?autoplay=1`}
+              className="w-full h-full border-none"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : video.source_type === 'upload' ? (
+            <div className="w-full h-full flex items-center justify-center bg-brand-teal/5">
+              <div className="text-center space-y-4">
+                <Upload size={48} className="text-brand-teal mx-auto" />
+                <p className="text-white/60 uppercase tracking-widest text-sm">Simulated Video Playback</p>
+                <p className="text-white/20 text-xs">File: {video.video_url}</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-brand-coral/5">
-            <div className="text-center space-y-4">
-              <Link2 size={48} className="text-brand-coral mx-auto" />
-              <p className="text-white/60 uppercase tracking-widest text-sm">External Link Redirect</p>
-              <a href={video.videoUrl} target="_blank" rel="noopener noreferrer" className="btn-primary inline-block">Open External Link</a>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-brand-coral/5">
+              <div className="text-center space-y-4">
+                <Link2 size={48} className="text-brand-coral mx-auto" />
+                <p className="text-white/60 uppercase tracking-widest text-sm">External Link Redirect</p>
+                <a href={video.video_url} target="_blank" rel="noopener noreferrer" className="btn-primary inline-block">Open External Link</a>
+              </div>
             </div>
+          )}
+        </div>
+
+        <div className="space-y-4 max-w-3xl">
+          <div className="flex items-center gap-4">
+            <span className="text-brand-teal text-[10px] uppercase tracking-[0.4em] font-bold">{video.category_id}</span>
+            <span className="text-brand-coral text-[10px] uppercase tracking-widest border border-brand-coral/20 px-2 py-0.5 rounded">{video.level}</span>
           </div>
-        )}
+          <h2 className="text-4xl font-bold uppercase tracking-tighter leading-none">{video.title}</h2>
+          <p className="text-white/60 text-lg font-light leading-relaxed">
+            {video.description}
+          </p>
+        </div>
       </div>
     </motion.div>
   );
 };
 
 const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: Video) => void }) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     category: 'Full Body Workouts',
     duration: '',
     level: 'Beginner' as const,
     description: '',
-    sourceType: 'youtube' as const,
-    videoUrl: ''
+    source_type: 'youtube' as const,
+    video_url: '',
+    visibility: 'everyone' as const
   });
   const [benefitsInput, setBenefitsInput] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+
+  if (!user || user.role !== 'admin') {
+    return null;
+  }
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -1537,7 +1711,9 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
       ...formData,
       id: `v-${Date.now()}`,
       thumbnail: `https://picsum.photos/seed/${Date.now()}/800/450`,
-      benefits: benefitsInput ? benefitsInput.split(',').map(b => b.trim()) : ['Community Training', 'Performance', 'Discipline']
+      benefits: benefitsInput ? benefitsInput.split(',').map(b => b.trim()) : ['Community Training', 'Performance', 'Discipline'],
+      tags: tagsInput ? tagsInput.split(',').map(t => t.trim().toLowerCase()) : [],
+      createdAt: new Date().toISOString()
     };
     onAdd(newVideo);
     onClose();
@@ -1560,7 +1736,22 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
           <button onClick={onClose} className="text-white/40 hover:text-white"><X size={24} /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Visibility</label>
+            <select 
+              required
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              value={formData.visibility}
+              onChange={e => setFormData({...formData, visibility: e.target.value as any})}
+            >
+              <option value="everyone">Everyone</option>
+              <option value="Basic">Basic</option>
+              <option value="Premium">Premium</option>
+              <option value="Elite">Elite</option>
+            </select>
+          </div>
+
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-widest text-white/40">Video Title</label>
             <input 
@@ -1614,9 +1805,20 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
               <input 
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
                 placeholder="Strength, Mobility, Core"
+                value={benefitsInput}
                 onChange={e => setBenefitsInput(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Tags (comma separated)</label>
+            <input 
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              placeholder="mobility, morning, beginner"
+              value={tagsInput}
+              onChange={e => setTagsInput(e.target.value)}
+            />
           </div>
 
           <div className="space-y-2">
@@ -1637,9 +1839,9 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
                 <button
                   key={type}
                   type="button"
-                  onClick={() => setFormData({...formData, sourceType: type as any})}
+                  onClick={() => setFormData({...formData, source_type: type as any})}
                   className={`flex-1 py-3 rounded-xl border text-[10px] uppercase tracking-widest transition-all ${
-                    formData.sourceType === type ? 'bg-brand-teal border-brand-teal text-white' : 'bg-white/5 border-white/10 text-white/40'
+                    formData.source_type === type ? 'bg-brand-teal border-brand-teal text-white' : 'bg-white/5 border-white/10 text-white/40'
                   }`}
                 >
                   {type}
@@ -1650,14 +1852,14 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
 
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-widest text-white/40">
-              {formData.sourceType === 'youtube' ? 'YouTube URL' : formData.sourceType === 'upload' ? 'File Name' : 'External Link'}
+              {formData.source_type === 'youtube' ? 'YouTube URL' : formData.source_type === 'upload' ? 'File Name' : 'External Link'}
             </label>
             <input 
               required
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
-              placeholder={formData.sourceType === 'youtube' ? 'https://youtube.com/watch?v=...' : ''}
-              value={formData.videoUrl}
-              onChange={e => setFormData({...formData, videoUrl: e.target.value})}
+              placeholder={formData.source_type === 'youtube' ? 'https://youtube.com/watch?v=...' : ''}
+              value={formData.video_url}
+              onChange={e => setFormData({...formData, video_url: e.target.value})}
             />
           </div>
 
@@ -1675,8 +1877,38 @@ const VideoLibrary = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLevel, setActiveLevel] = useState('All');
   const [activeDuration, setActiveDuration] = useState('All');
+  const [localVideos, setLocalVideos] = useState<Video[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [localVideos, setLocalVideos] = useState<Video[]>(VIDEOS);
+
+  const handleAddVideo = async (video: Video) => {
+    try {
+      await supabase.from('videos').upsert({ ...video });
+    } catch (error) {
+      console.error('Error adding video:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        let query = supabase.from('videos').select('*');
+        if (!(user?.role === 'admin' || user?.role === 'super_admin')) {
+          query = query.eq('visibility_status', 'published');
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setLocalVideos(data as Video[]);
+        } else {
+          setLocalVideos(VIDEOS);
+        }
+      } catch (error) {
+        console.error('VideoLibrary error:', error);
+        setLocalVideos(VIDEOS);
+      }
+    };
+    fetchVideos();
+  }, [user]);
 
   const categories = ['All', 'Beginner Training', 'Intermediate Training', 'Advanced Training', 'Mobility & Recovery', 'Core Strength', 'Full Body Workouts'];
   const levels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
@@ -1693,10 +1925,23 @@ const VideoLibrary = () => {
 
   const filteredVideos = useMemo(() => {
     return localVideos.filter(v => {
+      // Visibility check
+      const userTier = user?.tier || 'everyone';
+      const visibility = v.visibility || 'everyone';
+      
+      let hasAccess = false;
+      if (visibility === 'everyone') hasAccess = true;
+      else if (visibility === 'Basic' && (userTier === 'Basic' || userTier === 'Premium' || userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
+      else if (visibility === 'Premium' && (userTier === 'Premium' || userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
+      else if (visibility === 'Elite' && (userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
+
+      if (!hasAccess) return false;
+
       const matchesCategory = activeCategory === 'All' || v.category === activeCategory;
       const matchesLevel = activeLevel === 'All' || v.level === activeLevel;
       const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           v.description.toLowerCase().includes(searchQuery.toLowerCase());
+                           v.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           (v.tags && v.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
       
       let matchesDuration = true;
       if (activeDuration !== 'All') {
@@ -1719,12 +1964,14 @@ const VideoLibrary = () => {
               <h1 className="text-5xl font-bold uppercase tracking-tighter mb-4">Video <span className="text-brand-teal">Library</span></h1>
               <p className="text-white/40 uppercase tracking-widest text-xs">Master your movement with guided sessions</p>
             </div>
-            <button 
-              onClick={() => setIsUploadModalOpen(true)}
-              className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-6 py-3 rounded-full text-[10px] uppercase tracking-[0.2em] transition-all"
-            >
-              <Plus size={16} className="text-brand-teal" /> Add Video
-            </button>
+            {user?.role === 'admin' && (
+              <button 
+                onClick={() => setIsUploadModalOpen(true)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus size={18} /> Add Video
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -1796,7 +2043,7 @@ const VideoLibrary = () => {
                 onClick={() => navigate(`/video/${video.id}`)}
               >
                 <div className="relative aspect-video">
-                  <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+                  <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
                   {video.isPremium && (
                     <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
                       <Zap size={10} fill="white" />
@@ -1833,9 +2080,9 @@ const VideoLibrary = () => {
                     </button>
                     <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] uppercase tracking-widest flex items-center gap-2">
                       {video.isPremium && <Zap size={10} className="text-brand-coral" />}
-                      {video.sourceType === 'youtube' && <Youtube size={12} className="text-red-500" />}
-                      {video.sourceType === 'upload' && <Upload size={12} className="text-brand-teal" />}
-                      {video.sourceType === 'link' && <ExternalLink size={12} className="text-brand-coral" />}
+                      {video.source_type === 'youtube' && <Youtube size={12} className="text-red-500" />}
+                      {video.source_type === 'upload' && <Upload size={12} className="text-brand-teal" />}
+                      {video.source_type === 'link' && <ExternalLink size={12} className="text-brand-coral" />}
                       {video.duration}
                     </div>
                   </div>
@@ -1870,7 +2117,12 @@ const VideoLibrary = () => {
       </div>
 
       <AnimatePresence>
-        {isUploadModalOpen && <VideoUploadModal onClose={() => setIsUploadModalOpen(false)} onAdd={(v) => setLocalVideos([v, ...localVideos])} />}
+        {isUploadModalOpen && (
+          <VideoUploadModal 
+            onClose={() => setIsUploadModalOpen(false)} 
+            onAdd={handleAddVideo}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
@@ -2269,13 +2521,177 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
   );
 };
 
+const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const { cart, removeFromCart, updateQuantity, totalPrice, totalItems, clearCart } = useCart();
+  const { user } = useAuth();
+  const isMember = user && user.tier !== 'Basic';
+  const discount = 0.3;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[200] flex justify-end">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-brand-black/80 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="relative w-full max-w-md h-full bg-brand-black border-l border-white/10 flex flex-col shadow-2xl"
+          >
+            <div className="p-8 border-b border-white/5 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold uppercase tracking-tighter">Shopping <span className="text-brand-teal">Cart</span></h2>
+                <p className="text-[10px] text-white/40 uppercase tracking-widest">{totalItems} Items</p>
+              </div>
+              <button onClick={onClose} className="p-2 text-white/40 hover:text-white transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+              {cart.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
+                  <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center text-white/20">
+                    <ShoppingBag size={40} />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-bold uppercase tracking-widest">Your cart is empty</p>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest">Add some premium gear to get started</p>
+                  </div>
+                  <button onClick={onClose} className="btn-primary px-8 py-3 text-[10px]">
+                    Continue Shopping
+                  </button>
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <div key={item.product.id} className="flex gap-6 group">
+                    <div className="w-24 h-32 rounded-xl overflow-hidden bg-white/5 flex-shrink-0">
+                      <img src={item.product.featured_image} alt={item.product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-2">
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-sm font-bold uppercase tracking-tight">{item.product.name}</h3>
+                          <button onClick={() => removeFromCart(item.product.id)} className="text-white/20 hover:text-brand-coral transition-colors">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{item.product.category_id}</p>
+                      </div>
+
+                      <div className="flex justify-between items-end">
+                        <div className="flex items-center gap-4 bg-white/5 rounded-lg p-1 border border-white/10">
+                          <button 
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                          >
+                            <Minus size={12} />
+                          </button>
+                          <span className="text-xs font-bold w-4 text-center">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            className="w-6 h-6 flex items-center justify-center text-white/40 hover:text-white transition-colors"
+                          >
+                            <Plus size={12} />
+                          </button>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-brand-teal">
+                            ${(isMember ? Math.floor(item.product.price * (1 - discount)) : item.product.price) * item.quantity}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="p-8 bg-white/5 border-t border-white/10 space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] uppercase tracking-widest text-white/40">
+                    <span>Subtotal</span>
+                    <span>${totalPrice}</span>
+                  </div>
+                  {isMember && (
+                    <div className="flex justify-between text-[10px] uppercase tracking-widest text-brand-teal">
+                      <span>Member Discount (30%)</span>
+                      <span>-${Math.floor(totalPrice * discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xl font-bold uppercase tracking-tighter pt-2 border-t border-white/5">
+                    <span>Total</span>
+                    <span className="text-brand-teal">${isMember ? Math.floor(totalPrice * (1 - discount)) : totalPrice}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button className="w-full btn-primary py-5 text-xs rounded-xl flex items-center justify-center gap-3">
+                    Proceed to Checkout <ArrowRight size={16} />
+                  </button>
+                  <button 
+                    onClick={clearCart}
+                    className="w-full py-4 text-[10px] uppercase tracking-widest text-white/20 hover:text-white transition-colors"
+                  >
+                    Clear Cart
+                  </button>
+                </div>
+                
+                <p className="text-[8px] text-white/20 uppercase tracking-widest text-center leading-relaxed">
+                  Shipping and taxes calculated at checkout. <br />
+                  Secure payment powered by FMF.
+                </p>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 const Store = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('All');
+  const { category } = useParams();
+  const navigate = useNavigate();
+  const { addToCart, totalItems } = useCart();
+  const [activeTab, setActiveTab] = useState(category ? category.charAt(0).toUpperCase() + category.slice(1) : 'All');
   const [activeCollection, setActiveCollection] = useState('All');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  const [recentlyViewed, setRecentlyViewed] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('fmf_recently_viewed');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fmf_recently_viewed', JSON.stringify(recentlyViewed));
+  }, [recentlyViewed]);
+
+  const addToRecentlyViewed = (product: Product) => {
+    setRecentlyViewed(prev => {
+      const filtered = prev.filter(p => p.id !== product.id);
+      return [product, ...filtered].slice(0, 3);
+    });
+  };
+
+  const handleQuickView = (product: Product) => {
+    setSelectedProduct(product);
+    setIsQuickViewOpen(true);
+    addToRecentlyViewed(product);
+  };
+
   const isMember = user && user.tier !== 'Basic';
   const discount = 0.3; // 30% discount for members
 
@@ -2285,10 +2701,10 @@ const Store = () => {
   const filteredProducts = useMemo(() => {
     let filtered = PRODUCTS;
     if (activeTab !== 'All') {
-      filtered = filtered.filter(p => p.category === activeTab);
+      filtered = filtered.filter(p => p.category_id === activeTab.toLowerCase());
     }
     if (activeCollection !== 'All') {
-      filtered = filtered.filter(p => p.collection === activeCollection);
+      filtered = filtered.filter(p => p.brand_id === activeCollection);
     }
     return filtered;
   }, [activeTab, activeCollection]);
@@ -2344,6 +2760,19 @@ const Store = () => {
                 </button>
               ))}
             </div>
+            <div className="flex justify-end pt-4">
+              <button 
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all group"
+              >
+                <ShoppingBag size={20} className="text-white/60 group-hover:text-brand-teal transition-colors" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-2 -right-2 w-6 h-6 bg-brand-teal text-black text-[10px] font-bold rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(45,212,191,0.5)]">
+                    {totalItems}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </header>
 
@@ -2353,10 +2782,10 @@ const Store = () => {
               layout
               key={product.id}
               className="group cursor-pointer"
-              onClick={() => setSelectedProduct(product)}
+              onClick={() => handleQuickView(product)}
             >
               <div className="relative aspect-[3/4] overflow-hidden rounded-2xl mb-6">
-                <img src={product.image} alt={product.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" referrerPolicy="no-referrer" />
+                <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-brand-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button className="bg-white text-brand-black px-8 py-4 rounded-full flex items-center gap-3 transform translate-y-4 group-hover:translate-y-0 transition-all font-bold text-[10px] uppercase tracking-widest shadow-2xl">
                     <ShoppingBag size={16} />
@@ -2364,14 +2793,14 @@ const Store = () => {
                   </button>
                 </div>
                 <div className="absolute top-4 left-4">
-                  <span className="bg-brand-black/60 backdrop-blur-md text-[9px] uppercase tracking-widest px-2 py-1 rounded">{product.collection}</span>
+                  <span className="bg-brand-black/60 backdrop-blur-md text-[9px] uppercase tracking-widest px-2 py-1 rounded">{product.brand_id}</span>
                 </div>
               </div>
               <div className="flex flex-col space-y-2">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{product.title}</h3>
-                    <p className="text-white/40 text-xs uppercase tracking-widest">{product.category}</p>
+                    <h3 className="text-lg font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{product.name}</h3>
+                    <p className="text-white/40 text-xs uppercase tracking-widest">{product.category_id}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Retail Price</div>
@@ -2399,26 +2828,45 @@ const Store = () => {
             </motion.div>
           ))}
         </div>
+        
+        {recentlyViewed.length > 0 && (
+          <div className="mt-40 space-y-12">
+            <h2 className="text-3xl font-bold uppercase tracking-tighter">Recently <span className="text-brand-teal">Viewed</span></h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+              {recentlyViewed.map((p: Product) => (
+                <div key={p.id} className="card-gradient p-6 space-y-6 group cursor-pointer" onClick={() => navigate(`/shop/product/${p.id}`)}>
+                  <div className="aspect-[4/5] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
+                    <img src={p.featured_image} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold uppercase tracking-tighter">{p.name}</h4>
+                    <p className="text-xs text-white/40">${p.price}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* Product Detail Modal */}
+        {/* Quick View Modal */}
         <AnimatePresence>
-          {selectedProduct && (
+          {isQuickViewOpen && selectedProduct && (
             <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setSelectedProduct(null)}
+                onClick={() => setIsQuickViewOpen(false)}
                 className="absolute inset-0 bg-brand-black/90 backdrop-blur-xl"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-4xl card-gradient overflow-hidden flex flex-col md:flex-row"
+                className="relative w-full max-w-4xl card-gradient overflow-hidden flex flex-col md:flex-row max-h-[90vh] overflow-y-auto scrollbar-hide"
               >
                 <button 
-                  onClick={() => setSelectedProduct(null)}
+                  onClick={() => setIsQuickViewOpen(false)}
                   className="absolute top-6 right-6 z-10 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white/60 hover:text-white transition-colors"
                 >
                   <X size={20} />
@@ -2426,8 +2874,8 @@ const Store = () => {
 
                 <div className="w-full md:w-1/2 aspect-[4/5] md:aspect-auto">
                   <img 
-                    src={selectedProduct.image} 
-                    alt={selectedProduct.title} 
+                    src={selectedProduct.featured_image} 
+                    alt={selectedProduct.name} 
                     className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
                     referrerPolicy="no-referrer"
                   />
@@ -2435,9 +2883,20 @@ const Store = () => {
 
                 <div className="w-full md:w-1/2 p-10 md:p-16 flex flex-col justify-center space-y-8">
                   <div className="space-y-4">
-                    <span className="text-brand-teal text-[10px] uppercase tracking-[0.4em] font-bold">{selectedProduct.collection}</span>
-                    <h2 className="text-4xl font-bold uppercase tracking-tighter leading-none">{selectedProduct.title}</h2>
-                    <p className="text-white/40 text-xs uppercase tracking-widest">{selectedProduct.category}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-brand-teal text-[10px] uppercase tracking-[0.4em] font-bold">{selectedProduct.brand_id}</span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span className="text-white/40 text-[10px] uppercase tracking-[0.4em]">{selectedProduct.category_id}</span>
+                    </div>
+                    <h2 className="text-4xl font-bold uppercase tracking-tighter leading-none">{selectedProduct.name}</h2>
+                    <div className="flex items-baseline gap-4">
+                      <span className="text-3xl font-bold text-white">${isMember ? Math.floor(selectedProduct.price * (1 - discount)) : selectedProduct.price}</span>
+                      {(isMember || selectedProduct.compare_at_price > selectedProduct.price) && (
+                        <span className="text-sm text-white/20 line-through">
+                          ${isMember ? selectedProduct.price : selectedProduct.compare_at_price}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {selectedProduct.description && (
@@ -2486,6 +2945,10 @@ const Store = () => {
                         </div>
                       )}
                     </div>
+                    <div className="flex justify-between items-center text-[9px] uppercase tracking-widest text-white/20">
+                      <span>SKU: {selectedProduct.sku}</span>
+                      <span>Stock: {selectedProduct.inventory_count > 0 ? `${selectedProduct.inventory_count} units` : 'Out of Stock'}</span>
+                    </div>
                     {!isMember && (
                       <Link to="/membership" className="flex items-center gap-2 text-brand-coral text-[10px] uppercase tracking-widest font-bold hover:underline">
                         <Zap size={12} /> Join Power Hour for 30% off
@@ -2496,11 +2959,15 @@ const Store = () => {
                   <div className="space-y-4 pt-8 border-t border-white/5">
                     <button 
                       onClick={() => {
-                        setIsAddingToCart(true);
-                        setTimeout(() => {
-                          setIsAddingToCart(false);
-                          setSelectedProduct(null);
-                        }, 1500);
+                        if (selectedProduct) {
+                          setIsAddingToCart(true);
+                          addToCart(selectedProduct);
+                          setTimeout(() => {
+                            setIsAddingToCart(false);
+                            setIsQuickViewOpen(false);
+                            setIsCartOpen(true);
+                          }, 1000);
+                        }
                       }}
                       disabled={isAddingToCart}
                       className="w-full bg-white text-brand-black py-6 rounded-full font-bold text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-brand-teal transition-all shadow-[0_20px_40px_rgba(255,255,255,0.1)]"
@@ -2527,6 +2994,37 @@ const Store = () => {
             </div>
           )}
         </AnimatePresence>
+
+        {/* Recently Viewed Section */}
+        {recentlyViewed.length > 0 && (
+          <section className="mt-32 pt-24 border-t border-white/5">
+            <div className="flex justify-between items-end mb-12">
+              <div>
+                <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Your History</span>
+                <h2 className="text-3xl font-bold uppercase tracking-tighter">Recently <span className="text-brand-coral">Viewed</span></h2>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+              {recentlyViewed.map((product) => (
+                <div 
+                  key={product.id} 
+                  className="group cursor-pointer flex gap-6 items-center p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-brand-teal/30 transition-all"
+                  onClick={() => handleQuickView(product)}
+                >
+                  <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0">
+                    <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{product.name}</h3>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest">${product.price}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
         {/* Member Privileges Section */}
         <section className="mt-40 py-24 border-t border-white/5">
@@ -2571,44 +3069,2287 @@ const Store = () => {
                 </div>
               )}
             </div>
-            
-            <div className="relative aspect-square rounded-[3rem] overflow-hidden">
-              <img 
-                src="https://picsum.photos/seed/fmf-privileges/1000/1000" 
-                alt="Member Lifestyle" 
-                className="w-full h-full object-cover grayscale"
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent" />
-              <div className="absolute bottom-12 left-12 right-12 p-8 card-gradient backdrop-blur-md rounded-2xl border border-white/10">
-                <p className="text-white text-sm font-light italic leading-relaxed">
-                  "Being a Power Hour member isn't just about the workouts; it's about the standard you set for your life. The privileges are just a reflection of that commitment."
+
+            <div className="mt-32 p-12 md:p-24 rounded-[3rem] bg-gradient-to-br from-brand-black via-brand-black to-brand-teal/10 border border-white/5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
+                <img src="https://picsum.photos/seed/cle-lifestyle/800/1200" className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
+              </div>
+              <div className="relative z-10 max-w-xl space-y-8">
+                <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
+                <h2 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
+                  CLÉ <span className="text-brand-teal italic">Paris</span>
+                </h2>
+                <p className="text-white/60 text-lg font-light leading-relaxed italic">
+                  "Train with discipline. Move with strength. Carry yourself with elegance."
                 </p>
-                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">— Michael Power, Founder</p>
+                <div className="space-y-4 text-sm text-white/40 leading-relaxed">
+                  <p>
+                    CLÉ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
+                  </p>
+                </div>
+                <button className="btn-primary">Explore CLÉ Paris</button>
               </div>
             </div>
           </div>
         </section>
+      </div>
+    </div>
+  );
+};
 
-        {/* Luxury Lifestyle Feature */}
-        <div className="mt-32 p-12 md:p-24 rounded-[3rem] bg-gradient-to-br from-brand-black via-brand-black to-brand-teal/10 border border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
-            <img src="https://picsum.photos/seed/cle-lifestyle/800/1200" className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
+const ProgramBuilder = ({ videos, showToast }: { videos: Video[], showToast: (msg: string, type?: 'success' | 'error') => void }) => {
+  const [selectedUser, setSelectedUser] = useState<string>('');
+  const [programTitle, setProgramTitle] = useState('');
+  const [selectedVideos, setSelectedVideos] = useState<Video[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const { data, error } = await supabase.from('users').select('*');
+      if (data) setUsers(data as UserProfile[]);
+      if (error) console.error('Error fetching users:', error);
+    };
+    fetchUsers();
+  }, []);
+
+  const handleAddVideo = (video: Video) => {
+    if (!selectedVideos.find(v => v.id === video.id)) {
+      setSelectedVideos([...selectedVideos, video]);
+    }
+  };
+
+  const handleRemoveVideo = (videoId: string) => {
+    setSelectedVideos(selectedVideos.filter(v => v.id !== videoId));
+  };
+
+  const handleSaveProgram = async () => {
+    if (!selectedUser || !programTitle || selectedVideos.length === 0) {
+      showToast('Please fill all fields', 'error');
+      return;
+    }
+
+    const newProgram: Program = {
+      id: `prog-${Date.now()}`,
+      title: programTitle,
+      description: 'Personalized training program',
+      video_ids: selectedVideos.map(v => v.id),
+      created_by: 'admin',
+      status: 'published',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      await supabase.from('user_programs').upsert({
+        id: selectedUser,
+        programs: [newProgram]
+      });
+      showToast('Program linked to user!', 'success');
+      setProgramTitle('');
+      setSelectedVideos([]);
+      setSelectedUser('');
+    } catch (error) {
+      showToast('Error saving program', 'error');
+    }
+  };
+
+  return (
+    <div className="card-gradient p-8 space-y-8">
+      <h3 className="text-xl font-bold uppercase tracking-tight">Build & Link <span className="text-brand-teal">Program</span></h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Select User</label>
+            <select 
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
+            >
+              <option value="">Choose a user...</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>
+              ))}
+            </select>
           </div>
-          <div className="relative z-10 max-w-xl space-y-8">
-            <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
-            <h2 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
-              CLÉ <span className="text-brand-teal italic">Paris</span>
-            </h2>
-            <p className="text-white/60 text-lg font-light leading-relaxed italic">
-              "Train with discipline. Move with strength. Carry yourself with elegance."
-            </p>
-            <div className="space-y-4 text-sm text-white/40 leading-relaxed">
-              <p>
-                CLÉ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
-              </p>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Program Title</label>
+            <input 
+              type="text"
+              value={programTitle}
+              onChange={(e) => setProgramTitle(e.target.value)}
+              placeholder="e.g. 4-Week Strength Phase"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
+            />
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] uppercase tracking-widest text-white/40">Selected Videos ({selectedVideos.length})</label>
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+              {selectedVideos.map(v => (
+                <div key={v.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                  <span className="text-xs font-bold truncate">{v.title}</span>
+                  <button onClick={() => handleRemoveVideo(v.id)} className="text-brand-coral hover:text-white">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              {selectedVideos.length === 0 && (
+                <p className="text-[10px] text-white/20 uppercase tracking-widest text-center py-4">No videos selected</p>
+              )}
             </div>
-            <button className="btn-primary">Explore CLÉ Paris</button>
+          </div>
+
+          <button onClick={handleSaveProgram} className="btn-primary w-full py-4">Link Program to Profile</button>
+        </div>
+
+        <div className="space-y-4">
+          <label className="text-[10px] uppercase tracking-widest text-white/40">Available Videos</label>
+          <div className="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+            {videos.map(v => (
+              <div 
+                key={v.id} 
+                onClick={() => handleAddVideo(v)}
+                className="flex items-center gap-4 p-3 bg-white/5 rounded-lg border border-white/10 hover:border-brand-teal cursor-pointer transition-all group"
+              >
+                <img src={v.thumbnail_url} className="w-16 h-10 object-cover rounded grayscale group-hover:grayscale-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold truncate">{v.title}</p>
+                  <p className="text-[8px] text-white/40 uppercase tracking-widest">{v.level} • {v.duration}</p>
+                </div>
+                <Plus size={14} className="text-white/20 group-hover:text-brand-teal" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditUserModal = ({ user, onClose, onSave }: { user: UserProfile, onClose: () => void, onSave: (updatedUser: UserProfile) => void }) => {
+  const [formData, setFormData] = useState<UserProfile>(user);
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative w-full max-w-2xl bg-brand-black border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+      >
+        <div className="p-8 space-y-8">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold uppercase tracking-tight">Edit <span className="text-brand-teal">User</span></h2>
+            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Display Name</label>
+              <input 
+                type="text" 
+                value={formData.full_name || ''} 
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Email</label>
+              <input 
+                type="email" 
+                value={formData.email} 
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Tier</label>
+              <select 
+                value={formData.tier} 
+                onChange={(e) => setFormData({ ...formData, tier: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              >
+                <option value="Basic">Basic</option>
+                <option value="Premium">Premium</option>
+                <option value="Elite">Elite</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Role</label>
+              <select 
+                value={formData.role || 'user'} 
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              >
+                <option value="user">User</option>
+                <option value="athlete">Athlete</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">City</label>
+              <input 
+                type="text" 
+                value={formData.city || ''} 
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Level</label>
+              <input 
+                type="text" 
+                value={formData.level || ''} 
+                onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <button onClick={onClose} className="flex-1 py-4 border border-white/10 rounded-xl text-[10px] uppercase tracking-widest font-bold hover:bg-white/5 transition-all">
+              Cancel
+            </button>
+            <button 
+              onClick={() => onSave(formData)}
+              className="flex-1 py-4 bg-brand-teal text-black rounded-xl text-[10px] uppercase tracking-widest font-bold hover:bg-brand-teal/90 transition-all"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const ShippingLabelModal = ({ order, onClose }: { order: Order, onClose: () => void }) => {
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white text-black p-12 rounded-none w-full max-w-2xl shadow-2xl relative print:p-0 print:shadow-none"
+      >
+        <button onClick={onClose} className="absolute top-6 right-6 text-black/40 hover:text-black print:hidden">
+          <X size={24} />
+        </button>
+
+        <div className="space-y-12">
+          <div className="flex justify-between items-start border-b-4 border-black pb-8">
+            <div>
+              <h2 className="text-4xl font-black uppercase tracking-tighter">FMF Shipping</h2>
+              <p className="text-xs font-bold uppercase tracking-widest mt-1">Fitness Power Hour Ecosystem</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-bold">ORDER #{order.id.slice(-8).toUpperCase()}</p>
+              <p className="text-[10px] uppercase tracking-widest">{new Date(order.created_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-12">
+            <div className="space-y-4">
+              <p className="text-[10px] uppercase tracking-widest font-black border-b border-black pb-1">Ship From</p>
+              <div className="text-sm space-y-1 font-medium">
+                <p>FMF Logistics Hub</p>
+                <p>123 Performance Way</p>
+                <p>Miami, FL 33101</p>
+                <p>United States</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <p className="text-[10px] uppercase tracking-widest font-black border-b border-black pb-1">Ship To</p>
+              <div className="text-sm space-y-1 font-bold">
+                <p>{order.customer_name_snapshot}</p>
+                <p>{order.shipping_address?.street || '456 Athlete Ave'}</p>
+                <p>{order.shipping_address?.city || 'Los Angeles'}, {order.shipping_address?.state || 'CA'} {order.shipping_address?.zip || '90210'}</p>
+                <p>{order.shipping_address?.country || 'United States'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-4 border-black p-6 flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <div className="h-20 w-full bg-black flex items-center justify-center">
+                <div className="flex gap-1 h-12">
+                  {[...Array(40)].map((_, i) => (
+                    <div key={i} className={`bg-white h-full ${i % 3 === 0 ? 'w-1' : i % 5 === 0 ? 'w-2' : 'w-0.5'}`} />
+                  ))}
+                </div>
+              </div>
+              <p className="font-mono text-xs tracking-[0.5em] font-bold">*{order.id.toUpperCase()}*</p>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-end pt-8 border-t border-black/10">
+            <div className="text-[10px] uppercase tracking-widest font-bold">
+              <p>Weight: 2.4 lbs</p>
+              <p>Service: Priority Elite</p>
+            </div>
+            <button 
+              onClick={handlePrint}
+              className="bg-black text-white px-8 py-3 rounded-full text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 hover:invert transition-all print:hidden"
+            >
+              <Printer size={14} /> Print Label
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const CreateCommunityModal = ({ onClose, showToast }: { onClose: () => void, showToast: (msg: string, type?: 'success' | 'error') => void }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    image: 'https://picsum.photos/seed/community/800/1000'
+  });
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.description) {
+      showToast('Please fill in all fields', 'error');
+      return;
+    }
+
+    const newCommunity: CommunityType = {
+      id: `c${Date.now()}`,
+      ...formData,
+      members: [],
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await supabase.from('communities').insert(newCommunity);
+      showToast('Community created!', 'success');
+      onClose();
+    } catch (error) {
+      showToast('Error creating community', 'error');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-brand-black border border-white/10 p-10 rounded-3xl w-full max-w-md space-y-8"
+      >
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold uppercase tracking-tighter">Create <span className="text-brand-teal">Community</span></h2>
+          <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Community Name</label>
+            <input 
+              type="text"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g. Elite Calisthenics"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description</label>
+            <textarea 
+              rows={4}
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors resize-none"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="What is this community about?"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Cover Image URL</label>
+            <input 
+              type="text"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors"
+              value={formData.image}
+              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+            />
+          </div>
+          <button 
+            type="submit"
+            className="w-full py-4 bg-brand-teal text-black rounded-xl text-[10px] uppercase tracking-widest font-bold hover:bg-brand-teal/90 transition-all"
+          >
+            Create Community
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const CommunityMemberModal = ({ community, users, onClose, showToast }: { community: CommunityType, users: UserProfile[], onClose: () => void, showToast: (msg: string, type?: 'success' | 'error') => void }) => {
+  const [search, setSearch] = useState('');
+  
+  const members = useMemo(() => {
+    return users.filter(u => community.members.includes(u.id));
+  }, [users, community.members]);
+
+  const nonMembers = useMemo(() => {
+    return users.filter(u => !community.members.includes(u.id) && (
+      (u.full_name || '').toLowerCase().includes(search.toLowerCase()) || 
+      u.email?.toLowerCase().includes(search.toLowerCase())
+    ));
+  }, [users, community.members, search]);
+
+  const handleAddMember = async (userId: string) => {
+    try {
+      const updatedMembers = [...community.members, userId];
+      await supabase.from('communities').update({ members: updatedMembers }).eq('id', community.id);
+      showToast('Member added!', 'success');
+    } catch (error) {
+      showToast('Error adding member', 'error');
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    try {
+      const updatedMembers = community.members.filter(id => id !== userId);
+      await supabase.from('communities').update({ members: updatedMembers }).eq('id', community.id);
+      showToast('Member removed!', 'success');
+    } catch (error) {
+      showToast('Error removing member', 'error');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-brand-black border border-white/10 p-10 rounded-3xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col"
+      >
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h2 className="text-3xl font-bold uppercase tracking-tighter">Manage <span className="text-brand-teal">Members</span></h2>
+            <p className="text-white/40 uppercase tracking-widest text-[10px] mt-1">{community.name}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 flex-1 overflow-hidden">
+          <div className="flex flex-col space-y-6 overflow-hidden">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-white/60">Current Members ({members.length})</h3>
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide">
+              {members.map(u => (
+                <div key={u.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-brand-teal/20 flex items-center justify-center text-brand-teal text-[10px] font-bold">
+                      {(u.full_name || 'U')[0]}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-tight">{u.full_name}</p>
+                      <p className="text-[8px] text-white/40">{u.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleRemoveMember(u.id)}
+                    className="p-2 text-brand-coral hover:bg-brand-coral/10 rounded-lg transition-all"
+                  >
+                    <UserMinus size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col space-y-6 overflow-hidden">
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-white/60">Add Members</h3>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={14} />
+                <input 
+                  type="text"
+                  placeholder="Search users..."
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs outline-none focus:border-brand-teal transition-colors"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-hide">
+              {nonMembers.map(u => (
+                <div key={u.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/40 text-[10px] font-bold">
+                      {(u.full_name || 'U')[0]}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-tight">{u.full_name}</p>
+                      <p className="text-[8px] text-white/40">{u.email}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleAddMember(u.id)}
+                    className="p-2 text-brand-teal hover:bg-brand-teal/10 rounded-lg transition-all"
+                  >
+                    <UserPlus size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const AdminDashboard = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [videoCategories, setVideoCategories] = useState<VideoCategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [retreats, setRetreats] = useState<Retreat[]>([]);
+  const [retreatApplications, setRetreatApplications] = useState<RetreatApplication[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Filters
+  const [cityFilter, setCityFilter] = useState('All');
+  const [roleFilter, setRoleFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
+  const [isCreateCommunityModalOpen, setIsCreateCommunityModalOpen] = useState(false);
+  const [isAddAthleteModalOpen, setIsAddAthleteModalOpen] = useState(false);
+  const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<Community | null>(null);
+
+  useEffect(() => {
+    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return;
+
+    const fetchData = async () => {
+      const [usersRes, videosRes, videoCatsRes, productsRes, prodCatsRes, brandsRes, retreatsRes, packagesRes, athletesRes, programsRes, communitiesRes, ordersRes, retreatAppsRes, postsRes] = await Promise.all([
+        supabase.from('users').select('*'),
+        supabase.from('videos').select('*'),
+        supabase.from('video_categories').select('*'),
+        supabase.from('products').select('*'),
+        supabase.from('product_categories').select('*'),
+        supabase.from('brands').select('*'),
+        supabase.from('retreats').select('*'),
+        supabase.from('packages').select('*'),
+        supabase.from('athletes').select('*'),
+        supabase.from('programs').select('*'),
+        supabase.from('communities').select('*'),
+        supabase.from('orders').select('*'),
+        supabase.from('retreat_applications').select('*'),
+        supabase.from('community_posts').select('*'),
+      ]);
+      if (usersRes.data) setUsers(usersRes.data as UserProfile[]);
+      if (videosRes.data) setVideos(videosRes.data as Video[]);
+      if (videoCatsRes.data) setVideoCategories(videoCatsRes.data as VideoCategory[]);
+      if (productsRes.data) setProducts(productsRes.data as Product[]);
+      if (prodCatsRes.data) setProductCategories(prodCatsRes.data as ProductCategory[]);
+      if (brandsRes.data) setBrands(brandsRes.data as Brand[]);
+      if (retreatsRes.data) setRetreats(retreatsRes.data as Retreat[]);
+      if (packagesRes.data) setPackages(packagesRes.data as Package[]);
+      if (athletesRes.data) setAthletes(athletesRes.data as Athlete[]);
+      if (programsRes.data) setPrograms(programsRes.data as Program[]);
+      if (communitiesRes.data) setCommunities(communitiesRes.data as Community[]);
+      if (ordersRes.data) setOrders(ordersRes.data as Order[]);
+      if (retreatAppsRes.data) setRetreatApplications(retreatAppsRes.data as RetreatApplication[]);
+      if (postsRes.data) setPosts(postsRes.data as CommunityPost[]);
+
+      if (user.role === 'super_admin') {
+        const { data: logsData } = await supabase.from('activity_logs').select('*');
+        if (logsData) setActivityLogs(logsData as ActivityLog[]);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  const handleToggleActive = async (userId: string, currentStatus: string) => {
+    try {
+      await supabase.from('users').update({ status: currentStatus === 'active' ? 'suspended' : 'active' }).eq('id', userId);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+    }
+  };
+
+  const handleToggleBan = async (userId: string, currentStatus: string) => {
+    try {
+      await supabase.from('users').update({ status: currentStatus === 'banned' ? 'active' : 'banned', banned_at: currentStatus === 'banned' ? null : new Date().toISOString() }).eq('id', userId);
+    } catch (error) {
+      console.error('Error banning/unbanning user:', error);
+    }
+  };
+
+  const handleAddVideo = async (video: Video) => {
+    try {
+      await supabase.from('videos').upsert({ ...video });
+      showToast('Video added successfully!', 'success');
+    } catch (error) {
+      console.error('Error adding video:', error);
+      showToast('Failed to add video.', 'error');
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    try {
+      await supabase.from('videos').delete().eq('id', videoId);
+      showToast('Video deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      showToast('Failed to delete video.', 'error');
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      await supabase.from('products').delete().eq('id', productId);
+      showToast('Product deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      showToast('Failed to delete product.', 'error');
+    }
+  };
+
+  const handleDeleteRetreat = async (retreatId: string) => {
+    try {
+      await supabase.from('retreats').delete().eq('id', retreatId);
+      showToast('Retreat deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting retreat:', error);
+      showToast('Failed to delete retreat.', 'error');
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    try {
+      await supabase.from('sessions').delete().eq('id', sessionId);
+      showToast('Session deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      showToast('Failed to delete session.', 'error');
+    }
+  };
+
+  const handleDeleteCommunity = async (communityId: string) => {
+    try {
+      await supabase.from('communities').delete().eq('id', communityId);
+      showToast('Community deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting community:', error);
+      showToast('Failed to delete community.', 'error');
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      await supabase.from('posts').delete().eq('id', postId);
+      showToast('Post deleted successfully!', 'success');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      showToast('Failed to delete post.', 'error');
+    }
+  };
+  const handleAddProduct = async () => {
+    const newProduct: Product = {
+      id: `p${Date.now()}`,
+      brand_id: 'fmf',
+      category_id: 'apparel',
+      name: 'New Product', 
+      slug: `new-product-${Date.now()}`,
+      description: 'New product description',
+      price: 99, 
+      compare_at_price: 120,
+      sku: `SKU-${Date.now()}`,
+      inventory_count: 50,
+      status: 'active',
+      featured_image: 'https://picsum.photos/seed/new-prod/800/1000',
+      images: ['https://picsum.photos/seed/new-prod/800/1000'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    try {
+      await supabase.from('products').insert(newProduct);
+      showToast('Product added!', 'success');
+    } catch (error) {
+      showToast('Error adding product', 'error');
+    }
+  };
+
+  const handleAddRetreat = async () => {
+      const newRetreat: Retreat = {
+        id: `r${Date.now()}`,
+        title: 'New Retreat',
+        description: 'New retreat description',
+        cover_image: 'https://picsum.photos/seed/new-retreat/800/1000',
+        start_date: new Date().toISOString(),
+        end_date: new Date().toISOString(),
+        location: 'Miami Beach',
+        price: '2499',
+        visibility_status: 'draft',
+        access_type: 'package_based',
+        allowed_packages: ['elite'],
+        allowed_users: [],
+        preview_enabled: true,
+        created_by: 'admin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    try {
+      await supabase.from('retreats').insert(newRetreat);
+      showToast('Retreat added!', 'success');
+    } catch (error) {
+      showToast('Error adding retreat', 'error');
+    }
+  };
+
+  const handleSaveUser = async (updatedUser: UserProfile) => {
+    try {
+      await supabase.from('users').update({ ...updatedUser }).eq('id', updatedUser.id);
+      setEditingUser(null);
+      showToast('User updated successfully!', 'success');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      showToast('Failed to update user.', 'error');
+    }
+  };
+
+  const handleReviewRetreatApp = async (appId: string, status: 'accepted' | 'declined') => {
+    try {
+      await supabase.from('retreat_applications').update({ status }).eq('id', appId);
+      showToast(`Application ${status}!`, 'success');
+    } catch (error) {
+      showToast('Error updating application', 'error');
+    }
+  };
+
+  const handleCreateCommunity = async () => {
+    const newCommunity: Community = {
+      id: `c${Date.now()}`,
+      name: 'New Community',
+      description: 'A new space for athletes to connect.',
+      image_url: 'https://picsum.photos/seed/community/800/1000',
+      members: [],
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    try {
+      await supabase.from('communities').insert(newCommunity);
+      showToast('Community created!', 'success');
+    } catch (error) {
+      showToast('Error creating community', 'error');
+    }
+  };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const matchesSearch = (u.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           u.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCity = cityFilter === 'All' || u.city === cityFilter;
+      const matchesRole = roleFilter === 'All' || u.role === roleFilter;
+      const matchesStatus = statusFilter === 'All' || u.status === statusFilter;
+      return matchesSearch && matchesCity && matchesRole && matchesStatus;
+    });
+  }, [users, searchQuery, cityFilter, roleFilter, statusFilter]);
+
+  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
+    return <Navigate to="/" replace />;
+  }
+
+  const sidebarItems = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'users', label: 'Users', icon: Users },
+    { id: 'athletes', label: 'Athletes', icon: Trophy },
+    { id: 'content', label: 'Content', icon: PlayCircle },
+    { id: 'programs', label: 'Programs', icon: ListChecks },
+    { id: 'retreats', label: 'Retreats', icon: MapPin },
+    { id: 'community', label: 'Community', icon: MessageSquare },
+    { id: 'shop', label: 'Shop', icon: ShoppingBag },
+    { id: 'orders', label: 'Orders', icon: ClipboardList },
+    { id: 'packages', label: 'Packages', icon: PackageIcon, adminOnly: true },
+    { id: 'logs', label: 'Activity Logs', icon: History, adminOnly: true },
+  ];
+
+  return (
+    <div className="pt-20 min-h-screen bg-brand-black flex">
+      {/* Sidebar */}
+      <aside className="w-64 border-r border-white/5 bg-brand-black/50 backdrop-blur-xl sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto hidden lg:block">
+        <nav className="p-6 space-y-2">
+          {sidebarItems.map((item) => {
+            if (item.adminOnly && user.role !== 'super_admin') return null;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] uppercase tracking-widest transition-all ${
+                  activeTab === item.id 
+                    ? 'bg-brand-teal text-black font-bold shadow-[0_0_20px_rgba(45,212,191,0.2)]' 
+                    : 'text-white/40 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon size={16} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-8 lg:p-12 space-y-12">
+        <header className="flex flex-col md:flex-row justify-between items-end gap-6">
+          <div>
+            <h1 className="text-5xl font-bold uppercase tracking-tighter">
+              Admin <span className="text-brand-teal">{sidebarItems.find(i => i.id === activeTab)?.label}</span>
+            </h1>
+            <p className="text-white/40 uppercase tracking-widest text-xs mt-2">Manage the FMF Ecosystem</p>
+          </div>
+          
+          {/* Mobile Tab Switcher */}
+          <div className="lg:hidden flex gap-4 overflow-x-auto pb-2 scrollbar-hide w-full">
+            {sidebarItems.map((item) => {
+              if (item.adminOnly && user.role !== 'super_admin') return null;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex-shrink-0 px-6 py-2 rounded-full text-[10px] uppercase tracking-widest transition-all ${
+                    activeTab === item.id ? 'bg-brand-teal text-black font-bold' : 'bg-white/5 text-white/40'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
+        </header>
+
+        {activeTab === 'overview' && (
+          <div className="space-y-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: 'Total Users', value: users.length, icon: Users, color: 'text-brand-teal' },
+                { label: 'Active Athletes', value: athletes.length, icon: Trophy, color: 'text-brand-coral' },
+                { label: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-brand-teal' },
+                { label: 'Revenue', value: `$${orders.reduce((acc, curr) => acc + curr.total_amount, 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
+              ].map((stat, i) => (
+                <div key={i} className="card-gradient p-8 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <stat.icon size={24} className={stat.color} />
+                    <span className="text-[10px] text-white/20 uppercase tracking-widest">Live</span>
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-bold uppercase tracking-tighter">{stat.value}</h3>
+                    <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">{stat.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 card-gradient p-8 space-y-6">
+                <h3 className="text-lg font-bold uppercase tracking-tight">Recent Activity</h3>
+                <div className="space-y-4">
+                  {activityLogs.slice(0, 5).map((log) => (
+                    <div key={log.id} className="flex items-center justify-between py-4 border-b border-white/5 last:border-0">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+                          <History size={16} className="text-white/20" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold uppercase tracking-tight">{log.action}</p>
+                          <p className="text-[10px] text-white/40 uppercase tracking-widest">
+                            {log.entity_type} • {new Date(log.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-brand-teal font-bold uppercase tracking-widest">Success</span>
+                    </div>
+                  ))}
+                  {activityLogs.length === 0 && (
+                    <p className="text-center py-12 text-white/20 uppercase tracking-widest text-xs">No recent activity</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="card-gradient p-8 space-y-6">
+                <h3 className="text-lg font-bold uppercase tracking-tight">Quick Actions</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <button onClick={() => setIsUploadModalOpen(true)} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-3">
+                    <Plus size={16} className="text-brand-teal" /> Upload Video
+                  </button>
+                  <button onClick={() => setActiveTab('shop')} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-3">
+                    <ShoppingBag size={16} className="text-brand-coral" /> Manage Shop
+                  </button>
+                  <button onClick={() => setActiveTab('users')} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-3">
+                    <Users size={16} className="text-brand-teal" /> Review Users
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'users' && (
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">User Management</h2>
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-brand-teal transition-colors"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <select 
+                  value={roleFilter} 
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] uppercase tracking-widest outline-none focus:border-brand-teal"
+                >
+                  <option value="All">All Roles</option>
+                  <option value="user">User</option>
+                  <option value="athlete">Athlete</option>
+                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+                <select 
+                  value={statusFilter} 
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] uppercase tracking-widest outline-none focus:border-brand-teal"
+                >
+                  <option value="All">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                  <option value="banned">Banned</option>
+                </select>
+                <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all">
+                  <Download size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5">
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">User</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Role</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Package</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {filteredUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-brand-teal/20 flex items-center justify-center text-brand-teal font-bold">
+                            {u.profile_image ? (
+                              <img src={u.profile_image} alt={u.full_name} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              (u.full_name || 'U')[0]
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold">{u.full_name}</p>
+                            <p className="text-[10px] text-white/40">{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`text-[9px] uppercase tracking-widest px-2 py-1 rounded font-bold ${
+                          u.role === 'super_admin' ? 'bg-brand-coral/20 text-brand-coral' :
+                          u.role === 'admin' ? 'bg-brand-teal/20 text-brand-teal' :
+                          u.role === 'athlete' ? 'bg-indigo-500/20 text-indigo-400' :
+                          'bg-white/10 text-white/60'
+                        }`}>
+                          {u.role.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-white/60">
+                          {packages.find(p => p.id === u.package_id)?.name || 'No Package'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            u.status === 'active' ? 'bg-emerald-500' :
+                            u.status === 'suspended' ? 'bg-amber-500' :
+                            'bg-brand-coral'
+                          }`} />
+                          <span className={`text-[10px] uppercase tracking-widest ${
+                            u.status === 'active' ? 'text-emerald-500' :
+                            u.status === 'suspended' ? 'text-amber-500' :
+                            'text-brand-coral'
+                          }`}>
+                            {u.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => setEditingUser(u)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+                            title="Edit User"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+                            title="View Profile"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button 
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-brand-coral transition-all"
+                            title="Ban User"
+                          >
+                            <Ban size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'athletes' && (
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">Athlete Management</h2>
+              <button 
+                onClick={() => setIsAddAthleteModalOpen(true)}
+                className="px-6 py-3 bg-brand-teal text-black font-bold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all"
+              >
+                <UserPlus size={16} /> Add Athlete
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {athletes.map((athlete) => (
+                <div key={athlete.id} className="card-gradient p-6 space-y-6 relative group">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-white/5 overflow-hidden border border-white/10">
+                        {athlete.image_url ? (
+                          <img src={athlete.image_url} alt={athlete.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-brand-teal font-bold text-xl">
+                            {athlete.name[0]}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold uppercase tracking-tight">{athlete.name}</h3>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{athlete.specialties.join(', ')}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all">
+                        <Edit2 size={14} />
+                      </button>
+                      <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 hover:text-brand-coral transition-all">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-[10px] uppercase tracking-widest">
+                      <span className="text-white/20">Status</span>
+                      <span className={`font-bold ${athlete.is_active ? 'text-emerald-500' : 'text-brand-coral'}`}>
+                        {athlete.is_active ? 'active' : 'inactive'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] uppercase tracking-widest">
+                      <span className="text-white/20">Programs</span>
+                      <span className="text-white/60 font-bold">{programs.filter(p => p.athlete_id === athlete.id).length}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] uppercase tracking-widest">
+                      <span className="text-white/20">Videos</span>
+                      <span className="text-white/60 font-bold">{videos.filter(v => v.athlete_id === athlete.id).length}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5 flex gap-2">
+                    <button className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] uppercase tracking-widest font-bold transition-all">
+                      View Stats
+                    </button>
+                    <button className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] uppercase tracking-widest font-bold transition-all">
+                      Edit Bio
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {athletes.length === 0 && (
+                <div className="col-span-full py-20 text-center card-gradient">
+                  <Trophy size={48} className="mx-auto text-white/10 mb-4" />
+                  <p className="text-white/20 uppercase tracking-widest text-xs">No athletes found</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">Order Management</h2>
+              <div className="flex gap-4">
+                <select className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] uppercase tracking-widest outline-none focus:border-brand-teal">
+                  <option value="All">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all">
+                  <Download size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5">
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Order ID</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Customer</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Total</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {orders.map((order) => (
+                    <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-mono text-brand-teal">#{order.id.slice(-8).toUpperCase()}</p>
+                        <p className="text-[10px] text-white/40">{new Date(order.created_at).toLocaleDateString()}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold">{users.find(u => u.id === order.user_id)?.full_name || 'Guest'}</p>
+                        <p className="text-[10px] text-white/40">{order.shipping_address.email}</p>
+                      </td>
+                      <td className="px-6 py-4 font-bold text-sm">${order.total_amount.toFixed(2)}</td>
+                      <td className="px-6 py-4">
+                        <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold ${
+                          order.status === 'delivered' ? 'bg-emerald-500/20 text-emerald-500' :
+                          order.status === 'shipped' ? 'bg-brand-teal/20 text-brand-teal' :
+                          order.status === 'processing' ? 'bg-indigo-500/20 text-indigo-400' :
+                          'bg-brand-coral/20 text-brand-coral'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button 
+                            onClick={() => setSelectedOrder(order)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+                            title="View Details"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button 
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+                            title="Print Label"
+                          >
+                            <Printer size={14} />
+                          </button>
+                          <button 
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+                            title="Ship Order"
+                          >
+                            <Truck size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {orders.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No orders found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'packages' && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">Membership Packages</h2>
+              <button className="px-6 py-3 bg-brand-teal text-black font-bold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all">
+                <Plus size={16} /> Create Package
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {packages.map((pkg) => (
+                <div key={pkg.id} className="card-gradient p-8 space-y-6 relative group">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-xl font-bold uppercase tracking-tight">{pkg.name}</h3>
+                      <p className="text-2xl font-bold text-brand-teal mt-2">${pkg.price}<span className="text-xs text-white/40 font-normal">/{pkg.interval}</span></p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all">
+                        <Edit2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Features</p>
+                    {pkg.features.map((feature, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/60">
+                        <Check size={12} className="text-brand-teal" />
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-6 border-t border-white/5 flex justify-between items-center">
+                    <span className="text-[10px] text-white/20 uppercase tracking-widest">Users: {users.filter(u => u.package_id === pkg.id).length}</span>
+                    <span className={`text-[10px] uppercase tracking-widest font-bold ${pkg.status === 'active' ? 'text-emerald-500' : 'text-brand-coral'}`}>
+                      {pkg.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'logs' && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">System Activity Logs</h2>
+              <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all">
+                <Download size={16} />
+              </button>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5">
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Admin</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Action</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Entity</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {activityLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold">{users.find(u => u.id === log.actor_id)?.full_name || 'System'}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-white/80">{log.action}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-[10px] uppercase tracking-widest text-white/40">{log.entity_type} • {log.entity_id.slice(-8)}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-[10px] text-white/40">{new Date(log.created_at).toLocaleString()}</p>
+                      </td>
+                    </tr>
+                  ))}
+                  {activityLogs.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No activity logs found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'programs' && (
+          <div className="space-y-8">
+            <ProgramBuilder videos={videos} showToast={showToast} />
+          </div>
+        )}
+
+        {activeTab === 'content' && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">Content Management</h2>
+              <button 
+                onClick={() => setIsUploadModalOpen(true)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus size={16} /> Add Video
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {videos.map((video) => (
+                <div key={video.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden group">
+                  <div className="relative aspect-video">
+                    <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                    <div className="absolute top-4 right-4">
+                      <span className="bg-brand-black/60 backdrop-blur-md text-[9px] uppercase tracking-widest px-2 py-1 rounded font-bold text-brand-teal">
+                        {video.visibility_status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <h3 className="font-bold uppercase tracking-tight">{video.title}</h3>
+                      <p className="text-[10px] text-white/40 uppercase tracking-widest">{video.category_id}</p>
+                    </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                      <span className="text-[10px] text-white/40 uppercase tracking-widest">{video.duration}</span>
+                      <button 
+                        onClick={() => handleDeleteVideo(video.id)}
+                        className="text-brand-coral hover:text-white transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'retreats' && (
+          <div className="space-y-12">
+            <div className="space-y-8">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold uppercase tracking-tight">Retreat Management</h2>
+                <button 
+                  onClick={handleAddRetreat}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <Plus size={16} /> Add Retreat
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {retreats.map((retreat) => (
+                  <div key={retreat.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden group flex flex-col md:flex-row">
+                    <div className="relative w-full md:w-48 aspect-[4/5] md:aspect-auto">
+                      <img src={retreat.cover_image} alt={retreat.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                    </div>
+                    <div className="p-8 flex-1 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-xl font-bold uppercase tracking-tight">{retreat.title}</h3>
+                          <p className="text-[10px] text-brand-teal uppercase tracking-[0.3em] font-bold">{retreat.location}</p>
+                        </div>
+                        <span className="text-lg font-bold text-white">${retreat.price}</span>
+                      </div>
+                      <p className="text-xs text-white/40 line-clamp-2">{retreat.description}</p>
+                      <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                        <span className={`text-[10px] uppercase tracking-widest ${retreat.isSoldOut ? 'text-brand-coral' : 'text-emerald-500'}`}>
+                          {retreat.isSoldOut ? 'Sold Out' : 'Available'}
+                        </span>
+                        <button 
+                          onClick={() => handleDeleteRetreat(retreat.id)}
+                          className="text-brand-coral hover:text-white transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">Applications Review</h2>
+              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/5">
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Applicant</th>
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Retreat</th>
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {retreatApplications.map((app) => (
+                      <tr key={app.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-bold">{app.userName}</p>
+                          <p className="text-[10px] text-white/40">{app.userEmail}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-[10px] uppercase tracking-widest font-bold">
+                            {retreats.find(r => r.id === app.retreatId)?.title || 'Unknown Retreat'}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold ${
+                            app.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-500' :
+                            app.status === 'declined' ? 'bg-brand-coral/20 text-brand-coral' :
+                            'bg-amber-500/20 text-amber-500'
+                          }`}>
+                            {app.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {app.status === 'pending' && (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleReviewRetreatApp(app.id, 'accepted')}
+                                className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 transition-all hover:text-white"
+                              >
+                                <Check size={14} />
+                              </button>
+                              <button 
+                                onClick={() => handleReviewRetreatApp(app.id, 'declined')}
+                                className="p-2 rounded-lg bg-brand-coral/10 text-brand-coral hover:bg-brand-coral transition-all hover:text-white"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {retreatApplications.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No applications to review</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'community' && (
+          <div className="space-y-12">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">Community Management</h2>
+              <button 
+                onClick={() => setIsCreateCommunityModalOpen(true)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus size={16} /> Create Community
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {communities.map((community) => (
+                <div key={community.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden group">
+                  <div className="relative aspect-[16/9]">
+                    <img src={community.image} alt={community.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                    <div className="absolute top-4 right-4 flex gap-2">
+                      <button 
+                        onClick={() => setSelectedCommunityForMembers(community)}
+                        className="p-2 bg-brand-black/60 backdrop-blur-md rounded-lg text-white hover:bg-brand-teal transition-all"
+                        title="Manage Members"
+                      >
+                        <Users size={14} />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteCommunity(community.id)}
+                        className="p-2 bg-brand-black/60 backdrop-blur-md rounded-lg text-white hover:bg-brand-coral transition-all"
+                        title="Delete Community"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="absolute bottom-4 left-4">
+                      <span className="bg-brand-teal text-black text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold">
+                        {community.members.length} Members
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-8 space-y-4">
+                    <div>
+                      <h3 className="text-xl font-bold uppercase tracking-tight">{community.name}</h3>
+                      <p className="text-xs text-white/40 mt-2 line-clamp-2">{community.description}</p>
+                    </div>
+                    <div className="pt-4 border-t border-white/5 flex justify-between items-center">
+                      <span className="text-[10px] text-white/20 uppercase tracking-widest">Created {new Date(community.createdAt).toLocaleDateString()}</span>
+                      <button className="text-brand-teal text-[10px] uppercase tracking-widest font-bold hover:underline">View Feed</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
+                <h3 className="text-lg font-bold uppercase tracking-tight">Community Stats</h3>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Total Members', value: users.length },
+                    { label: 'Active Today', value: Math.floor(users.length * 0.4) },
+                    { label: 'Total Posts', value: posts.length },
+                    { label: 'Elite Tier', value: users.filter(u => u.tier === 'Elite').length }
+                  ].map((stat, i) => (
+                    <div key={i} className="flex justify-between items-center">
+                      <span className="text-[10px] uppercase tracking-widest text-white/40">{stat.label}</span>
+                      <span className="text-sm font-bold text-brand-teal">{stat.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="md:col-span-2 space-y-6">
+                <h3 className="text-lg font-bold uppercase tracking-tight">Recent Activity</h3>
+                <div className="space-y-4">
+                  {posts.slice(0, 5).map((post) => (
+                    <div key={post.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 flex justify-between items-center group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">
+                          {post.authorName[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{post.authorName}</p>
+                          <p className="text-[10px] text-white/40 line-clamp-1">{post.content}</p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => handleDeletePost(post.id)}
+                        className="p-2 rounded-lg bg-white/5 hover:bg-brand-coral/20 text-white/20 hover:text-brand-coral transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <AnimatePresence>
+        {isUploadModalOpen && (
+          <VideoUploadModal 
+            onClose={() => setIsUploadModalOpen(false)} 
+            onAdd={handleAddVideo}
+          />
+        )}
+        {selectedOrder && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-brand-black border border-white/10 p-10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h2 className="text-3xl font-bold uppercase tracking-tighter">Order <span className="text-brand-teal">Details</span></h2>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Order #{selectedOrder.id.slice(-8).toUpperCase()}</p>
+                </div>
+                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Customer</p>
+                    <p className="text-sm font-bold">{users.find(u => u.id === selectedOrder.user_id)?.full_name || 'Guest'}</p>
+                    <p className="text-xs text-white/60">{selectedOrder.shipping_address.email}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Status</p>
+                    <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold inline-block ${
+                      selectedOrder.status === 'delivered' ? 'bg-emerald-500/20 text-emerald-500' :
+                      selectedOrder.status === 'shipped' ? 'bg-brand-teal/20 text-brand-teal' :
+                      'bg-brand-coral/20 text-brand-coral'
+                    }`}>
+                      {selectedOrder.status}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Items</p>
+                  <div className="space-y-2">
+                    {selectedOrder.items.map((item: any, i: number) => (
+                      <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
+                            <img src={item.product.featured_image} alt={item.product.name} className="w-full h-full object-cover" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-tight">{item.product.name}</p>
+                            <p className="text-[10px] text-white/40">Qty: {item.quantity}</p>
+                          </div>
+                        </div>
+                        <p className="text-xs font-bold">${(item.product.price * item.quantity).toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
+                  <p className="text-sm font-bold uppercase tracking-widest">Total Amount</p>
+                  <p className="text-2xl font-bold text-brand-teal">${selectedOrder.total_amount.toFixed(2)}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4">
+                  <button className="btn-secondary w-full flex items-center justify-center gap-2">
+                    <Printer size={16} /> Print Invoice
+                  </button>
+                  <button className="btn-primary w-full flex items-center justify-center gap-2">
+                    <Truck size={16} /> Update Status
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        {isAddAthleteModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-brand-black border border-white/10 p-10 rounded-3xl w-full max-w-2xl"
+            >
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h2 className="text-3xl font-bold uppercase tracking-tighter">Add New <span className="text-brand-teal">Athlete</span></h2>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Create a new trainer profile</p>
+                </div>
+                <button onClick={() => setIsAddAthleteModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form className="space-y-6" onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const newAthlete: Omit<Athlete, 'id'> = {
+                  name: formData.get('name') as string,
+                  specialties: [formData.get('specialty') as string],
+                  bio: formData.get('bio') as string,
+                  image_url: `https://picsum.photos/seed/${Date.now()}/800/1000`,
+                  is_active: true,
+                  is_banned: false,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  profile_id: '', // Would link to a user profile
+                  age: Number(formData.get('age')),
+                  city: formData.get('city') as string,
+                  responsibilities: formData.get('responsibilities') as string,
+                  training_focus: formData.get('training_focus') as string
+                };
+                
+                supabase.from('athletes').insert(newAthlete)
+                  .then(({ error }) => {
+                    if (error) throw error;
+                    showToast('Athlete added successfully!', 'success');
+                    setIsAddAthleteModalOpen(false);
+                  })
+                  .catch(err => {
+                    console.error(err);
+                    showToast('Error adding athlete', 'error');
+                  });
+              }}>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Full Name</label>
+                    <input name="name" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Specialty</label>
+                    <input name="specialty" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Bio</label>
+                  <textarea name="bio" required rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors resize-none" />
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Age</label>
+                    <input name="age" type="number" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">City</label>
+                    <input name="city" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary w-full py-4 uppercase tracking-widest text-xs font-bold">
+                  Create Athlete Profile
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+        {selectedOrderForLabel && (
+          <ShippingLabelModal 
+            order={selectedOrderForLabel}
+            onClose={() => setSelectedOrderForLabel(null)}
+          />
+        )}
+        {selectedCommunityForMembers && (
+          <CommunityMemberModal 
+            community={selectedCommunityForMembers}
+            users={users}
+            onClose={() => setSelectedCommunityForMembers(null)}
+            showToast={showToast}
+          />
+        )}
+        {isCreateCommunityModalOpen && (
+          <CreateCommunityModal 
+            onClose={() => setIsCreateCommunityModalOpen(false)}
+            showToast={showToast}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const Services = () => {
+  const navigate = useNavigate();
+  const services = [
+    {
+      id: 'flexmob305',
+      title: 'Flex Mob 305',
+      desc: 'Professional assisted stretching and muscle recovery.',
+      image: 'https://picsum.photos/seed/flexmob-service/800/600',
+      path: '/services/flexmob305'
+    },
+    {
+      id: 'personal-training',
+      title: 'Personal Training',
+      desc: 'One-on-one or small group functional training sessions.',
+      image: 'https://picsum.photos/seed/pt-service/800/600',
+      path: '/services/personal-training'
+    }
+  ];
+
+  return (
+    <div className="pt-40 pb-32 px-6">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-20 space-y-6">
+          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Our Services</span>
+          <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">FMF <span className="text-brand-teal">Services</span></h1>
+          <p className="text-white/40 uppercase tracking-widest text-xs max-w-xl leading-relaxed">
+            From elite training to professional recovery, we provide the tools you need to master your body.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {services.map((service) => (
+            <div key={service.id} className="card-gradient p-12 space-y-8 group hover:border-brand-teal/30 transition-all cursor-pointer" onClick={() => navigate(service.path)}>
+              <div className="aspect-video rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
+                <img src={service.image} alt={service.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-3xl font-bold uppercase tracking-tighter">{service.title}</h3>
+                <p className="text-white/40 text-lg font-light leading-relaxed">{service.desc}</p>
+                <button className="btn-outline">Learn More</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'error') => void }) => {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedService, setSelectedService] = useState('Stretching');
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      const { data, error } = await supabase.from('bookings').select('*').eq('service_type', 'flex_mob');
+      if (data) setBookings(data as Booking[]);
+      if (error) console.error('Error fetching bookings:', error);
+    };
+    fetchBookings();
+  }, []);
+
+  const handleBookingRequest = async () => {
+    if (!user) {
+      showToast('Please login to request a booking', 'error');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('bookings').insert({
+        user_id: user.id,
+        user_name: user.full_name,
+        service_type: 'flex_mob',
+        service_name: selectedService,
+        date: selectedDate,
+        time: '10:00 AM',
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      if (error) throw error;
+      showToast('Booking request sent successfully');
+    } catch (error) {
+      console.error('Error creating booking:', error);
+    }
+  };
+
+  const services = ['Massages', 'Stretching', 'Physical Therapy'];
+
+  return (
+    <div className="pt-40 pb-32 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
+          <div className="space-y-12">
+            <header className="space-y-6">
+              <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Recovery & Mobility</span>
+              <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Flex Mob <span className="text-brand-coral">305</span></h1>
+              <p className="text-white/60 text-lg font-light leading-relaxed">
+                Specializing in professional assisted stretching and muscle recovery designed to support athletes and optimize performance.
+              </p>
+            </header>
+
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold uppercase tracking-tighter">Our Services</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {services.map(s => (
+                  <div key={s} className={`p-6 border rounded-2xl transition-all cursor-pointer ${selectedService === s ? 'border-brand-coral bg-brand-coral/10' : 'border-white/5 bg-white/5 hover:border-white/20'}`} onClick={() => setSelectedService(s)}>
+                    <p className="text-sm font-bold uppercase tracking-widest text-center">{s}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card-gradient p-10 space-y-8">
+              <h3 className="text-2xl font-bold uppercase tracking-tighter">Request Appointment</h3>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40">Select Date</label>
+                  <input 
+                    type="date" 
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-coral outline-none transition-all"
+                  />
+                </div>
+                <button onClick={handleBookingRequest} className="btn-primary w-full bg-brand-coral hover:bg-brand-coral/80">Request Booking</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-12">
+            <div className="card-gradient p-10 space-y-8">
+              <h3 className="text-2xl font-bold uppercase tracking-tighter">Booking Calendar</h3>
+              <div className="space-y-4">
+                {bookings.length === 0 ? (
+                  <p className="text-white/40 text-sm italic">No bookings scheduled yet.</p>
+                ) : (
+                  bookings.map(booking => (
+                    <div key={booking.id} className="flex items-center justify-between p-4 border border-white/5 rounded-xl bg-white/5">
+                      <div>
+                        <p className="text-sm font-bold uppercase tracking-tighter">{booking.service_name}</p>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{booking.date} at {booking.time}</p>
+                      </div>
+                      <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded-full ${
+                        booking.status === 'approved' ? 'bg-brand-teal/20 text-brand-teal' :
+                        booking.status === 'pending' ? 'bg-brand-coral/20 text-brand-coral' :
+                        'bg-white/10 text-white/40'
+                      }`}>
+                        {booking.status}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="aspect-video rounded-3xl overflow-hidden">
+              <img src="https://picsum.photos/seed/flexmob-lifestyle/1000/600" className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' | 'error') => void }) => {
+  const { user } = useAuth();
+  const [sessions, setSessions] = useState<Booking[]>([]);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      const { data, error } = await supabase.from('bookings').select('*').eq('service_type', 'personal_training');
+      if (data) setSessions(data as Booking[]);
+      if (error) console.error('Error fetching sessions:', error);
+    };
+    fetchSessions();
+  }, []);
+
+  const handleRequest = async () => {
+    if (!user) {
+      showToast('Please login to request a session', 'error');
+      return;
+    }
+
+    // Check if class is full (max 5)
+    const existingAtTime = sessions.filter(s => s.date === selectedDate && s.status === 'approved');
+    if (existingAtTime.length >= 5) {
+      showToast('This session is full', 'error');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from('bookings').insert({
+        user_id: user.id,
+        user_name: user.full_name,
+        service_type: 'personal_training',
+        service_name: 'Studio Session',
+        date: selectedDate,
+        time: '09:00 AM',
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+      if (error) throw error;
+      showToast('Session request sent');
+    } catch (error) {
+      console.error('Error creating booking:', error);
+    }
+  };
+
+  return (
+    <div className="pt-40 pb-32 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
+          <div className="space-y-12">
+            <header className="space-y-6">
+              <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Studio Training</span>
+              <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Personal <span className="text-brand-teal">Training</span></h1>
+              <p className="text-white/60 text-lg font-light leading-relaxed">
+                Elite functional training sessions in our private studio. Maximum 5 participants per session for personalized attention.
+              </p>
+            </header>
+
+            <div className="card-gradient p-10 space-y-8">
+              <h3 className="text-2xl font-bold uppercase tracking-tighter">Book a Session</h3>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40">Select Date</label>
+                  <input 
+                    type="date" 
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-teal outline-none transition-all"
+                  />
+                </div>
+                <button onClick={handleRequest} className="btn-primary w-full">Request Session</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-12">
+            <div className="card-gradient p-10 space-y-8">
+              <h3 className="text-2xl font-bold uppercase tracking-tighter">Upcoming Sessions</h3>
+              <div className="space-y-4">
+                {sessions.length === 0 ? (
+                  <p className="text-white/40 text-sm italic">No sessions scheduled.</p>
+                ) : (
+                  sessions.map(session => (
+                    <div key={session.id} className="flex items-center justify-between p-4 border border-white/5 rounded-xl bg-white/5">
+                      <div>
+                        <p className="text-sm font-bold uppercase tracking-tighter">{session.date}</p>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{session.time}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded-full ${
+                          session.status === 'approved' ? 'bg-brand-teal/20 text-brand-teal' :
+                          session.status === 'pending' ? 'bg-brand-coral/20 text-brand-coral' :
+                          'bg-white/10 text-white/40'
+                        }`}>
+                          {session.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProductDetail = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const product = PRODUCTS.find(p => p.id === id);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+
+  useEffect(() => {
+    if (product) {
+      const saved = localStorage.getItem('fmf_recently_viewed');
+      const prev = saved ? JSON.parse(saved) : [];
+      const filtered = prev.filter((p: any) => p.id !== product.id);
+      const updated = [product, ...filtered].slice(0, 3);
+      localStorage.setItem('fmf_recently_viewed', JSON.stringify(updated));
+    }
+  }, [product]);
+
+  if (!product) return <div className="pt-40 text-center">Product not found</div>;
+
+  const recentlyViewed = JSON.parse(localStorage.getItem('fmf_recently_viewed') || '[]');
+
+  return (
+    <div className="pt-40 pb-32 px-6">
+      <div className="max-w-7xl mx-auto">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-white/40 hover:text-white mb-12 transition-colors uppercase tracking-widest text-[10px]">
+          <ArrowLeft size={14} /> Back to Shop
+        </button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
+          <div className="space-y-8">
+            <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-white/5">
+              <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000" referrerPolicy="no-referrer" />
+            </div>
+            <div className="grid grid-cols-4 gap-4">
+              {product.gallery?.map((img, i) => (
+                <div key={i} className="aspect-square rounded-xl overflow-hidden bg-white/5 cursor-pointer border border-transparent hover:border-brand-teal/50 transition-all">
+                  <img src={img} alt={`${product.name} ${i}`} className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-12">
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">{product.brand_id}</span>
+                <span className="text-white/20">/</span>
+                <span className="text-white/40 text-[10px] uppercase tracking-[0.5em]">{product.category_id}</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">{product.name}</h1>
+              <div className="text-4xl font-light tracking-tighter">${product.price}</div>
+            </div>
+
+            <p className="text-white/60 text-lg font-light leading-relaxed">{product.description}</p>
+
+            <div className="space-y-8">
+              {product.sizes && product.sizes.length > 0 && (
+                <div className="space-y-4">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40">Select Size</label>
+                  <div className="flex flex-wrap gap-3">
+                    {product.sizes.map(size => (
+                      <button key={size} onClick={() => setSelectedSize(size)} className={`px-6 py-3 border rounded-xl transition-all uppercase tracking-widest text-xs font-bold ${selectedSize === size ? 'border-brand-teal bg-brand-teal text-white' : 'border-white/10 hover:border-white/30'}`}>
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => addToCart(product)} className="btn-primary w-full py-6 text-lg">Add to Cart</button>
+            </div>
+
+            <div className="pt-12 border-t border-white/10 space-y-6">
+              <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-white/40">
+                <Truck size={16} /> Free Shipping on orders over $150
+              </div>
+              <div className="flex items-center gap-4 text-xs uppercase tracking-widest text-white/40">
+                <ShieldCheck size={16} /> 100% Authentic FMF Product
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {recentlyViewed.length > 0 && (
+          <div className="mt-40 space-y-12">
+            <h2 className="text-3xl font-bold uppercase tracking-tighter">Recently <span className="text-brand-teal">Viewed</span></h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+              {recentlyViewed.map((p: Product) => (
+                <div key={p.id} className="card-gradient p-6 space-y-6 group cursor-pointer" onClick={() => navigate(`/shop/product/${p.id}`)}>
+                  <div className="aspect-[4/5] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
+                    <img src={p.featured_image} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold uppercase tracking-tighter">{p.name}</h4>
+                    <p className="text-xs text-white/40">${p.price}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const BrandPage = () => {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const brandProducts = PRODUCTS.filter(p => p.brand_id.toLowerCase().replace(/ /g, '-') === slug);
+
+  return (
+    <div className="pt-40 pb-32 px-6">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-20 space-y-6">
+          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Brand Collection</span>
+          <h1 className="text-5xl md:text-8xl font-bold uppercase tracking-tighter">{slug?.replace(/-/g, ' ')}</h1>
+        </header>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {brandProducts.map(product => (
+            <div key={product.id} className="card-gradient p-8 space-y-8 group cursor-pointer" onClick={() => navigate(`/shop/product/${product.id}`)}>
+              <div className="aspect-[4/5] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
+                <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold uppercase tracking-tighter">{product.name}</h3>
+                <p className="text-white/40">${product.price}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Mission = () => (
+  <div className="pt-40 pb-32 px-6">
+    <div className="max-w-4xl mx-auto space-y-20">
+      <header className="space-y-6 text-center">
+        <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Our Purpose</span>
+        <h1 className="text-5xl md:text-8xl font-bold uppercase tracking-tighter">The <span className="text-brand-teal italic">Mission</span></h1>
+      </header>
+
+      <div className="space-y-12 text-white/60 text-xl font-light leading-relaxed text-center">
+        <p>
+          Fashion Meetz Fitness was established in 2022 with a singular mission: to redefine the intersection of physical performance and personal lifestyle.
+        </p>
+        <p>
+          We believe that discipline is the ultimate form of self-respect. Our goal is to provide the environment, the tools, and the community required for individuals to master their bodies and their minds.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-20 border-t border-white/10">
+        <div className="text-center space-y-4">
+          <div className="text-4xl font-bold text-brand-teal">2022</div>
+          <p className="text-[10px] uppercase tracking-widest text-white/40">Established</p>
+        </div>
+        <div className="text-center space-y-4">
+          <div className="text-4xl font-bold text-brand-coral">10k+</div>
+          <p className="text-[10px] uppercase tracking-widest text-white/40">Community Members</p>
+        </div>
+        <div className="text-center space-y-4">
+          <div className="text-4xl font-bold text-brand-teal">Elite</div>
+          <p className="text-[10px] uppercase tracking-widest text-white/40">Training Standards</p>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const RunClub = () => {
+  const { user } = useAuth();
+  const [isJoined, setIsJoined] = useState(false);
+
+  return (
+    <div className="pt-40 pb-32 px-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          <div className="space-y-12">
+            <header className="space-y-6">
+              <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Community Movement</span>
+              <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">FMF <span className="text-brand-coral">Run Club</span></h1>
+              <p className="text-white/60 text-lg font-light leading-relaxed">
+                Join the movement. The FMF Run Club is a community-driven initiative focused on endurance, discipline, and collective growth.
+              </p>
+            </header>
+
+            <div className="space-y-8">
+              <div className="flex items-center gap-6">
+                <div className="w-12 h-12 rounded-full bg-brand-coral/20 flex items-center justify-center text-brand-coral">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold uppercase tracking-tighter">Open to All</h4>
+                  <p className="text-xs text-white/40">Anyone can join the Run Club community, regardless of membership tier.</p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setIsJoined(!isJoined)}
+                className={`btn-primary w-full md:w-auto ${isJoined ? 'bg-white/10 text-white' : 'bg-brand-coral hover:bg-brand-coral/80'}`}
+              >
+                {isJoined ? 'Joined Run Club' : 'Join Run Club'}
+              </button>
+            </div>
+          </div>
+          
+          <div className="relative aspect-square rounded-3xl overflow-hidden">
+            <img src="https://picsum.photos/seed/runclub/1000/1000" className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
           </div>
         </div>
       </div>
@@ -2764,7 +5505,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           showToast('Passwords do not match', 'error');
           return;
         }
-        await signup(formData.name, formData.email, selectedTier?.name || 'Basic');
+        await signup(formData.name, formData.email, formData.password, selectedTier?.name || 'Basic');
         showToast(`Welcome to the Collective, ${formData.name}!`);
       }
       
@@ -2778,7 +5519,11 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       let msg = 'Action failed';
       if (error.code === 'auth/email-already-in-use') msg = 'Email already in use';
       if (error.code === 'auth/wrong-password') msg = 'Incorrect password';
-      if (error.code === 'auth/user-not-found') msg = 'User not found';
+      if (error.code === 'auth/user-not-found') {
+        msg = formData.email === 'fashionmeetzfitness86@gmail.com' 
+          ? 'Admin account not found. Please Sign Up first with this email.' 
+          : 'User not found';
+      }
       showToast(msg, 'error');
     }
   };
@@ -2859,11 +5604,11 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
             <h2 className="text-4xl font-bold uppercase tracking-tighter">Miami <span className="text-brand-teal italic">Local Passes</span></h2>
             <p className="text-white/40 text-xs uppercase tracking-widest max-w-xl mx-auto">Short-term access for visitors and locals. Includes our signature recovery beverages.</p>
           </div>
-
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {localPasses.map((pass, i) => (
-              <div
-                key={i}
+              <div 
+                key={i} 
                 className="card-gradient p-12 flex flex-col space-y-8 relative overflow-hidden border-brand-teal/20"
               >
                 {pass.badge && (
@@ -2886,7 +5631,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                     </li>
                   ))}
                 </ul>
-                <button
+                <button 
                   onClick={() => handleJoin(pass)}
                   className="w-full py-4 bg-brand-teal text-black uppercase tracking-widest text-[10px] font-bold hover:bg-white transition-all"
                 >
@@ -2984,7 +5729,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
 
               {(!user || user.tier === 'Basic') && (
                 <div className="pt-8">
-                  <button
+                  <button 
                     onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     className="btn-primary inline-flex items-center gap-3"
                   >
@@ -3123,6 +5868,123 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   );
 };
 
+const OrderHistory = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  if (!user) {
+    useEffect(() => {
+      navigate('/membership?mode=login');
+    }, [navigate]);
+    return null;
+  }
+
+  const mockOrders = [
+    { id: 'ORD-7721', date: '2026-02-15', total: 124.50, items: ['FMF Training Tee', 'Resistance Band Set'], status: 'Delivered' },
+    { id: 'ORD-8902', date: '2026-03-01', total: 89.00, items: ['FMF Lifestyle Hoodie'], status: 'Shipped' },
+  ];
+
+  const orders = user.orderHistory || mockOrders;
+
+  return (
+    <div className="pt-40 pb-32 px-6 min-h-screen">
+      <div className="max-w-4xl mx-auto">
+        <header className="mb-16 space-y-4">
+          <Link to="/profile" className="text-brand-teal text-[10px] uppercase tracking-widest flex items-center gap-2 hover:gap-4 transition-all">
+            <ArrowRight size={14} className="rotate-180" /> Back to Profile
+          </Link>
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-brand-coral/20 rounded-full flex items-center justify-center text-brand-coral">
+              <ShoppingBag size={32} />
+            </div>
+            <div>
+              <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">Order <span className="text-brand-coral">History</span></h1>
+              <p className="text-white/40 uppercase tracking-widest text-xs">View and track your past purchases</p>
+            </div>
+          </div>
+        </header>
+
+        <div className="space-y-6">
+          {orders.length > 0 ? (
+            orders.map((order: any) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={order.id} 
+                className="card-gradient p-8 flex flex-col md:flex-row justify-between gap-8 hover:border-brand-teal/30 transition-all group"
+              >
+                <div className="space-y-6 flex-grow">
+                  <div className="flex items-center justify-between md:justify-start md:gap-8">
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-widest text-white/20">Order ID</p>
+                      <p className="text-sm font-bold uppercase tracking-widest text-white">{order.id}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-widest text-white/20">Date Placed</p>
+                      <p className="text-sm text-white/60 uppercase tracking-widest">{new Date(order.created_at).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <p className="text-[10px] uppercase tracking-widest text-white/20">Items Purchased</p>
+                    <div className="flex flex-wrap gap-3">
+                      {order.items.map((item: string, i: number) => (
+                        <div key={i} className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] uppercase tracking-widest text-white/80 group-hover:border-brand-teal/20 transition-colors">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-row md:flex-col justify-between items-end gap-6 md:min-w-[150px] border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-8">
+                  <div className="space-y-1 text-right">
+                    <p className="text-[10px] uppercase tracking-widest text-white/20">Status</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-[9px] uppercase tracking-widest font-bold ${
+                      order.status === 'Delivered' ? 'bg-brand-teal/20 text-brand-teal' : 'bg-brand-coral/20 text-brand-coral'
+                    }`}>
+                      {order.status}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <p className="text-[10px] uppercase tracking-widest text-white/20">Total Amount</p>
+                    <p className="text-2xl font-bold text-white">${order.total.toFixed(2)}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            <div className="card-gradient p-20 text-center space-y-8">
+              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/20">
+                <ShoppingBag size={40} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold uppercase tracking-tight">No Orders Yet</h3>
+                <p className="text-white/40 text-xs uppercase tracking-widest">Your purchase history will appear here once you've made a purchase.</p>
+              </div>
+              <Link to="/store" className="btn-primary inline-block px-12">
+                Visit the FMF Store
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <footer className="mt-20 p-10 bg-brand-teal/5 border border-brand-teal/10 rounded-3xl">
+          <div className="flex flex-col md:flex-row items-center gap-8 justify-between">
+            <div className="space-y-2">
+              <h4 className="text-sm font-bold uppercase tracking-widest text-brand-teal">Need Assistance?</h4>
+              <p className="text-[10px] text-white/40 uppercase tracking-widest">Our support team is available 24/7 for order inquiries.</p>
+            </div>
+            <button className="px-8 py-4 border border-brand-teal/30 text-brand-teal text-[10px] uppercase tracking-widest font-bold hover:bg-brand-teal hover:text-black transition-all">
+              Contact Support
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
 const Profile = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -3173,24 +6035,53 @@ const Profile = () => {
   const orders = user.orderHistory || mockOrders;
 
   const mockLogs: WorkoutLog[] = [
-    { id: 'log-1', date: '2026-03-05', sessionTitle: 'Upper Body Power', duration: 45, type: 'Strength' },
-    { id: 'log-2', date: '2026-03-06', sessionTitle: 'Calisthenics Flow', duration: 30, type: 'Mobility' },
-    { id: 'log-3', date: '2026-03-07', sessionTitle: 'High Intensity Blast', duration: 20, type: 'HIIT' },
+    { id: 'log-1', user_id: user.id, video_id: 'v1', duration: 45, completed_at: '2026-03-05T10:00:00Z' },
+    { id: 'log-2', user_id: user.id, video_id: 'v2', duration: 30, completed_at: '2026-03-06T10:00:00Z' },
+    { id: 'log-3', user_id: user.id, video_id: 'v3', duration: 20, completed_at: '2026-03-07T10:00:00Z' },
   ];
 
   const mockPBs: PersonalBest[] = [
-    { exercise: 'Muscle Ups', value: '12 Reps', date: '2026-02-20' },
-    { exercise: 'Handstand Hold', value: '45 Seconds', date: '2026-03-01' },
-    { exercise: 'Pistol Squats', value: '20 Reps', date: '2026-03-05' },
+    { id: 'pb-1', user_id: user.id, exercise: 'Muscle Ups', value: '12 Reps', date: '2026-02-20' },
+    { id: 'pb-2', user_id: user.id, exercise: 'Handstand Hold', value: '45 Seconds', date: '2026-03-01' },
+    { id: 'pb-3', user_id: user.id, exercise: 'Pistol Squats', value: '20 Reps', date: '2026-03-05' },
   ];
 
-  const [activeTab, setActiveTab] = useState<'perks' | 'orders' | 'progress' | 'favorites'>('progress');
+  const [activeTab, setActiveTab] = useState<'perks' | 'orders' | 'progress' | 'favorites' | 'programs' | 'athlete'>('progress');
   const [isLoggingWorkout, setIsLoggingWorkout] = useState(false);
   const [isLoggingPB, setIsLoggingPB] = useState(false);
 
   const [logs, setLogs] = useState<WorkoutLog[]>(user.workoutLogs || mockLogs);
   const [pbs, setPbs] = useState<PersonalBest[]>(user.personalBests || mockPBs);
+  const [localVideos, setLocalVideos] = useState<Video[]>([]);
+  const [userPrograms, setUserPrograms] = useState<ProgramType[]>([]);
+  const [retreatApps, setRetreatApps] = useState<RetreatApplication[]>([]);
   const streak = user.streak || 5;
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      // Fetch videos
+      let videoQuery = supabase.from('videos').select('*');
+      if (!(user.role === 'admin' || user.role === 'super_admin')) {
+        videoQuery = videoQuery.eq('visibility_status', 'published');
+      }
+      const { data: videoData, error: videoError } = await videoQuery;
+      if (videoError) console.error('Profile videos error:', videoError);
+      setLocalVideos(videoData && videoData.length > 0 ? videoData as Video[] : VIDEOS);
+
+      // Fetch user programs
+      const { data: progData } = await supabase.from('user_programs').select('*').eq('id', user.id).single();
+      if (progData) {
+        setUserPrograms(progData.programs as ProgramType[]);
+      }
+
+      // Fetch retreat applications if athlete
+      if (user.role === 'athlete') {
+        const { data: appsData } = await supabase.from('retreat_applications').select('*');
+        if (appsData) setRetreatApps(appsData as RetreatApplication[]);
+      }
+    };
+    fetchProfileData();
+  }, [user.id, user.role]);
 
   const handleLogWorkout = (e: FormEvent) => {
     e.preventDefault();
@@ -3199,10 +6090,10 @@ const Profile = () => {
     
     const newLog: WorkoutLog = {
       id: `log-${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
-      sessionTitle: formData.get('title') as string,
+      user_id: user.id,
+      video_id: 'manual',
       duration: parseInt(formData.get('duration') as string),
-      type: formData.get('type') as any
+      completed_at: new Date().toISOString()
     };
 
     setLogs([newLog, ...logs]);
@@ -3215,6 +6106,8 @@ const Profile = () => {
     const formData = new FormData(form);
     
     const newPB: PersonalBest = {
+      id: `pb-${Date.now()}`,
+      user_id: user.id,
       exercise: formData.get('exercise') as string,
       value: formData.get('value') as string,
       date: new Date().toISOString().split('T')[0]
@@ -3231,7 +6124,7 @@ const Profile = () => {
           <div className="space-y-6">
             <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Member Profile</span>
             <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">
-              Welcome, <span className="text-brand-coral">{user.name.split(' ')[0]}</span>
+              Welcome, <span className="text-brand-coral">{user.full_name.split(' ')[0]}</span>
             </h1>
             <div className="flex items-center gap-4">
               <div className="px-4 py-2 bg-brand-teal/10 border border-brand-teal/30 rounded-full text-brand-teal text-[10px] uppercase tracking-widest font-bold">
@@ -3258,6 +6151,8 @@ const Profile = () => {
           {[
             { id: 'progress', label: 'Progress Tracking' },
             { id: 'favorites', label: 'Favorite Videos' },
+            { id: 'programs', label: 'My Programs' },
+            ...(user.role === 'athlete' ? [{ id: 'athlete', label: 'Athlete Dashboard' }] : []),
             { id: 'perks', label: 'Member Privileges' },
             { id: 'orders', label: 'Order History' },
           ].map((tab) => (
@@ -3370,7 +6265,7 @@ const Profile = () => {
             <div className="lg:col-span-3">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {user.favorites && user.favorites.length > 0 ? (
-                  VIDEOS.filter(v => user.favorites?.includes(v.id)).map((video) => (
+                  localVideos.filter(v => user.favorites?.includes(v.id)).map((video) => (
                     <motion.div
                       layout
                       key={video.id}
@@ -3380,7 +6275,7 @@ const Profile = () => {
                       onClick={() => navigate(`/video/${video.id}`)}
                     >
                       <div className="relative aspect-video">
-                        <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+                        <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
                         {video.isPremium && (
                           <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
                             <Zap size={10} fill="white" />
@@ -3413,7 +6308,116 @@ const Profile = () => {
             </div>
           )}
 
-          {activeTab === 'perks' && (
+          {activeTab === 'programs' && (
+            <div className="lg:col-span-3 space-y-12">
+              {userPrograms.length > 0 ? (
+                userPrograms.map((prog) => (
+                  <div key={prog.id} className="card-gradient p-10 space-y-8">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-2xl font-bold uppercase tracking-tighter">{prog.title}</h3>
+                        <p className="text-[10px] text-white/40 uppercase tracking-widest">Linked on {new Date(prog.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <span className="px-4 py-2 bg-brand-teal/10 text-brand-teal text-[10px] uppercase tracking-widest font-bold rounded-full">Active Program</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {localVideos.filter(v => prog.videoIds.includes(v.id)).map((video) => (
+                        <div 
+                          key={video.id}
+                          onClick={() => navigate(`/video/${video.id}`)}
+                          className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden group cursor-pointer hover:border-brand-teal transition-all"
+                        >
+                          <div className="relative aspect-video">
+                            <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="w-10 h-10 bg-brand-teal rounded-full flex items-center justify-center">
+                                <Play size={16} fill="white" className="translate-x-0.5" />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <p className="text-xs font-bold uppercase tracking-tight truncate">{video.title}</p>
+                            <p className="text-[9px] text-white/40 uppercase tracking-widest">{video.duration} • {video.level}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-20 card-gradient">
+                  <p className="text-white/20 text-xs uppercase tracking-widest">No personalized programs linked to your profile yet.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'athlete' && user.role === 'athlete' && (
+            <div className="lg:col-span-3 space-y-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="card-gradient p-8 space-y-4">
+                  <div className="w-12 h-12 bg-brand-teal/20 rounded-full flex items-center justify-center text-brand-teal">
+                    <Users size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold uppercase tracking-tight">Class Attendees</h4>
+                  <p className="text-xs text-white/40 leading-relaxed">View who is signed up for your upcoming training sessions and retreats.</p>
+                </div>
+                <div className="card-gradient p-8 space-y-4">
+                  <div className="w-12 h-12 bg-brand-coral/20 rounded-full flex items-center justify-center text-brand-coral">
+                    <Calendar size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold uppercase tracking-tight">Event Details</h4>
+                  <p className="text-xs text-white/40 leading-relaxed">Access full schedules and logistics for all FMF retreats and special events.</p>
+                </div>
+                <div className="card-gradient p-8 space-y-4">
+                  <div className="w-12 h-12 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400">
+                    <Zap size={24} />
+                  </div>
+                  <h4 className="text-xl font-bold uppercase tracking-tight">Elite Access</h4>
+                  <p className="text-xs text-white/40 leading-relaxed">As an FMF Athlete, you have full access to all Elite-tier content and perks.</p>
+                </div>
+              </div>
+
+              <div className="card-gradient p-10 space-y-8">
+                <h3 className="text-2xl font-bold uppercase tracking-tighter">Retreat Attendance</h3>
+                <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Attendee</th>
+                        <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Retreat</th>
+                        <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {retreatApps.filter(app => app.status === 'accepted').map((app) => (
+                        <tr key={app.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-bold">{app.userName}</p>
+                            <p className="text-[10px] text-white/40">{app.userEmail}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-[10px] uppercase tracking-widest font-bold">{app.retreatTitle}</p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold bg-emerald-500/20 text-emerald-500">Confirmed</span>
+                          </td>
+                        </tr>
+                      ))}
+                      {retreatApps.filter(app => app.status === 'accepted').length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No confirmed attendees found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
             <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-12">
               <div className="lg:col-span-1 space-y-8">
                 <div className="card-gradient p-10 space-y-8">
@@ -3468,6 +6472,9 @@ const Profile = () => {
                     </div>
                     <h3 className="text-xl font-bold uppercase tracking-tighter">Order History</h3>
                   </div>
+                  <Link to="/order-history" className="text-brand-teal text-[10px] font-bold uppercase tracking-widest hover:underline flex items-center gap-2">
+                    View Full History <ArrowRight size={14} />
+                  </Link>
                 </div>
 
                 <div className="space-y-6">
@@ -3477,7 +6484,7 @@ const Profile = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-4">
                             <span className="text-xs font-bold uppercase tracking-widest text-white">{order.id}</span>
-                            <span className="text-[10px] text-white/40 uppercase tracking-widest">{order.date}</span>
+                            <span className="text-[10px] text-white/40 uppercase tracking-widest">{new Date(order.created_at).toLocaleDateString()}</span>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {order.items.map((item: string, i: number) => (
@@ -3625,6 +6632,103 @@ const Profile = () => {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const Philosophy = () => {
+  const pillars = [
+    { 
+      title: 'Discipline', 
+      desc: 'Consistency is the foundation of all progress. We believe in showing up when you don\'t want to, because that is where true strength is forged.', 
+      icon: <Dumbbell size={32} />,
+      color: 'text-brand-coral'
+    },
+    { 
+      title: 'Movement', 
+      desc: 'The human body was designed for freedom and power. Our training focuses on mastering your own weight before adding external resistance.', 
+      icon: <Zap size={32} />,
+      color: 'text-brand-teal'
+    },
+    { 
+      title: 'Energy', 
+      desc: 'Training is not just about burning calories; it is about generating energy. A strong body fuels a sharp mind and a resilient spirit.', 
+      icon: <Heart size={32} />,
+      color: 'text-brand-coral'
+    },
+    { 
+      title: 'Lifestyle', 
+      desc: 'Fitness is not a destination or a phase. It is an essential part of how you live, eat, think, and interact with the world.', 
+      icon: <Star size={32} />,
+      color: 'text-brand-teal'
+    },
+  ];
+
+  return (
+    <div className="pt-40 pb-32 px-6">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-20 space-y-6 max-w-3xl">
+          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">The FMF Manifesto</span>
+          <h1 className="text-5xl md:text-8xl font-bold uppercase tracking-tighter leading-none">
+            Master Your <br /> <span className="text-brand-teal italic">Existence</span>
+          </h1>
+          <p className="text-white/60 text-xl font-light leading-relaxed">
+            Fashion Meetz Fitness is more than a brand. It is a philosophy of living with intention, discipline, and aesthetic excellence.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-32">
+          {pillars.map((pillar, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="card-gradient p-12 space-y-8 group hover:border-brand-teal/30 transition-all"
+            >
+              <div className={`${pillar.color} group-hover:scale-110 transition-transform duration-500`}>
+                {pillar.icon}
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-3xl font-bold uppercase tracking-tighter">{pillar.title}</h3>
+                <p className="text-white/40 text-lg font-light leading-relaxed">{pillar.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+          <div className="space-y-8">
+            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">The <span className="text-brand-coral">Architect's</span> Vision</h2>
+            <div className="space-y-6 text-white/60 text-lg font-light leading-relaxed">
+              <p>
+                Michael Leggett founded FMF with a simple yet profound realization: the discipline required to master one's physical body is the same discipline required to master any aspect of life.
+              </p>
+              <p>
+                By blending the raw, functional power of calisthenics with the refined aesthetics of high fashion, we create an environment where performance and presence coexist.
+              </p>
+            </div>
+            <div className="pt-8 border-t border-white/10">
+              <p className="text-2xl italic font-light text-white/80 leading-tight">
+                "We don't just build muscles. We build the character required to use them with purpose."
+              </p>
+              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">— Michael Leggett</p>
+            </div>
+          </div>
+          <div className="relative aspect-square rounded-3xl overflow-hidden">
+            <img 
+              src="https://picsum.photos/seed/philosophy-vision/1000/1000" 
+              alt="FMF Vision" 
+              className="w-full h-full object-cover grayscale"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent opacity-60" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -3641,7 +6745,7 @@ const Athletes = () => (
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-        {ATHLETES.map((athlete) => (
+        {LANDING_ATHLETES.map((athlete) => (
           <div key={athlete.id} className="space-y-8 group">
             <div className="relative aspect-[3/4] overflow-hidden rounded-3xl">
               <img 
@@ -3829,55 +6933,59 @@ const ConfirmationModal = ({
   );
 };
 
-const Community = () => {
+const mockPosts: Post[] = [
+  {
+    id: 'p1',
+    community_id: '1',
+    user_id: 'u1',
+    user_name_snapshot: 'Alex Rivera',
+    title: 'New PR!',
+    content: 'Just hit a new PB on muscle ups! 12 reps clean. The Power Hour system really works if you stay consistent. Who else is training today?',
+    likes: ['u2', 'u3'],
+    comments: [
+      { id: 'c1', user_id: 'u2', user_name_snapshot: 'Sarah', content: 'Insane work Alex! Keep pushing.', created_at: '2026-03-07T10:00:00Z' }
+    ],
+    tags: ['Progress', 'Calisthenics'],
+    created_at: '2026-03-07T09:00:00Z',
+    updated_at: '2026-03-07T09:00:00Z'
+  },
+  {
+    id: 'p2',
+    community_id: '1',
+    user_id: 'u4',
+    user_name_snapshot: 'Elena Vance',
+    title: 'Morning Flow',
+    content: 'Morning mobility flow at the beach. Nothing beats starting the day with movement and the sound of the ocean. #FMF #Lifestyle',
+    image_url: 'https://picsum.photos/seed/fmf-post-1/800/600',
+    likes: ['u1', 'u5', 'u6'],
+    comments: [],
+    tags: ['Lifestyle', 'Mobility'],
+    created_at: '2026-03-08T07:30:00Z',
+    updated_at: '2026-03-08T07:30:00Z'
+  }
+];
+
+const leaderboard = [
+  { rank: 1, name: 'Alex R.', points: 12450, level: 'Elite' },
+  { rank: 2, name: 'Sarah M.', points: 11200, level: 'Power' },
+  { rank: 3, name: 'James K.', points: 10850, level: 'Power' },
+  { rank: 4, name: 'Elena V.', points: 9400, level: 'Foundation' },
+  { rank: 5, name: 'Marcus D.', points: 8900, level: 'Foundation' },
+];
+
+const challenges = [
+  { title: '30-Day Core Blast', participants: 1240, daysLeft: 12, reward: 'Elite Badge' },
+  { title: 'Muscle Up Mastery', participants: 450, daysLeft: 5, reward: 'Store Credit' },
+  { title: 'Sunrise Beach Ritual', participants: 890, daysLeft: 20, reward: 'Retreat Discount' },
+];
+
+const CommunityPage = () => {
   const { user, addNotification } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPostContent, setNewPostContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All');
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'post' | 'comment', postId: string, commentId?: string } | null>(null);
-
-  const leaderboard = [
-    { rank: 1, name: 'Alex R.', points: 12450, level: 'Elite' },
-    { rank: 2, name: 'Sarah M.', points: 11200, level: 'Power' },
-    { rank: 3, name: 'James K.', points: 10850, level: 'Power' },
-    { rank: 4, name: 'Elena V.', points: 9400, level: 'Foundation' },
-    { rank: 5, name: 'Marcus D.', points: 8900, level: 'Foundation' },
-  ];
-
-  const challenges = [
-    { title: '30-Day Core Blast', participants: 1240, daysLeft: 12, reward: 'Elite Badge' },
-    { title: 'Muscle Up Mastery', participants: 450, daysLeft: 5, reward: 'Store Credit' },
-    { title: 'Sunrise Beach Ritual', participants: 890, daysLeft: 20, reward: 'Retreat Discount' },
-  ];
-
-  const mockPosts: Post[] = [
-    {
-      id: 'p1',
-      authorId: 'u1',
-      authorName: 'Alex Rivera',
-      authorTier: 'Elite',
-      content: 'Just hit a new PB on muscle ups! 12 reps clean. The Power Hour system really works if you stay consistent. Who else is training today?',
-      likes: ['u2', 'u3'],
-      comments: [
-        { id: 'c1', authorId: 'u2', authorName: 'Sarah', content: 'Insane work Alex! Keep pushing.', createdAt: '2026-03-07T10:00:00Z' }
-      ],
-      createdAt: '2026-03-07T09:00:00Z',
-      tags: ['Progress', 'Calisthenics']
-    },
-    {
-      id: 'p2',
-      authorId: 'u4',
-      authorName: 'Elena Vance',
-      authorTier: 'Premium',
-      content: 'Morning mobility flow at the beach. Nothing beats starting the day with movement and the sound of the ocean. #FMF #Lifestyle',
-      imageUrl: 'https://picsum.photos/seed/fmf-post-1/800/600',
-      likes: ['u1', 'u5', 'u6'],
-      comments: [],
-      createdAt: '2026-03-08T07:30:00Z',
-      tags: ['Lifestyle', 'Mobility']
-    }
-  ];
 
   useEffect(() => {
     // In a real app, we'd fetch from Firestore here
@@ -3890,14 +6998,16 @@ const Community = () => {
 
     const newPost: Post = {
       id: `p-${Date.now()}`,
-      authorId: user.id,
-      authorName: user.name,
-      authorTier: user.tier,
+      community_id: '1',
+      user_id: user.id,
+      user_name_snapshot: user.full_name,
+      title: 'New Post',
       content: newPostContent,
       likes: [],
       comments: [],
-      createdAt: new Date().toISOString(),
-      tags: ['General']
+      tags: ['General'],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     setPosts([newPost, ...posts]);
@@ -3912,10 +7022,10 @@ const Community = () => {
         const hasLiked = post.likes.includes(user.id);
         if (!hasLiked) {
           addNotification({
-            userId: post.authorId,
+            user_id: post.user_id,
             type: 'like',
             fromUserId: user.id,
-            fromUserName: user.name,
+            fromUserName: user.full_name,
             postId: post.id,
             postContent: post.content.substring(0, 50) + '...'
           });
@@ -3978,19 +7088,23 @@ const Community = () => {
           {/* Main Forum Feed */}
           <div className="lg:col-span-2 space-y-8">
             {/* Create Post */}
-            {user ? (
+            {user && (user.role === 'admin' || user.role === 'athlete') ? (
               <div className="card-gradient p-8 space-y-6">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-brand-teal/20 flex items-center justify-center text-brand-teal font-bold text-xs">
-                    {user.name.charAt(0)}
+                    {user.full_name.charAt(0)}
                   </div>
                   <button 
                     onClick={() => setIsPosting(true)}
                     className="flex-grow text-left px-6 py-3 bg-white/5 border border-white/10 rounded-full text-white/40 text-xs uppercase tracking-widest hover:bg-white/10 transition-all"
                   >
-                    Share your progress, {user.name.split(' ')[0]}...
+                    Share your progress, {user.full_name.split(' ')[0]}...
                   </button>
                 </div>
+              </div>
+            ) : user ? (
+              <div className="card-gradient p-8 text-center space-y-4">
+                <p className="text-xs text-white/40 uppercase tracking-widest">Only Admins and Athletes can post on the feed. You can still like posts!</p>
               </div>
             ) : (
               <div className="card-gradient p-8 text-center space-y-4">
@@ -4026,22 +7140,19 @@ const Community = () => {
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-brand-teal font-bold">
-                        {post.authorName.charAt(0)}
+                        {post.user_name_snapshot.charAt(0)}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold uppercase tracking-tight">{post.authorName}</h4>
-                          <span className="text-[8px] px-2 py-0.5 bg-brand-teal/10 text-brand-teal rounded uppercase font-bold tracking-widest">
-                            {post.authorTier}
-                          </span>
+                          <h4 className="text-sm font-bold uppercase tracking-tight">{post.user_name_snapshot}</h4>
                         </div>
                         <p className="text-[10px] text-white/20 uppercase tracking-widest">
-                          {new Date(post.createdAt).toLocaleDateString()}
+                          {new Date(post.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      {post.authorId === user?.id && (
+                      {post.user_id === user?.id && (
                         <button 
                           onClick={() => setConfirmDelete({ type: 'post', postId: post.id })}
                           className="text-white/20 hover:text-brand-coral transition-colors"
@@ -4057,9 +7168,9 @@ const Community = () => {
 
                   <div className="space-y-4">
                     <p className="text-white/80 text-sm leading-relaxed">{post.content}</p>
-                    {post.imageUrl && (
+                    {post.image_url && (
                       <div className="rounded-2xl overflow-hidden border border-white/5">
-                        <img src={post.imageUrl} alt="Post content" className="w-full h-auto grayscale hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
+                        <img src={post.image_url} alt="Post content" className="w-full h-auto grayscale hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
                       </div>
                     )}
                     <div className="flex flex-wrap gap-2">
@@ -4100,11 +7211,11 @@ const Community = () => {
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-tight">{comment.authorName}</span>
+                              <span className="text-[10px] font-bold uppercase tracking-tight">{comment.user_name_snapshot}</span>
                               <span className="text-[8px] text-white/20 uppercase tracking-widest">
-                                {new Date(comment.createdAt).toLocaleDateString()}
+                                {new Date(comment.created_at).toLocaleDateString()}
                               </span>
-                              {comment.authorId === user?.id && (
+                              {comment.user_id === user?.id && (
                                 <button 
                                   onClick={() => setConfirmDelete({ type: 'comment', postId: post.id, commentId: comment.id })}
                                   className="text-white/20 hover:text-brand-coral transition-colors"
@@ -4121,10 +7232,10 @@ const Community = () => {
                   )}
 
                   {/* Add Comment Input */}
-                  {user && (
+                  {user && (user.role === 'admin' || user.role === 'athlete') && (
                     <div className="pt-4 flex gap-4">
                       <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-brand-teal">
-                        {user.name.charAt(0)}
+                        {user.full_name.charAt(0)}
                       </div>
                       <form 
                         onSubmit={(e) => {
@@ -4133,22 +7244,22 @@ const Community = () => {
                           const input = form.elements.namedItem('comment') as HTMLInputElement;
                           if (!input.value.trim()) return;
                           
-                          const newComment: Comment = {
+                          const newComment: CommunityComment = {
                             id: `c-${Date.now()}`,
-                            authorId: user.id,
-                            authorName: user.name,
+                            user_id: user.id,
+                            user_name_snapshot: user.full_name,
                             content: input.value,
-                            createdAt: new Date().toISOString()
+                            created_at: new Date().toISOString()
                           };
 
                           setPosts(posts.map(p => 
                             p.id === post.id ? { ...p, comments: [...p.comments, newComment] } : p
                           ));
                           addNotification({
-                            userId: post.authorId,
+                            user_id: post.user_id,
                             type: 'comment',
                             fromUserId: user.id,
-                            fromUserName: user.name,
+                            fromUserName: user.full_name,
                             postId: post.id,
                             postContent: post.content.substring(0, 50) + '...'
                           });
@@ -4397,11 +7508,37 @@ const VideoDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, toggleFavorite } = useAuth();
-  const video = VIDEOS.find(v => v.id === id);
+  const [video, setVideo] = useState<Video | undefined>(VIDEOS.find(v => v.id === id));
+  const [loading, setLoading] = useState(!video);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [id]);
+    if (!video && id) {
+      const fetchVideo = async () => {
+        try {
+          const { data, error } = await supabase.from('videos').select('*').eq('id', id).single();
+          if (error) throw error;
+          if (data) {
+            setVideo(data as Video);
+          }
+        } catch (error) {
+          console.error('Error fetching video:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchVideo();
+    }
+  }, [id, video]);
+
+  if (loading) {
+    return (
+      <div className="pt-40 pb-32 px-6 text-center">
+        <div className="w-12 h-12 border-4 border-brand-teal border-t-transparent rounded-full animate-spin mx-auto mb-8"></div>
+        <p className="text-white/40 uppercase tracking-widest text-xs">Loading workout...</p>
+      </div>
+    );
+  }
 
   if (!video) {
     return (
@@ -4415,14 +7552,14 @@ const VideoDetail = () => {
   const isLocked = video.isPremium && (!user || user.tier === 'Basic');
 
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="pt-40 pb-32 px-6"
     >
       <div className="max-w-7xl mx-auto">
-        <button
+        <button 
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-white/40 hover:text-white transition-colors uppercase tracking-widest text-[10px] mb-12"
         >
@@ -4443,30 +7580,30 @@ const VideoDetail = () => {
                 </div>
               ) : (
                 <iframe
-                  src={video.videoUrl?.replace('watch?v=', 'embed/')}
+                  src={video.video_url?.replace('watch?v=', 'embed/')}
                   title={video.title}
                   className="w-full h-full"
                   allowFullScreen
                 />
               )}
-              <img src={video.thumbnail} alt={video.title} className="absolute inset-0 w-full h-full object-cover -z-10 opacity-40" />
+              <img src={video.thumbnail_url} alt={video.title} className="absolute inset-0 w-full h-full object-cover -z-10 opacity-40" />
             </div>
 
             <div className="space-y-8">
               <div className="flex flex-col md:flex-row justify-between items-start gap-8">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <span className="text-brand-teal text-[10px] uppercase tracking-[0.4em] font-bold">{video.category}</span>
+                    <span className="text-brand-teal text-[10px] uppercase tracking-[0.4em] font-bold">{video.category_id}</span>
                     <span className="text-brand-coral text-[10px] uppercase tracking-widest border border-brand-coral/20 px-2 py-0.5 rounded">{video.level}</span>
                   </div>
                   <h1 className="text-5xl font-bold uppercase tracking-tighter leading-none">{video.title}</h1>
                 </div>
                 <div className="flex items-center gap-4">
-                  <button
+                  <button 
                     onClick={() => toggleFavorite(video.id)}
                     className={`p-4 rounded-full backdrop-blur-md transition-all ${
-                      user?.favorites?.includes(video.id)
-                        ? 'bg-brand-coral text-white'
+                      user?.favorites?.includes(video.id) 
+                        ? 'bg-brand-coral text-white' 
                         : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10'
                     }`}
                   >
@@ -4479,9 +7616,15 @@ const VideoDetail = () => {
               </div>
 
               <div className="prose prose-invert max-w-none">
-                <p className="text-white/60 text-lg leading-relaxed uppercase tracking-wide">
+                <p className="text-white/80 text-xl leading-relaxed font-light">
                   {video.description}
                 </p>
+                <div className="mt-8 p-6 bg-white/5 rounded-2xl border border-white/10">
+                  <h4 className="text-xs uppercase tracking-[0.3em] text-brand-teal mb-4 font-bold">Session Overview</h4>
+                  <p className="text-white/50 text-sm leading-relaxed">
+                    This session is designed to push your boundaries while maintaining perfect form. Focus on the mind-muscle connection and breathe through every movement.
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-12 border-t border-white/5">
@@ -4521,9 +7664,9 @@ const VideoDetail = () => {
             <div className="card-gradient p-10 space-y-8">
               <h3 className="text-sm font-bold uppercase tracking-[0.2em]">Instructor</h3>
               <div className="flex items-center gap-6">
-                <img
-                  src={video.instructorImage}
-                  alt={video.instructor}
+                <img 
+                  src={video.instructorImage} 
+                  alt={video.instructor} 
                   className="w-20 h-20 rounded-full object-cover border-2 border-brand-teal/30"
                 />
                 <div>
@@ -4545,7 +7688,7 @@ const VideoDetail = () => {
                 {VIDEOS.filter(v => v.id !== video.id).slice(0, 2).map(v => (
                   <Link key={v.id} to={`/video/${v.id}`} className="flex gap-4 group">
                     <div className="w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0">
-                      <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                      <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
                     </div>
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{v.title}</h4>
@@ -4683,8 +7826,8 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
             {RETREATS.map((retreat) => (
               <div key={retreat.id} className="card-gradient overflow-hidden flex flex-col lg:flex-row group">
                 <div className="lg:w-1/2 relative overflow-hidden">
-                  <img src={retreat.image} alt={retreat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" referrerPolicy="no-referrer" />
-                  <div className="absolute top-6 left-6 bg-brand-teal px-4 py-2 text-[10px] uppercase tracking-widest font-bold">{retreat.date}</div>
+                  <img src={retreat.cover_image} alt={retreat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" referrerPolicy="no-referrer" />
+                  <div className="absolute top-6 left-6 bg-brand-teal px-4 py-2 text-[10px] uppercase tracking-widest font-bold">{new Date(retreat.start_date).toLocaleDateString()}</div>
                 </div>
                 <div className="lg:w-1/2 p-12 flex flex-col justify-center space-y-6">
                   <div className="flex items-center gap-2 text-brand-coral text-xs uppercase tracking-widest">
@@ -4974,7 +8117,7 @@ const About = () => (
               <div className="text-[10px] uppercase tracking-widest text-white/20">Headquarters</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-brand-coral">2024</div>
+              <div className="text-3xl font-bold text-brand-coral">2022</div>
               <div className="text-[10px] uppercase tracking-widest text-white/20">Established</div>
             </div>
           </div>
@@ -5025,23 +8168,35 @@ export default function App() {
               <AnimatePresence mode="wait">
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/program" element={<Program />} />
+                  <Route path="/philosophy" element={<Philosophy />} />
+                  <Route path="/mission" element={<Mission />} />
+                  <Route path="/run-club" element={<RunClub />} />
+                  <Route path="/services" element={<Services />} />
+                  <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
+                  <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
+                  <Route path="/program" element={<ProgramPage />} />
                   <Route path="/videos" element={<VideoLibrary />} />
                   <Route path="/video/:id" element={<VideoDetail />} />
                   <Route path="/athletes" element={<Athletes />} />
                   <Route path="/membership" element={<Membership showToast={showToast} />} />
-                  <Route path="/community" element={<Community />} />
+                  <Route path="/community" element={<CommunityPage />} />
                   <Route path="/schedule" element={<Schedule showToast={showToast} />} />
-                  <Route path="/store" element={<Store />} />
+                  <Route path="/shop" element={<Store />} />
+                  <Route path="/shop/:category" element={<Store />} />
+                  <Route path="/shop/product/:id" element={<ProductDetail />} />
+                  <Route path="/brand/:slug" element={<BrandPage />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/order-history" element={<OrderHistory />} />
                   <Route path="/recovery" element={<Recovery />} />
                   <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/admin" element={<AdminDashboard showToast={showToast} />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AnimatePresence>
             </main>
 
-            <Footer />
+            <Footer showToast={showToast} />
 
             {/* Global Toast */}
             <AnimatePresence>
