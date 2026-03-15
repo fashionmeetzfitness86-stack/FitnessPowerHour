@@ -404,8 +404,32 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUser = async (userId: string) => {
     const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
-    if (data) setUser(data as UserProfile);
-    else setUser(null);
+    if (data) {
+      setUser(data as UserProfile);
+    } else {
+      // No profile row found — auto-create from auth session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const meta = session.user.user_metadata || {};
+        const newUser: any = {
+          id: session.user.id,
+          full_name: meta.display_name || meta.full_name || session.user.email?.split('@')[0] || 'Member',
+          email: session.user.email || '',
+          role: session.user.email === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
+          tier: 'Basic',
+          status: 'active',
+          signup_date: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        const { error: insertErr } = await supabase.from('users').upsert(newUser);
+        if (insertErr) {
+          console.error('Auto-create user error:', insertErr);
+        } else {
+          setUser(newUser as UserProfile);
+        }
+      }
+    }
     if (error && error.code !== 'PGRST116') console.error('Fetch user error:', error);
   };
 
