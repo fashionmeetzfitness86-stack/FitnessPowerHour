@@ -5390,20 +5390,30 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<any>(null);
-  const params = new URLSearchParams(location.search);
-  const startWithLogin = !user && (params.get('mode') === 'login' || params.get('confirmed') === 'true');
-  const [isRegistering, setIsRegistering] = useState(startWithLogin);
-  const [isLogin, setIsLogin] = useState(startWithLogin);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [isLogin, setIsLogin] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(params.get('confirmed') === 'true');
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const hasOpenedRef = useRef(false);
 
-  // Close modal when user logs in
   useEffect(() => {
+    // If user is logged in, close modal and redirect to profile
     if (user) {
       setIsRegistering(false);
       setIsSuccess(false);
+      return;
     }
-  }, [user]);
+    // Only open modal once per navigation
+    const params = new URLSearchParams(location.search);
+    const wantsLogin = params.get('mode') === 'login';
+    const wasConfirmed = params.get('confirmed') === 'true';
+    if ((wantsLogin || wasConfirmed) && !hasOpenedRef.current) {
+      hasOpenedRef.current = true;
+      setIsLogin(true);
+      setIsRegistering(true);
+      if (wasConfirmed) setIsConfirmed(true);
+    }
+  }, [location.search, user]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -6035,11 +6045,18 @@ const Profile = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) {
-    useEffect(() => {
+  useEffect(() => {
+    if (!user) {
       navigate('/membership?mode=login');
-    }, [navigate]);
-    return null;
+    }
+  }, [user, navigate]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-brand-black">
+        <div className="w-12 h-12 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   const perks = {
@@ -6170,7 +6187,7 @@ const Profile = () => {
           <div className="space-y-6">
             <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Member Profile</span>
             <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">
-              Welcome, <span className="text-brand-coral">{user.full_name.split(' ')[0]}</span>
+              Welcome, <span className="text-brand-coral">{(user.full_name || 'Member').split(' ')[0]}</span>
             </h1>
             <div className="flex items-center gap-4">
               <div className="px-4 py-2 bg-brand-teal/10 border border-brand-teal/30 rounded-full text-brand-teal text-[10px] uppercase tracking-widest font-bold">
