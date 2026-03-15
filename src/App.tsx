@@ -5364,6 +5364,7 @@ const RunClub = () => {
 const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) => {
   const { user, login, signup, logout, updateTier } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<any>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLogin, setIsLogin] = useState(false);
@@ -5510,12 +5511,9 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       if (isLogin) {
         await login(formData.email, formData.password);
         showToast('Logged in successfully');
-        setIsSuccess(true);
-        setTimeout(() => {
-          setIsRegistering(false);
-          setSelectedTier(null);
-          setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        }, 2000);
+        setIsRegistering(false);
+        setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+        navigate('/profile');
       } else {
         if (formData.password !== formData.confirmPassword) {
           showToast('Passwords do not match', 'error');
@@ -6155,9 +6153,9 @@ const Profile = () => {
             </h1>
             <div className="flex items-center gap-4">
               <div className="px-4 py-2 bg-brand-teal/10 border border-brand-teal/30 rounded-full text-brand-teal text-[10px] uppercase tracking-widest font-bold">
-                {user.tier} Member
+                {user.tier || 'Basic'} Member
               </div>
-              <span className="text-white/20 text-[10px] uppercase tracking-widest">Joined {new Date(user.joinedAt).toLocaleDateString()}</span>
+              <span className="text-white/20 text-[10px] uppercase tracking-widest">Joined {new Date(user.signup_date || user.created_at).toLocaleDateString()}</span>
             </div>
           </div>
           <div className="flex gap-4">
@@ -6273,8 +6271,8 @@ const Profile = () => {
                             <Dumbbell size={18} />
                           </div>
                           <div>
-                            <h4 className="text-sm font-bold uppercase tracking-tight">{log.sessionTitle}</h4>
-                            <p className="text-[10px] text-white/40 uppercase tracking-widest">{log.date} • {log.type}</p>
+                            <h4 className="text-sm font-bold uppercase tracking-tight">{(log as any).sessionTitle || `Workout Session`}</h4>
+                            <p className="text-[10px] text-white/40 uppercase tracking-widest">{new Date(log.completed_at).toLocaleDateString()} • {log.duration}min</p>
                           </div>
                         </div>
                         <div className="text-right">
