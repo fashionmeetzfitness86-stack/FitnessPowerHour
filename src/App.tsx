@@ -5520,14 +5520,13 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
       }, 2000);
     } catch (error: any) {
+      const errMsg = error?.message || '';
       let msg = 'Action failed';
-      if (error.code === 'auth/email-already-in-use') msg = 'Email already in use';
-      if (error.code === 'auth/wrong-password') msg = 'Incorrect password';
-      if (error.code === 'auth/user-not-found') {
-        msg = formData.email === 'fashionmeetzfitness86@gmail.com' 
-          ? 'Admin account not found. Please Sign Up first with this email.' 
-          : 'User not found';
-      }
+      if (errMsg.includes('already registered') || errMsg.includes('already been registered')) msg = 'Email already in use';
+      else if (errMsg.includes('Invalid login credentials')) msg = 'Incorrect email or password';
+      else if (errMsg.includes('Email not confirmed')) msg = 'Please check your email to confirm your account';
+      else if (errMsg.includes('Password should be')) msg = 'Password must be at least 6 characters';
+      else if (errMsg) msg = errMsg;
       showToast(msg, 'error');
     }
   };
