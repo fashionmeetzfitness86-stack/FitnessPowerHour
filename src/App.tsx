@@ -5390,29 +5390,20 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<any>(null);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
+  const params = new URLSearchParams(location.search);
+  const startWithLogin = !user && (params.get('mode') === 'login' || params.get('confirmed') === 'true');
+  const [isRegistering, setIsRegistering] = useState(startWithLogin);
+  const [isLogin, setIsLogin] = useState(startWithLogin);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(params.get('confirmed') === 'true');
 
+  // Close modal when user logs in
   useEffect(() => {
-    // If user is logged in, close any modal
     if (user) {
       setIsRegistering(false);
       setIsSuccess(false);
-      return;
     }
-    const params = new URLSearchParams(location.search);
-    if (params.get('mode') === 'login') {
-      setIsLogin(true);
-      setIsRegistering(true);
-    }
-    if (params.get('confirmed') === 'true') {
-      setIsConfirmed(true);
-      setIsLogin(true);
-      setIsRegistering(true);
-    }
-  }, [location.search, user]);
+  }, [user]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
