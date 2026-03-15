@@ -5368,10 +5368,16 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLogin, setIsLogin] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('mode') === 'login' && !user) {
+      setIsLogin(true);
+      setIsRegistering(true);
+    }
+    if (params.get('confirmed') === 'true' && !user) {
+      setIsConfirmed(true);
       setIsLogin(true);
       setIsRegistering(true);
     }
@@ -5800,8 +5806,15 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
               ) : (
                 <>
                   <div className="space-y-2">
+                    {isConfirmed && (
+                      <div className="mb-6 p-4 bg-brand-teal/10 border border-brand-teal/30 rounded-lg text-center">
+                        <Check size={24} className="mx-auto text-brand-teal mb-2" />
+                        <p className="text-brand-teal text-sm font-bold uppercase tracking-widest">Email Confirmed!</p>
+                        <p className="text-white/50 text-xs mt-1">Log in with your credentials to access your account.</p>
+                      </div>
+                    )}
                     <h3 className="text-3xl font-bold uppercase tracking-tighter">
-                      {isLogin ? 'Welcome Back' : 'Join the Collective'}
+                      {isConfirmed ? 'Log In Now' : isLogin ? 'Welcome Back' : 'Join the Collective'}
                     </h3>
                     <p className="text-white/40 text-[10px] uppercase tracking-widest">
                       {isLogin ? 'Enter your credentials to continue' : `Signing up for ${selectedTier?.name}`}
