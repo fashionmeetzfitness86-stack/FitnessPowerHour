@@ -5504,21 +5504,20 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       if (isLogin) {
         await login(formData.email, formData.password);
         showToast('Logged in successfully');
+        setIsSuccess(true);
+        setTimeout(() => {
+          setIsRegistering(false);
+          setSelectedTier(null);
+          setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+        }, 2000);
       } else {
         if (formData.password !== formData.confirmPassword) {
           showToast('Passwords do not match', 'error');
           return;
         }
         await signup(formData.name, formData.email, formData.password, selectedTier?.name || 'Basic');
-        showToast(`Welcome to the Collective, ${formData.name}!`);
+        setIsSuccess(true);
       }
-      
-      setIsSuccess(true);
-      setTimeout(() => {
-        setIsRegistering(false);
-        setSelectedTier(null);
-        setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-      }, 2000);
     } catch (error: any) {
       const errMsg = error?.message || '';
       let msg = 'Action failed';
@@ -5781,10 +5780,22 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
               {isSuccess ? (
                 <div className="text-center space-y-6 py-12">
                   <div className="w-20 h-20 bg-brand-teal/20 rounded-full flex items-center justify-center mx-auto text-brand-teal">
-                    <Check size={40} />
+                    {isLogin ? <Check size={40} /> : <Send size={40} />}
                   </div>
-                  <h3 className="text-3xl font-bold uppercase tracking-tighter">Welcome to the Collective</h3>
-                  <p className="text-white/40 text-sm uppercase tracking-widest">Your power is now unlocked.</p>
+                  <h3 className="text-3xl font-bold uppercase tracking-tighter">
+                    {isLogin ? 'Welcome Back' : 'Check Your Email'}
+                  </h3>
+                  <p className="text-white/40 text-sm uppercase tracking-widest">
+                    {isLogin ? 'Your power is now unlocked.' : `We sent a confirmation link to ${formData.email}. Click it to activate your account.`}
+                  </p>
+                  {!isLogin && (
+                    <button
+                      onClick={() => { setIsRegistering(false); setIsSuccess(false); setFormData({ name: '', email: '', password: '', confirmPassword: '' }); }}
+                      className="btn-primary mt-4"
+                    >
+                      Got It
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
