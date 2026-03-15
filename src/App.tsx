@@ -8204,38 +8204,6 @@ const About = () => (
 
 // --- Main App ---
 
-// Handle Supabase auth callback (email confirmation redirect)
-const AuthCallback = () => {
-  const navigate = useNavigate();
-  useEffect(() => {
-    // Supabase puts tokens in the URL hash after email confirmation
-    // Extract and exchange them for a session
-    const hash = window.location.hash;
-    if (hash.includes('access_token')) {
-      // Parse the tokens from the hash
-      const params = new URLSearchParams(hash.replace(/^#\/?/, '').split('#').pop() || '');
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      if (accessToken && refreshToken) {
-        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(() => {
-          navigate('/profile');
-        });
-        return;
-      }
-    }
-    // If confirmed=true is in the URL, show login
-    navigate('/membership?confirmed=true');
-  }, [navigate]);
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-black">
-      <div className="text-center space-y-4">
-        <div className="w-12 h-12 border-4 border-brand-teal border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-white/40 text-xs uppercase tracking-widest">Confirming your account...</p>
-      </div>
-    </div>
-  );
-};
-
 export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -8244,21 +8212,6 @@ export default function App() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Handle Supabase auth tokens in URL on page load (email confirmation redirect)
-  useEffect(() => {
-    const fullHash = window.location.hash;
-    if (fullHash.includes('access_token') && fullHash.includes('refresh_token')) {
-      const tokenPart = fullHash.substring(fullHash.lastIndexOf('access_token'));
-      const params = new URLSearchParams(tokenPart);
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
-      if (accessToken && refreshToken) {
-        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(() => {
-          window.location.hash = '#/profile';
-        });
-      }
-    }
-  }, []);
 
   return (
     <ErrorBoundary>
@@ -8271,7 +8224,6 @@ export default function App() {
             <main>
               <AnimatePresence mode="wait">
                 <Routes>
-                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/" element={<Home />} />
                   <Route path="/philosophy" element={<Philosophy />} />
                   <Route path="/mission" element={<Mission />} />
