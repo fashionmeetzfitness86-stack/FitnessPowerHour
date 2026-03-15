@@ -5396,12 +5396,18 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [isConfirmed, setIsConfirmed] = useState(false);
 
   useEffect(() => {
+    // If user is logged in, close any modal
+    if (user) {
+      setIsRegistering(false);
+      setIsSuccess(false);
+      return;
+    }
     const params = new URLSearchParams(location.search);
-    if (params.get('mode') === 'login' && !user) {
+    if (params.get('mode') === 'login') {
       setIsLogin(true);
       setIsRegistering(true);
     }
-    if (params.get('confirmed') === 'true' && !user) {
+    if (params.get('confirmed') === 'true') {
       setIsConfirmed(true);
       setIsLogin(true);
       setIsRegistering(true);
