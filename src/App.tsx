@@ -5394,26 +5394,31 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [isLogin, setIsLogin] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const hasOpenedRef = useRef(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
+  // Close modal and go to profile when user logs in
   useEffect(() => {
-    // If user is logged in, close modal and redirect to profile
     if (user) {
       setIsRegistering(false);
-      setIsSuccess(false);
-      return;
+      navigate('/profile');
     }
-    // Only open modal once per navigation
+  }, [user]);
+
+  // Open login modal from URL params (only once on mount)
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const wantsLogin = params.get('mode') === 'login';
-    const wasConfirmed = params.get('confirmed') === 'true';
-    if ((wantsLogin || wasConfirmed) && !hasOpenedRef.current) {
-      hasOpenedRef.current = true;
-      setIsLogin(true);
-      setIsRegistering(true);
-      if (wasConfirmed) setIsConfirmed(true);
+    if (!user) {
+      if (params.get('mode') === 'login') {
+        setIsLogin(true);
+        setIsRegistering(true);
+      }
+      if (params.get('confirmed') === 'true') {
+        setIsConfirmed(true);
+        setIsLogin(true);
+        setIsRegistering(true);
+      }
     }
-  }, [location.search, user]);
+  }, []);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -5556,12 +5561,12 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
     } catch (error: any) {
       const errMsg = error?.message || '';
       let msg = 'Action failed';
-      if (errMsg.includes('already registered') || errMsg.includes('already been registered')) msg = 'Email already in use';
-      else if (errMsg.includes('Invalid login credentials')) msg = 'Incorrect email or password';
-      else if (errMsg.includes('Email not confirmed')) msg = 'Please check your email to confirm your account';
-      else if (errMsg.includes('Password should be')) msg = 'Password must be at least 6 characters';
+      if (errMsg.includes('already registered') || errMsg.includes('already been registered')) msg = 'This email is already registered. Try logging in instead.';
+      else if (errMsg.includes('Invalid login credentials')) msg = 'Incorrect email or password. Please try again.';
+      else if (errMsg.includes('Email not confirmed')) msg = 'Your email is not confirmed yet. Please check your inbox and click the confirmation link.';
+      else if (errMsg.includes('Password should be')) msg = 'Password must be at least 6 characters.';
       else if (errMsg) msg = errMsg;
-      showToast(msg, 'error');
+      setErrorMsg(msg);
     }
   };
 
@@ -5870,7 +5875,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                         required
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        onChange={(e) => { setErrorMsg(''); setFormData({ ...formData, email: e.target.value }); }}
                         className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
                         placeholder="ALEX@POWERHOUR.COM"
                       />
@@ -5897,6 +5902,12 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                           className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
                           placeholder="••••••••"
                         />
+                      </div>
+                    )}
+
+                    {errorMsg && (
+                      <div className="p-4 bg-brand-coral/10 border border-brand-coral/30 rounded-lg">
+                        <p className="text-brand-coral text-xs leading-relaxed">{errorMsg}</p>
                       </div>
                     )}
 
