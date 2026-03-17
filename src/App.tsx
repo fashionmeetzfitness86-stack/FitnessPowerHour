@@ -54,7 +54,7 @@ import {
   CommunityType
 } from './types';
 
-import { supabase } from './supabase';
+import { supabase, authRedirectError } from './supabase';
 
 // --- Error Boundary ---
 interface ErrorBoundaryProps {
@@ -5394,7 +5394,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [isLogin, setIsLogin] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState(authRedirectError || '');
 
   // Close modal and go to profile when user logs in
   useEffect(() => {
