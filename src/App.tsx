@@ -5946,12 +5946,7 @@ const OrderHistory = () => {
     return null;
   }
 
-  const mockOrders = [
-    { id: 'ORD-7721', date: '2026-02-15', total: 124.50, items: ['FMF Training Tee', 'Resistance Band Set'], status: 'Delivered' },
-    { id: 'ORD-8902', date: '2026-03-01', total: 89.00, items: ['FMF Lifestyle Hoodie'], status: 'Shipped' },
-  ];
-
-  const orders = user.orderHistory || mockOrders;
+  const orders = user.orderHistory || [];
 
   return (
     <div className="pt-40 pb-32 px-6 min-h-screen">
@@ -6110,35 +6105,18 @@ const Profile = () => {
 
   const currentPerks = perks[user.tier as keyof typeof perks] || perks.Basic;
 
-  const mockOrders = [
-    { id: 'ORD-7721', date: '2026-02-15', total: 124.50, items: ['FMF Training Tee', 'Resistance Band Set'], status: 'Delivered' },
-    { id: 'ORD-8902', date: '2026-03-01', total: 89.00, items: ['FMF Lifestyle Hoodie'], status: 'Shipped' },
-  ];
-
-  const orders = user.orderHistory || mockOrders;
-
-  const mockLogs: WorkoutLog[] = [
-    { id: 'log-1', user_id: user.id, video_id: 'v1', duration: 45, completed_at: '2026-03-05T10:00:00Z' },
-    { id: 'log-2', user_id: user.id, video_id: 'v2', duration: 30, completed_at: '2026-03-06T10:00:00Z' },
-    { id: 'log-3', user_id: user.id, video_id: 'v3', duration: 20, completed_at: '2026-03-07T10:00:00Z' },
-  ];
-
-  const mockPBs: PersonalBest[] = [
-    { id: 'pb-1', user_id: user.id, exercise: 'Muscle Ups', value: '12 Reps', date: '2026-02-20' },
-    { id: 'pb-2', user_id: user.id, exercise: 'Handstand Hold', value: '45 Seconds', date: '2026-03-01' },
-    { id: 'pb-3', user_id: user.id, exercise: 'Pistol Squats', value: '20 Reps', date: '2026-03-05' },
-  ];
+  const orders = user.orderHistory || [];
 
   const [activeTab, setActiveTab] = useState<'perks' | 'orders' | 'progress' | 'favorites' | 'programs' | 'athlete'>('progress');
   const [isLoggingWorkout, setIsLoggingWorkout] = useState(false);
   const [isLoggingPB, setIsLoggingPB] = useState(false);
 
-  const [logs, setLogs] = useState<WorkoutLog[]>(user.workoutLogs || mockLogs);
-  const [pbs, setPbs] = useState<PersonalBest[]>(user.personalBests || mockPBs);
+  const [logs, setLogs] = useState<WorkoutLog[]>(user.workoutLogs || []);
+  const [pbs, setPbs] = useState<PersonalBest[]>(user.personalBests || []);
   const [localVideos, setLocalVideos] = useState<Video[]>([]);
   const [userPrograms, setUserPrograms] = useState<ProgramType[]>([]);
   const [retreatApps, setRetreatApps] = useState<RetreatApplication[]>([]);
-  const streak = user.streak || 5;
+  const streak = user.streak || 0;
 
   useEffect(() => {
     const fetchProfileData = async () => {
