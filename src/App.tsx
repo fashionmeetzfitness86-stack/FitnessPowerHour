@@ -3102,9 +3102,7 @@ const Store = () => {
             </div>
 
             <div className="mt-32 p-12 md:p-24 rounded-[3rem] bg-gradient-to-br from-brand-black via-brand-black to-brand-teal/10 border border-white/5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
-                <img src={placeholder('Clé Paris', 'c4a265')} className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
-              </div>
+              <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 bg-gradient-to-l from-[#c4a265]/20 to-transparent" />
               <div className="relative z-10 max-w-xl space-y-8">
                 <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
                 <h2 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
