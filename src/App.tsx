@@ -5407,7 +5407,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
     }
   }, [user]);
 
-  // Open login modal from URL params (only once on mount)
+  // Open login modal from URL params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (!user) {
@@ -5421,7 +5421,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
         setIsRegistering(true);
       }
     }
-  }, []);
+  }, [location.search]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
