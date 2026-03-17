@@ -5547,9 +5547,8 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       if (isLogin) {
         await login(formData.email, formData.password);
         showToast('Logged in successfully');
-        setIsRegistering(false);
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        navigate('/profile');
+        // Don't navigate here — useEffect on user will close modal and redirect
       } else {
         if (formData.password !== formData.confirmPassword) {
           showToast('Passwords do not match', 'error');
@@ -6055,12 +6054,21 @@ const OrderHistory = () => {
 const Profile = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [waited, setWaited] = useState(false);
+
+  // Wait 2 seconds before deciding user isn't logged in
+  // This prevents redirect during the async auth loading
+  useEffect(() => {
+    if (user) return;
+    const timer = setTimeout(() => setWaited(true), 2000);
+    return () => clearTimeout(timer);
+  }, [user]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user && waited) {
       navigate('/membership?mode=login');
     }
-  }, [user, navigate]);
+  }, [user, waited, navigate]);
 
   if (!user) {
     return (
