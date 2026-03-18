@@ -3682,6 +3682,11 @@ const AdminDashboard = ({ showToast }: { showToast: (msg: string, type?: 'succes
   const [isAddAthleteModalOpen, setIsAddAthleteModalOpen] = useState(false);
   const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<Community | null>(null);
 
+  // Shop Tab State
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+
   useEffect(() => {
     if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return;
 
@@ -3810,29 +3815,32 @@ const AdminDashboard = ({ showToast }: { showToast: (msg: string, type?: 'succes
       showToast('Failed to delete post.', 'error');
     }
   };
-  const handleAddProduct = async () => {
-    const newProduct: Product = {
-      id: `p${Date.now()}`,
-      brand_id: 'fmf',
-      category_id: 'apparel',
-      name: 'New Product', 
-      slug: `new-product-${Date.now()}`,
-      description: 'New product description',
-      price: 99, 
-      compare_at_price: 120,
-      sku: `SKU-${Date.now()}`,
-      inventory_count: 50,
-      status: 'active',
-      featured_image: 'https://picsum.photos/seed/new-prod/800/1000',
-      images: ['https://picsum.photos/seed/new-prod/800/1000'],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+  const handleSaveProduct = async (productData: Partial<Product>) => {
     try {
-      await supabase.from('products').insert(newProduct);
-      showToast('Product added!', 'success');
+      if (editingProduct) {
+        // Update existing
+        const { error } = await supabase.from('products').update({ ...productData, updated_at: new Date().toISOString() }).eq('id', editingProduct.id);
+        if (error) throw error;
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? { ...p, ...productData, updated_at: new Date().toISOString() } as Product : p));
+        showToast('Product updated successfully!', 'success');
+      } else {
+        // Create new
+        const newProduct: Product = {
+          id: `p${Date.now()}`,
+          ...(productData as Omit<Product, 'id' | 'created_at' | 'updated_at'>),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        const { error } = await supabase.from('products').insert(newProduct);
+        if (error) throw error;
+        setProducts(prev => [...prev, newProduct]);
+        showToast('Product added successfully!', 'success');
+      }
+      setIsProductModalOpen(false);
+      setEditingProduct(null);
     } catch (error) {
-      showToast('Error adding product', 'error');
+      console.error('Error saving product:', error);
+      showToast('Error saving product', 'error');
     }
   };
 
@@ -4702,6 +4710,108 @@ const AdminDashboard = ({ showToast }: { showToast: (msg: string, type?: 'succes
             </div>
           </div>
         )}
+
+        {activeTab === 'shop' && (
+          <div className="space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <h2 className="text-2xl font-bold uppercase tracking-tight">Shop Management</h2>
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-brand-teal transition-colors"
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={() => setIsProductModalOpen(true)}
+                  className="px-6 py-3 bg-brand-teal text-black font-bold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all"
+                >
+                  <Plus size={16} /> Add Product
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5">
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Product</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Price</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Stock</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
+                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {products.filter(p => p.name.toLowerCase().includes(productSearchQuery.toLowerCase()) || p.sku?.toLowerCase().includes(productSearchQuery.toLowerCase())).map((product) => (
+                    <tr key={product.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex-shrink-0">
+                            {product.featured_image ? (
+                              <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white/20"><ShoppingBag size={20} /></div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold uppercase tracking-tight">{product.name}</p>
+                            <p className="text-[10px] text-white/40">{product.sku || 'No SKU'} • {brands.find(b => b.id === product.brand_id)?.name || 'Generic'}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold">${product.price.toFixed(2)}</p>
+                        {product.compare_at_price && product.compare_at_price > product.price && (
+                          <p className="text-[10px] text-white/40 line-through">${product.compare_at_price.toFixed(2)}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <p className={`text-sm font-bold ${product.inventory_count <= 5 ? 'text-brand-coral' : ''}`}>{product.inventory_count}</p>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold ${
+                          product.status === 'active' ? 'bg-emerald-500/20 text-emerald-500' :
+                          product.status === 'draft' ? 'bg-amber-500/20 text-amber-500' :
+                          'bg-brand-coral/20 text-brand-coral'
+                        }`}>
+                          {product.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => { setEditingProduct(product); setIsProductModalOpen(true); }}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
+                            title="Edit Product"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-brand-coral transition-all"
+                            title="Delete Product"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {products.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No products found</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </main>
 
       <AnimatePresence>
@@ -4883,6 +4993,113 @@ const AdminDashboard = ({ showToast }: { showToast: (msg: string, type?: 'succes
             onClose={() => setIsCreateCommunityModalOpen(false)}
             showToast={showToast}
           />
+        )}
+        {isProductModalOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-brand-black border border-white/10 p-10 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h2 className="text-3xl font-bold uppercase tracking-tighter">{editingProduct ? 'Edit' : 'Add New'} <span className="text-brand-teal">Product</span></h2>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">{editingProduct ? 'Update product details' : 'Create a new product for the shop'}</p>
+                </div>
+                <button onClick={() => { setIsProductModalOpen(false); setEditingProduct(null); }} className="p-2 hover:bg-white/5 rounded-full transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form className="space-y-6" onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleSaveProduct({
+                  name: formData.get('name') as string,
+                  description: formData.get('description') as string,
+                  price: parseFloat(formData.get('price') as string),
+                  compare_at_price: formData.get('compare_at_price') ? parseFloat(formData.get('compare_at_price') as string) : undefined,
+                  sku: formData.get('sku') as string,
+                  inventory_count: parseInt(formData.get('inventory_count') as string, 10),
+                  status: formData.get('status') as 'active' | 'draft' | 'archived',
+                  category_id: formData.get('category_id') as string,
+                  brand_id: formData.get('brand_id') as string,
+                  featured_image: formData.get('featured_image') as string,
+                  images: [formData.get('featured_image') as string],
+                  slug: (formData.get('name') as string).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
+                });
+              }}>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Product Name</label>
+                    <input name="name" defaultValue={editingProduct?.name} required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">SKU</label>
+                    <input name="sku" defaultValue={editingProduct?.sku} required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description</label>
+                  <textarea name="description" defaultValue={editingProduct?.description} required rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors resize-none" />
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Price ($)</label>
+                    <input name="price" type="number" step="0.01" defaultValue={editingProduct?.price} required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Compare at Price</label>
+                    <input name="compare_at_price" type="number" step="0.01" defaultValue={editingProduct?.compare_at_price} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Inventory Count</label>
+                    <input name="inventory_count" type="number" defaultValue={editingProduct?.inventory_count || 0} required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Brand</label>
+                    <select name="brand_id" defaultValue={editingProduct?.brand_id || 'fmf'} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors appearance-none">
+                      {brands.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Category</label>
+                    <select name="category_id" defaultValue={editingProduct?.category_id || 'apparel'} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors appearance-none">
+                      <option value="apparel">Apparel</option>
+                      <option value="gear">Gear</option>
+                      <option value="nutrition">Nutrition</option>
+                      <option value="fragrance">Fragrance</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</label>
+                    <select name="status" defaultValue={editingProduct?.status || 'active'} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors appearance-none">
+                      <option value="active">Active</option>
+                      <option value="draft">Draft</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Image URL</label>
+                  <input name="featured_image" defaultValue={editingProduct?.featured_image} required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" placeholder="https://..." />
+                </div>
+
+                <button type="submit" className="btn-primary w-full py-4 uppercase tracking-widest text-xs font-bold mt-4">
+                  {editingProduct ? 'Save Changes' : 'Create Product'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
