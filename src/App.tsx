@@ -5391,10 +5391,15 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<any>(null);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
+  const params = new URLSearchParams(location.search);
+  const wantsLogin = params.get('mode') === 'login';
+  const wasConfirmed = params.get('confirmed') === 'true';
+  const shouldOpenModal = !user && (wantsLogin || wasConfirmed);
+
+  const [isRegistering, setIsRegistering] = useState(shouldOpenModal);
+  const [isLogin, setIsLogin] = useState(shouldOpenModal);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(wasConfirmed);
   const [errorMsg, setErrorMsg] = useState(authRedirectError || '');
 
   // Close modal and go to profile when user logs in
@@ -5405,21 +5410,19 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
     }
   }, [user]);
 
-  // Open login modal from URL params
+  // Open login modal when URL params change (e.g. clicking Login from another page)
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (!user) {
-      if (params.get('mode') === 'login') {
-        setIsLogin(true);
-        setIsRegistering(true);
-      }
-      if (params.get('confirmed') === 'true') {
-        setIsConfirmed(true);
-        setIsLogin(true);
-        setIsRegistering(true);
-      }
+    const p = new URLSearchParams(location.search);
+    if (!user && p.get('mode') === 'login') {
+      setIsLogin(true);
+      setIsRegistering(true);
     }
-  }, [location.search]);
+    if (!user && p.get('confirmed') === 'true') {
+      setIsConfirmed(true);
+      setIsLogin(true);
+      setIsRegistering(true);
+    }
+  }, [location.search, location.key]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
