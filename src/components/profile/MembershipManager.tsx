@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Shield, Check, Lock, Info } from 'lucide-react';
+import { Shield, Check, Lock, Info, Loader2 } from 'lucide-react';
 import { UserProfile } from '../../types';
 
 export const MembershipManager = ({ user, updateTier, showToast }: { user: UserProfile, updateTier: any, showToast: any }) => {
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const tiers = [
     {
@@ -36,15 +37,38 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
   const daysSince = calculateDaysSinceChange();
   const canChange = daysSince >= 30;
 
-  const handleUpdate = () => {
-    if (!selectedTier) return;
+  const handleUpdate = async () => {
+    if (!selectedTier || loading) return;
     if (!canChange) {
       showToast('You cannot change tiers within 30 days of your last update.', 'error');
       return;
     }
-    updateTier(selectedTier);
-    setSelectedTier(null);
-    showToast(`Successfully upgraded to ${selectedTier}! Note: Next change restricted for 30 days.`, 'success');
+
+    setLoading(true);
+    try {
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'membership',
+          tier: selectedTier,
+          userId: user.id,
+          userEmail: user.email
+        })
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        showToast(data.error || 'Failed to start checkout', 'error');
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      showToast('Failed to connect to payment service', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,7 +78,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
           Membership <span className="text-brand-teal">Management</span>
         </h2>
         <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">
-          Upgrade or downgrade your access tier. Changes take effect on the next billing cycle.
+          Upgrade or downgrade your access tier. Payment processed securely via Stripe.
         </p>
       </header>
 
@@ -64,7 +88,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
           <div className="space-y-2">
             <h4 className="text-sm font-bold uppercase tracking-widest text-brand-coral">Change Restriction Active</h4>
             <p className="text-xs text-brand-coral/80 uppercase tracking-widest leading-relaxed font-bold">
-              You changed your membership {daysSince} days ago. Note that you may only update your tier once every 30 days. 
+              You changed your membership {daysSince} days ago. Note that you may only update your tier once every 30 days.
               You can change your tier again in {30 - daysSince} days.
             </p>
           </div>
@@ -77,15 +101,15 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
           const isSelected = selectedTier === tier.name;
 
           return (
-            <div 
+            <div
               key={tier.name}
               onClick={() => {
                 if (isCurrent || !canChange) return;
                 setSelectedTier(isSelected ? null : tier.name);
               }}
               className={`card-gradient relative flex flex-col p-8 transition-all overflow-hidden ${
-                isCurrent ? 'border-brand-teal/50 bg-brand-teal/5' : 
-                isSelected ? 'border-brand-coral/50 bg-brand-coral/5 cursor-pointer scale-[1.02]' : 
+                isCurrent ? 'border-brand-teal/50 bg-brand-teal/5' :
+                isSelected ? 'border-brand-coral/50 bg-brand-coral/5 cursor-pointer scale-[1.02]' :
                 canChange ? 'border-white/10 hover:border-white/30 cursor-pointer' : 'border-white/10 opacity-70 cursor-not-allowed'
               }`}
             >
@@ -95,7 +119,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
                   <Check size={12} />
                 </div>
               )}
-              
+
               <div className="mb-8">
                 <h3 className="text-xl font-bold uppercase tracking-tighter">{tier.name}</h3>
                 <div className="flex items-baseline gap-1 mt-2">
@@ -103,7 +127,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
                   <span className="text-[10px] text-white/40 uppercase tracking-widest">{tier.period}</span>
                 </div>
               </div>
-              
+
               <ul className="space-y-4 mb-12 flex-grow">
                 {tier.features.map((feature, i) => (
                   <li key={i} className="flex items-start gap-3">
@@ -113,7 +137,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
                 ))}
               </ul>
 
-              <button 
+              <button
                 disabled={isCurrent || !canChange}
                 className={`w-full py-4 text-[10px] uppercase font-bold tracking-widest rounded-xl transition-all ${
                   isCurrent ? 'bg-brand-teal/10 text-brand-teal cursor-not-allowed' :
@@ -135,14 +159,15 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
             <Info className="text-brand-teal" size={24} />
             <div>
               <p className="text-sm font-bold uppercase tracking-tight text-white">Ready to switch to {selectedTier}?</p>
-              <p className="text-[10px] uppercase tracking-widest text-white/60 mt-1">Your new billing cycle will start immediately.</p>
+              <p className="text-[10px] uppercase tracking-widest text-white/60 mt-1">You'll be redirected to Stripe for secure payment.</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={handleUpdate}
-            className="w-full md:w-auto px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all"
+            disabled={loading}
+            className="w-full md:w-auto px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            Confirm & Update Tier
+            {loading ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : 'Pay & Upgrade'}
           </button>
         </div>
       )}

@@ -2581,6 +2581,43 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
   const { user } = useAuth();
   const isMember = user && user.tier !== 'Basic';
   const discount = 0.3;
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
+    setCheckoutLoading(true);
+    try {
+      const items = cart.map((item: any) => ({
+        id: item.product.id,
+        name: item.product.name,
+        description: item.product.description,
+        price: isMember ? Math.floor(item.product.price * (1 - discount)) : item.product.price,
+        quantity: item.quantity
+      }));
+
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'shop',
+          items,
+          userId: user?.id || '',
+          userEmail: user?.email || ''
+        })
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Checkout error:', data.error);
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -2689,8 +2726,12 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full btn-primary py-5 text-xs rounded-xl flex items-center justify-center gap-3">
-                    Proceed to Checkout <ArrowRight size={16} />
+                  <button
+                    onClick={handleCheckout}
+                    disabled={checkoutLoading}
+                    className="w-full btn-primary py-5 text-xs rounded-xl flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {checkoutLoading ? 'Redirecting to Stripe...' : 'Proceed to Checkout'} {!checkoutLoading && <ArrowRight size={16} />}
                   </button>
                   <button 
                     onClick={clearCart}
@@ -3036,7 +3077,33 @@ const Store = () => {
                         </>
                       )}
                     </button>
-                    <button className="w-full border border-white/10 py-6 rounded-full font-bold text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/.netlify/functions/create-checkout', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              type: 'shop',
+                              items: [{
+                                id: selectedProduct.id,
+                                name: selectedProduct.name,
+                                description: selectedProduct.description,
+                                price: isMember ? Math.floor(selectedProduct.price * 0.7) : selectedProduct.price,
+                                quantity: 1
+                              }],
+                              userId: user?.id || '',
+                              userEmail: user?.email || ''
+                            })
+                          });
+                          const data = await res.json();
+                          if (data.url) window.location.href = data.url;
+                        } catch (err) {
+                          console.error('Buy now error:', err);
+                        }
+                      }}
+                      className="w-full border border-white/10 py-6 rounded-full font-bold text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all"
+                    >
                       Buy It Now
                     </button>
                   </div>
@@ -4818,6 +4885,20 @@ const Profile = () => {
   const navigate = useNavigate();
   const [waited, setWaited] = useState(false);
   const { showToast } = (window as any).fmfToast || { showToast: () => {} };
+
+  // Handle payment success redirect from Stripe
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    if (params.get('payment') === 'success') {
+      const tier = params.get('tier');
+      if (tier && user) {
+        updateTier(tier);
+      }
+      if (showToast) showToast('Payment successful! Welcome to your new plan.', 'success');
+      // Clean URL
+      window.history.replaceState(null, '', window.location.pathname + '#/profile');
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) return;
