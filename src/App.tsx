@@ -10,6 +10,8 @@
 
 import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
+import { ProfileDashboard } from './components/profile/ProfileDashboard';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
@@ -126,7 +128,7 @@ const VIDEOS: Video[] = [
     duration: '15 min', 
     category_id: 'mobility',
     visibility_status: 'published',
-    allowed_packages: ['basic', 'premium', 'elite'],
+    allowed_packages: ['basic', 'elite'],
     created_by: 'admin',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -140,14 +142,14 @@ const VIDEOS: Video[] = [
     duration: '45 min', 
     category_id: 'strength',
     visibility_status: 'published',
-    allowed_packages: ['premium', 'elite'],
+    allowed_packages: ['elite'],
     created_by: 'admin',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
 ];
 
-// Branded placeholder generator — replace with real product photos later
+// Branded placeholder generator â€” replace with real product photos later
 const placeholder = (label: string, color: string = '2dd4a8') =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect fill="#0a0a0a" width="600" height="800"/><rect fill="#${color}" opacity="0.15" width="600" height="800"/><text x="300" y="370" text-anchor="middle" fill="#${color}" font-family="sans-serif" font-size="20" font-weight="bold" letter-spacing="4">${label.toUpperCase()}</text><text x="300" y="410" text-anchor="middle" fill="#ffffff" opacity="0.3" font-family="sans-serif" font-size="12" letter-spacing="6">COMING SOON</text></svg>`)}`;
 
@@ -191,7 +193,7 @@ const PRODUCTS: Product[] = [
     id: 'p3', 
     brand_id: 'cle-paris',
     category_id: 'fragrance',
-    name: "CLÉ PARIS L'EAU",
+    name: "CLÃ‰ PARIS L'EAU",
     slug: 'cle-paris-leau',
     description: 'A fresh, sophisticated fragrance for the modern athlete.',
     price: 120,
@@ -199,8 +201,8 @@ const PRODUCTS: Product[] = [
     sku: 'FRG-001',
     inventory_count: 30,
     status: 'active',
-    featured_image: placeholder('Clé Paris', 'c4a265'),
-    images: [placeholder('Clé Paris', 'c4a265')],
+    featured_image: placeholder('ClÃ© Paris', 'c4a265'),
+    images: [placeholder('ClÃ© Paris', 'c4a265')],
     ingredients: ['Bergamot', 'Sandalwood', 'Marine Accord'],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -256,10 +258,10 @@ const COLLABORATIONS: CollaborationBrand[] = [
   },
   { 
     id: 'c4', 
-    name: 'CLÉ PARIS', 
+    name: 'CLÃ‰ PARIS', 
     category: 'Luxury Fragrance & Lifestyle', 
     description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
-    image: placeholder('Clé Paris', 'c4a265'),
+    image: placeholder('ClÃ© Paris', 'c4a265'),
     link: '/store',
     buttonText: 'Explore Brand'
   },
@@ -336,9 +338,11 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const useCart = () => {
+export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) throw new Error('useCart must be used within a CartProvider');
+  if (context === undefined) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
   return context;
 };
 
@@ -409,7 +413,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // No profile row found — build user from auth session
+    // No profile row found â€” build user from auth session
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const meta = session.user.user_metadata || {};
@@ -425,7 +429,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         updated_at: new Date().toISOString()
       };
 
-      // Always set user in state — don't block on DB insert
+      // Always set user in state â€” don't block on DB insert
       setUser(newUser as UserProfile);
 
       // Try to persist to DB in background
@@ -515,7 +519,10 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      await supabase.from('users').update({ tier }).eq('id', session.user.id);
+      await supabase.from('users').update({ 
+        tier,
+        last_tier_change_date: new Date().toISOString()
+      }).eq('id', session.user.id);
       fetchUser(session.user.id);
     } catch (error) {
       console.error('Error updating tier:', error);
@@ -939,7 +946,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
       </div>
     </div>
     <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 text-[10px] uppercase tracking-[0.3em] text-white/20 flex flex-col md:flex-row justify-between items-center gap-4">
-      <span>© 2026 Fitness Power Hour. All Rights Reserved.</span>
+      <span>Â© 2026 Fitness Power Hour. All Rights Reserved.</span>
       <span>Miami Beach</span>
     </div>
   </footer>
@@ -1058,7 +1065,7 @@ const Home = () => {
               The FMF <span className="text-brand-teal italic">Philosophy</span>
             </h2>
             <p className="text-white/50 text-lg font-light leading-relaxed">
-              Fitness Power Hour is not just a workout program — it is a lifestyle built around discipline, movement, and personal strength. We focus on four core pillars that define the FMF way of life.
+              Fitness Power Hour is not just a workout program â€” it is a lifestyle built around discipline, movement, and personal strength. We focus on four core pillars that define the FMF way of life.
             </p>
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-2">
@@ -1222,7 +1229,7 @@ const Home = () => {
                   {video.isPremium && (
                     <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
                       <Zap size={10} fill="white" />
-                      Premium
+                      Elite
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1371,7 +1378,7 @@ const PhilosophySection = () => {
             </h2>
             <div className="space-y-6 text-white/60 text-lg font-light leading-relaxed">
               <p>
-                Fitness Power Hour is not just a workout program — it is a lifestyle built around discipline, movement, and personal strength.
+                Fitness Power Hour is not just a workout program â€” it is a lifestyle built around discipline, movement, and personal strength.
               </p>
               <p>
                 We believe that training is a daily ritual that strengthens both the body and the mind. It is the ultimate expression of self-respect and the foundation of a high-performance life.
@@ -1472,9 +1479,9 @@ const TrainerSection = () => {
             <div className="pt-8 border-t border-white/10">
               <Quote className="text-brand-coral mb-4 opacity-40" size={32} />
               <p className="text-2xl italic font-light text-white/80 leading-tight">
-                “Your body is the first tool you were given. Learning how to use it changes everything.”
+                â€œYour body is the first tool you were given. Learning how to use it changes everything.â€
               </p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">— Michael Leggett</p>
+              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">â€” Michael Leggett</p>
             </div>
           </motion.div>
         </div>
@@ -1487,7 +1494,7 @@ const SystemSection = () => {
   const phases = [
     {
       title: 'Foundation',
-      weeks: 'Weeks 1–4',
+      weeks: 'Weeks 1â€“4',
       focus: ['Mobility', 'Core Stability', 'Body Control'],
       exercises: ['Push-ups', 'Squats', 'Planks', 'Lunges'],
       goal: 'Prepare the body for more advanced training.',
@@ -1495,7 +1502,7 @@ const SystemSection = () => {
     },
     {
       title: 'Power',
-      weeks: 'Weeks 5–8',
+      weeks: 'Weeks 5â€“8',
       focus: ['Explosive Strength', 'Endurance', 'Conditioning'],
       exercises: ['Jump Squats', 'Pull-ups', 'Burpees', 'Core Circuits'],
       goal: 'Build athletic performance.',
@@ -1503,7 +1510,7 @@ const SystemSection = () => {
     },
     {
       title: 'Mastery',
-      weeks: 'Weeks 9–12',
+      weeks: 'Weeks 9â€“12',
       focus: ['Full-body Strength', 'Advanced Calisthenics', 'Mental Discipline'],
       exercises: ['Muscle-ups', 'Pistol Squats', 'Handstand Work', 'Advanced Core Training'],
       goal: 'Develop total body strength and control.',
@@ -1600,7 +1607,7 @@ const SystemSection = () => {
         <div className="mt-24 p-12 rounded-3xl border border-white/5 bg-gradient-to-r from-brand-teal/10 to-transparent flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-4">
             <h3 className="text-2xl font-bold uppercase tracking-tighter">Session Structure</h3>
-            <p className="text-white/40 text-sm uppercase tracking-widest">45–60 Minutes of Focused Discipline</p>
+            <p className="text-white/40 text-sm uppercase tracking-widest">45â€“60 Minutes of Focused Discipline</p>
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             {['Warm-up', 'Strength', 'Conditioning', 'Cool Down'].map((step, i) => (
@@ -1778,7 +1785,6 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
             >
               <option value="everyone">Everyone</option>
               <option value="Basic">Basic</option>
-              <option value="Premium">Premium</option>
               <option value="Elite">Elite</option>
             </select>
           </div>
@@ -1962,9 +1968,8 @@ const VideoLibrary = () => {
       
       let hasAccess = false;
       if (visibility === 'everyone') hasAccess = true;
-      else if (visibility === 'Basic' && (userTier === 'Basic' || userTier === 'Premium' || userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
-      else if (visibility === 'Premium' && (userTier === 'Premium' || userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
-      else if (visibility === 'Elite' && (userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
+      else if (visibility === 'Basic' && userTier !== 'everyone') hasAccess = true;
+      else if ((visibility === 'Premium' || visibility === 'Elite') && (userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
 
       if (!hasAccess) return false;
 
@@ -2078,7 +2083,7 @@ const VideoLibrary = () => {
                   {video.isPremium && (
                     <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
                       <Zap size={10} fill="white" />
-                      Premium
+                      Elite
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -2087,7 +2092,7 @@ const VideoLibrary = () => {
                         <div className="w-12 h-12 bg-brand-black/80 rounded-full flex items-center justify-center shadow-2xl border border-brand-coral/50">
                           <Zap size={20} className="text-brand-coral" />
                         </div>
-                        <span className="text-[8px] uppercase tracking-widest text-brand-coral font-bold bg-brand-black/80 px-2 py-1 rounded">Unlock with Premium</span>
+                        <span className="text-[8px] uppercase tracking-widest text-brand-coral font-bold bg-brand-black/80 px-2 py-1 rounded">Unlock with Elite</span>
                       </div>
                     ) : (
                       <div className="w-12 h-12 bg-brand-teal/80 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-2xl">
@@ -2727,7 +2732,7 @@ const Store = () => {
   const discount = 0.3; // 30% discount for members
 
   const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle', 'Nutrition'];
-  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection', 'Mike Water Fitness'];
+  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÃ‰ Paris Collection', 'Mike Water Fitness'];
 
   const filteredProducts = useMemo(() => {
     let filtered = PRODUCTS;
@@ -3106,17 +3111,17 @@ const Store = () => {
               <div className="relative z-10 max-w-xl space-y-8">
                 <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
                 <h2 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
-                  CLÉ <span className="text-brand-teal italic">Paris</span>
+                  CLÃ‰ <span className="text-brand-teal italic">Paris</span>
                 </h2>
                 <p className="text-white/60 text-lg font-light leading-relaxed italic">
                   "Train with discipline. Move with strength. Carry yourself with elegance."
                 </p>
                 <div className="space-y-4 text-sm text-white/40 leading-relaxed">
                   <p>
-                    CLÉ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
+                    CLÃ‰ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
                   </p>
                 </div>
-                <button className="btn-primary">Explore CLÉ Paris</button>
+                <button className="btn-primary">Explore CLÃ‰ Paris</button>
               </div>
             </div>
           </div>
@@ -3245,7 +3250,7 @@ const ProgramBuilder = ({ videos, showToast }: { videos: Video[], showToast: (ms
                 <img src={v.thumbnail_url} className="w-16 h-10 object-cover rounded grayscale group-hover:grayscale-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-bold truncate">{v.title}</p>
-                  <p className="text-[8px] text-white/40 uppercase tracking-widest">{v.level} • {v.duration}</p>
+                  <p className="text-[8px] text-white/40 uppercase tracking-widest">{v.level} â€¢ {v.duration}</p>
                 </div>
                 <Plus size={14} className="text-white/20 group-hover:text-brand-teal" />
               </div>
@@ -3644,1247 +3649,6 @@ const CommunityMemberModal = ({ community, users, onClose, showToast }: { commun
           </div>
         </div>
       </motion.div>
-    </div>
-  );
-};
-
-const AdminDashboard = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) => {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [videoCategories, setVideoCategories] = useState<VideoCategory[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [retreats, setRetreats] = useState<Retreat[]>([]);
-  const [retreatApplications, setRetreatApplications] = useState<RetreatApplication[]>([]);
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [athletes, setAthletes] = useState<Athlete[]>([]);
-  const [programs, setPrograms] = useState<Program[]>([]);
-  const [communities, setCommunities] = useState<Community[]>([]);
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Filters
-  const [cityFilter, setCityFilter] = useState('All');
-  const [roleFilter, setRoleFilter] = useState('All');
-  const [statusFilter, setStatusFilter] = useState('All');
-  
-  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [selectedOrderForLabel, setSelectedOrderForLabel] = useState<Order | null>(null);
-  const [isCreateCommunityModalOpen, setIsCreateCommunityModalOpen] = useState(false);
-  const [isAddAthleteModalOpen, setIsAddAthleteModalOpen] = useState(false);
-  const [selectedCommunityForMembers, setSelectedCommunityForMembers] = useState<Community | null>(null);
-
-  useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return;
-
-    const fetchData = async () => {
-      const [usersRes, videosRes, videoCatsRes, productsRes, prodCatsRes, brandsRes, retreatsRes, packagesRes, athletesRes, programsRes, communitiesRes, ordersRes, retreatAppsRes, postsRes] = await Promise.all([
-        supabase.from('users').select('*'),
-        supabase.from('videos').select('*'),
-        supabase.from('video_categories').select('*'),
-        supabase.from('products').select('*'),
-        supabase.from('product_categories').select('*'),
-        supabase.from('brands').select('*'),
-        supabase.from('retreats').select('*'),
-        supabase.from('packages').select('*'),
-        supabase.from('athletes').select('*'),
-        supabase.from('programs').select('*'),
-        supabase.from('communities').select('*'),
-        supabase.from('orders').select('*'),
-        supabase.from('retreat_applications').select('*'),
-        supabase.from('community_posts').select('*'),
-      ]);
-      if (usersRes.data) setUsers(usersRes.data as UserProfile[]);
-      if (videosRes.data) setVideos(videosRes.data as Video[]);
-      if (videoCatsRes.data) setVideoCategories(videoCatsRes.data as VideoCategory[]);
-      if (productsRes.data) setProducts(productsRes.data as Product[]);
-      if (prodCatsRes.data) setProductCategories(prodCatsRes.data as ProductCategory[]);
-      if (brandsRes.data) setBrands(brandsRes.data as Brand[]);
-      if (retreatsRes.data) setRetreats(retreatsRes.data as Retreat[]);
-      if (packagesRes.data) setPackages(packagesRes.data as Package[]);
-      if (athletesRes.data) setAthletes(athletesRes.data as Athlete[]);
-      if (programsRes.data) setPrograms(programsRes.data as Program[]);
-      if (communitiesRes.data) setCommunities(communitiesRes.data as Community[]);
-      if (ordersRes.data) setOrders(ordersRes.data as Order[]);
-      if (retreatAppsRes.data) setRetreatApplications(retreatAppsRes.data as RetreatApplication[]);
-      if (postsRes.data) setPosts(postsRes.data as CommunityPost[]);
-
-      if (user.role === 'super_admin') {
-        const { data: logsData } = await supabase.from('activity_logs').select('*');
-        if (logsData) setActivityLogs(logsData as ActivityLog[]);
-      }
-    };
-    fetchData();
-  }, [user]);
-
-  const handleToggleActive = async (userId: string, currentStatus: string) => {
-    try {
-      await supabase.from('users').update({ status: currentStatus === 'active' ? 'suspended' : 'active' }).eq('id', userId);
-    } catch (error) {
-      console.error('Error updating user status:', error);
-    }
-  };
-
-  const handleToggleBan = async (userId: string, currentStatus: string) => {
-    try {
-      await supabase.from('users').update({ status: currentStatus === 'banned' ? 'active' : 'banned', banned_at: currentStatus === 'banned' ? null : new Date().toISOString() }).eq('id', userId);
-    } catch (error) {
-      console.error('Error banning/unbanning user:', error);
-    }
-  };
-
-  const handleAddVideo = async (video: Video) => {
-    try {
-      await supabase.from('videos').upsert({ ...video });
-      showToast('Video added successfully!', 'success');
-    } catch (error) {
-      console.error('Error adding video:', error);
-      showToast('Failed to add video.', 'error');
-    }
-  };
-
-  const handleDeleteVideo = async (videoId: string) => {
-    try {
-      await supabase.from('videos').delete().eq('id', videoId);
-      showToast('Video deleted successfully!', 'success');
-    } catch (error) {
-      console.error('Error deleting video:', error);
-      showToast('Failed to delete video.', 'error');
-    }
-  };
-
-  const handleDeleteProduct = async (productId: string) => {
-    try {
-      await supabase.from('products').delete().eq('id', productId);
-      showToast('Product deleted successfully!', 'success');
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      showToast('Failed to delete product.', 'error');
-    }
-  };
-
-  const handleDeleteRetreat = async (retreatId: string) => {
-    try {
-      await supabase.from('retreats').delete().eq('id', retreatId);
-      showToast('Retreat deleted successfully!', 'success');
-    } catch (error) {
-      console.error('Error deleting retreat:', error);
-      showToast('Failed to delete retreat.', 'error');
-    }
-  };
-
-  const handleDeleteSession = async (sessionId: string) => {
-    try {
-      await supabase.from('sessions').delete().eq('id', sessionId);
-      showToast('Session deleted successfully!', 'success');
-    } catch (error) {
-      console.error('Error deleting session:', error);
-      showToast('Failed to delete session.', 'error');
-    }
-  };
-
-  const handleDeleteCommunity = async (communityId: string) => {
-    try {
-      await supabase.from('communities').delete().eq('id', communityId);
-      showToast('Community deleted successfully!', 'success');
-    } catch (error) {
-      console.error('Error deleting community:', error);
-      showToast('Failed to delete community.', 'error');
-    }
-  };
-
-  const handleDeletePost = async (postId: string) => {
-    try {
-      await supabase.from('posts').delete().eq('id', postId);
-      showToast('Post deleted successfully!', 'success');
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      showToast('Failed to delete post.', 'error');
-    }
-  };
-  const handleAddProduct = async () => {
-    const newProduct: Product = {
-      id: `p${Date.now()}`,
-      brand_id: 'fmf',
-      category_id: 'apparel',
-      name: 'New Product', 
-      slug: `new-product-${Date.now()}`,
-      description: 'New product description',
-      price: 99, 
-      compare_at_price: 120,
-      sku: `SKU-${Date.now()}`,
-      inventory_count: 50,
-      status: 'active',
-      featured_image: 'https://picsum.photos/seed/new-prod/800/1000',
-      images: ['https://picsum.photos/seed/new-prod/800/1000'],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await supabase.from('products').insert(newProduct);
-      showToast('Product added!', 'success');
-    } catch (error) {
-      showToast('Error adding product', 'error');
-    }
-  };
-
-  const handleAddRetreat = async () => {
-      const newRetreat: Retreat = {
-        id: `r${Date.now()}`,
-        title: 'New Retreat',
-        description: 'New retreat description',
-        cover_image: 'https://picsum.photos/seed/new-retreat/800/1000',
-        start_date: new Date().toISOString(),
-        end_date: new Date().toISOString(),
-        location: 'Miami Beach',
-        price: '2499',
-        visibility_status: 'draft',
-        access_type: 'package_based',
-        allowed_packages: ['elite'],
-        allowed_users: [],
-        preview_enabled: true,
-        created_by: 'admin',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-    try {
-      await supabase.from('retreats').insert(newRetreat);
-      showToast('Retreat added!', 'success');
-    } catch (error) {
-      showToast('Error adding retreat', 'error');
-    }
-  };
-
-  const handleSaveUser = async (updatedUser: UserProfile) => {
-    try {
-      await supabase.from('users').update({ ...updatedUser }).eq('id', updatedUser.id);
-      setEditingUser(null);
-      showToast('User updated successfully!', 'success');
-    } catch (error) {
-      console.error('Error updating user:', error);
-      showToast('Failed to update user.', 'error');
-    }
-  };
-
-  const handleReviewRetreatApp = async (appId: string, status: 'accepted' | 'declined') => {
-    try {
-      await supabase.from('retreat_applications').update({ status }).eq('id', appId);
-      showToast(`Application ${status}!`, 'success');
-    } catch (error) {
-      showToast('Error updating application', 'error');
-    }
-  };
-
-  const handleCreateCommunity = async () => {
-    const newCommunity: Community = {
-      id: `c${Date.now()}`,
-      name: 'New Community',
-      description: 'A new space for athletes to connect.',
-      image_url: 'https://picsum.photos/seed/community/800/1000',
-      members: [],
-      status: 'active',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await supabase.from('communities').insert(newCommunity);
-      showToast('Community created!', 'success');
-    } catch (error) {
-      showToast('Error creating community', 'error');
-    }
-  };
-
-  const filteredUsers = useMemo(() => {
-    return users.filter(u => {
-      const matchesSearch = (u.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           u.email?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCity = cityFilter === 'All' || u.city === cityFilter;
-      const matchesRole = roleFilter === 'All' || u.role === roleFilter;
-      const matchesStatus = statusFilter === 'All' || u.status === statusFilter;
-      return matchesSearch && matchesCity && matchesRole && matchesStatus;
-    });
-  }, [users, searchQuery, cityFilter, roleFilter, statusFilter]);
-
-  if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) {
-    return <Navigate to="/" replace />;
-  }
-
-  const sidebarItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'athletes', label: 'Athletes', icon: Trophy },
-    { id: 'content', label: 'Content', icon: PlayCircle },
-    { id: 'programs', label: 'Programs', icon: ListChecks },
-    { id: 'retreats', label: 'Retreats', icon: MapPin },
-    { id: 'community', label: 'Community', icon: MessageSquare },
-    { id: 'shop', label: 'Shop', icon: ShoppingBag },
-    { id: 'orders', label: 'Orders', icon: ClipboardList },
-    { id: 'packages', label: 'Packages', icon: PackageIcon, adminOnly: true },
-    { id: 'logs', label: 'Activity Logs', icon: History, adminOnly: true },
-  ];
-
-  return (
-    <div className="pt-20 min-h-screen bg-brand-black flex">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 bg-brand-black/50 backdrop-blur-xl sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto hidden lg:block">
-        <nav className="p-6 space-y-2">
-          {sidebarItems.map((item) => {
-            if (item.adminOnly && user.role !== 'super_admin') return null;
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] uppercase tracking-widest transition-all ${
-                  activeTab === item.id 
-                    ? 'bg-brand-teal text-black font-bold shadow-[0_0_20px_rgba(45,212,191,0.2)]' 
-                    : 'text-white/40 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Icon size={16} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-8 lg:p-12 space-y-12">
-        <header className="flex flex-col md:flex-row justify-between items-end gap-6">
-          <div>
-            <h1 className="text-5xl font-bold uppercase tracking-tighter">
-              Admin <span className="text-brand-teal">{sidebarItems.find(i => i.id === activeTab)?.label}</span>
-            </h1>
-            <p className="text-white/40 uppercase tracking-widest text-xs mt-2">Manage the FMF Ecosystem</p>
-          </div>
-          
-          {/* Mobile Tab Switcher */}
-          <div className="lg:hidden flex gap-4 overflow-x-auto pb-2 scrollbar-hide w-full">
-            {sidebarItems.map((item) => {
-              if (item.adminOnly && user.role !== 'super_admin') return null;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex-shrink-0 px-6 py-2 rounded-full text-[10px] uppercase tracking-widest transition-all ${
-                    activeTab === item.id ? 'bg-brand-teal text-black font-bold' : 'bg-white/5 text-white/40'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </div>
-        </header>
-
-        {activeTab === 'overview' && (
-          <div className="space-y-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                { label: 'Total Users', value: users.length, icon: Users, color: 'text-brand-teal' },
-                { label: 'Active Athletes', value: athletes.length, icon: Trophy, color: 'text-brand-coral' },
-                { label: 'Total Orders', value: orders.length, icon: ShoppingBag, color: 'text-brand-teal' },
-                { label: 'Revenue', value: `$${orders.reduce((acc, curr) => acc + curr.total_amount, 0).toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500' },
-              ].map((stat, i) => (
-                <div key={i} className="card-gradient p-8 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <stat.icon size={24} className={stat.color} />
-                    <span className="text-[10px] text-white/20 uppercase tracking-widest">Live</span>
-                  </div>
-                  <div>
-                    <h3 className="text-3xl font-bold uppercase tracking-tighter">{stat.value}</h3>
-                    <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">{stat.label}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 card-gradient p-8 space-y-6">
-                <h3 className="text-lg font-bold uppercase tracking-tight">Recent Activity</h3>
-                <div className="space-y-4">
-                  {activityLogs.slice(0, 5).map((log) => (
-                    <div key={log.id} className="flex items-center justify-between py-4 border-b border-white/5 last:border-0">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                          <History size={16} className="text-white/20" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold uppercase tracking-tight">{log.action}</p>
-                          <p className="text-[10px] text-white/40 uppercase tracking-widest">
-                            {log.entity_type} • {new Date(log.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-brand-teal font-bold uppercase tracking-widest">Success</span>
-                    </div>
-                  ))}
-                  {activityLogs.length === 0 && (
-                    <p className="text-center py-12 text-white/20 uppercase tracking-widest text-xs">No recent activity</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="card-gradient p-8 space-y-6">
-                <h3 className="text-lg font-bold uppercase tracking-tight">Quick Actions</h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <button onClick={() => setIsUploadModalOpen(true)} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-3">
-                    <Plus size={16} className="text-brand-teal" /> Upload Video
-                  </button>
-                  <button onClick={() => setActiveTab('shop')} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-3">
-                    <ShoppingBag size={16} className="text-brand-coral" /> Manage Shop
-                  </button>
-                  <button onClick={() => setActiveTab('users')} className="w-full py-4 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-3">
-                    <Users size={16} className="text-brand-teal" /> Review Users
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'users' && (
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">User Management</h2>
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20" size={16} />
-                  <input
-                    type="text"
-                    placeholder="Search users..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm outline-none focus:border-brand-teal transition-colors"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-                <select 
-                  value={roleFilter} 
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] uppercase tracking-widest outline-none focus:border-brand-teal"
-                >
-                  <option value="All">All Roles</option>
-                  <option value="user">User</option>
-                  <option value="athlete">Athlete</option>
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
-                </select>
-                <select 
-                  value={statusFilter} 
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] uppercase tracking-widest outline-none focus:border-brand-teal"
-                >
-                  <option value="All">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="suspended">Suspended</option>
-                  <option value="banned">Banned</option>
-                </select>
-                <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all">
-                  <Download size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/5">
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">User</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Role</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Package</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-brand-teal/20 flex items-center justify-center text-brand-teal font-bold">
-                            {u.profile_image ? (
-                              <img src={u.profile_image} alt={u.full_name} className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                              (u.full_name || 'U')[0]
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold">{u.full_name}</p>
-                            <p className="text-[10px] text-white/40">{u.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[9px] uppercase tracking-widest px-2 py-1 rounded font-bold ${
-                          u.role === 'super_admin' ? 'bg-brand-coral/20 text-brand-coral' :
-                          u.role === 'admin' ? 'bg-brand-teal/20 text-brand-teal' :
-                          u.role === 'athlete' ? 'bg-indigo-500/20 text-indigo-400' :
-                          'bg-white/10 text-white/60'
-                        }`}>
-                          {u.role.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-[10px] uppercase tracking-widest font-bold text-white/60">
-                          {packages.find(p => p.id === u.package_id)?.name || 'No Package'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${
-                            u.status === 'active' ? 'bg-emerald-500' :
-                            u.status === 'suspended' ? 'bg-amber-500' :
-                            'bg-brand-coral'
-                          }`} />
-                          <span className={`text-[10px] uppercase tracking-widest ${
-                            u.status === 'active' ? 'text-emerald-500' :
-                            u.status === 'suspended' ? 'text-amber-500' :
-                            'text-brand-coral'
-                          }`}>
-                            {u.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => setEditingUser(u)}
-                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                            title="Edit User"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                            title="View Profile"
-                          >
-                            <Eye size={14} />
-                          </button>
-                          <button 
-                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-brand-coral transition-all"
-                            title="Ban User"
-                          >
-                            <Ban size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'athletes' && (
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">Athlete Management</h2>
-              <button 
-                onClick={() => setIsAddAthleteModalOpen(true)}
-                className="px-6 py-3 bg-brand-teal text-black font-bold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all"
-              >
-                <UserPlus size={16} /> Add Athlete
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {athletes.map((athlete) => (
-                <div key={athlete.id} className="card-gradient p-6 space-y-6 relative group">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-white/5 overflow-hidden border border-white/10">
-                        {athlete.image_url ? (
-                          <img src={athlete.image_url} alt={athlete.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-brand-teal font-bold text-xl">
-                            {athlete.name[0]}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold uppercase tracking-tight">{athlete.name}</h3>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{athlete.specialties.join(', ')}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all">
-                        <Edit2 size={14} />
-                      </button>
-                      <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 hover:text-brand-coral transition-all">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center text-[10px] uppercase tracking-widest">
-                      <span className="text-white/20">Status</span>
-                      <span className={`font-bold ${athlete.is_active ? 'text-emerald-500' : 'text-brand-coral'}`}>
-                        {athlete.is_active ? 'active' : 'inactive'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] uppercase tracking-widest">
-                      <span className="text-white/20">Programs</span>
-                      <span className="text-white/60 font-bold">{programs.filter(p => p.athlete_id === athlete.id).length}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] uppercase tracking-widest">
-                      <span className="text-white/20">Videos</span>
-                      <span className="text-white/60 font-bold">{videos.filter(v => v.athlete_id === athlete.id).length}</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-white/5 flex gap-2">
-                    <button className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] uppercase tracking-widest font-bold transition-all">
-                      View Stats
-                    </button>
-                    <button className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] uppercase tracking-widest font-bold transition-all">
-                      Edit Bio
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {athletes.length === 0 && (
-                <div className="col-span-full py-20 text-center card-gradient">
-                  <Trophy size={48} className="mx-auto text-white/10 mb-4" />
-                  <p className="text-white/20 uppercase tracking-widest text-xs">No athletes found</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'orders' && (
-          <div className="space-y-8">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">Order Management</h2>
-              <div className="flex gap-4">
-                <select className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-[10px] uppercase tracking-widest outline-none focus:border-brand-teal">
-                  <option value="All">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-                <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all">
-                  <Download size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/5">
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Order ID</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Customer</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Total</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-mono text-brand-teal">#{order.id.slice(-8).toUpperCase()}</p>
-                        <p className="text-[10px] text-white/40">{new Date(order.created_at).toLocaleDateString()}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-bold">{users.find(u => u.id === order.user_id)?.full_name || 'Guest'}</p>
-                        <p className="text-[10px] text-white/40">{order.shipping_address.email}</p>
-                      </td>
-                      <td className="px-6 py-4 font-bold text-sm">${order.total_amount.toFixed(2)}</td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold ${
-                          order.status === 'delivered' ? 'bg-emerald-500/20 text-emerald-500' :
-                          order.status === 'shipped' ? 'bg-brand-teal/20 text-brand-teal' :
-                          order.status === 'processing' ? 'bg-indigo-500/20 text-indigo-400' :
-                          'bg-brand-coral/20 text-brand-coral'
-                        }`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button 
-                            onClick={() => setSelectedOrder(order)}
-                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                            title="View Details"
-                          >
-                            <Eye size={14} />
-                          </button>
-                          <button 
-                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                            title="Print Label"
-                          >
-                            <Printer size={14} />
-                          </button>
-                          <button 
-                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all"
-                            title="Ship Order"
-                          >
-                            <Truck size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {orders.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No orders found</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'packages' && (
-          <div className="space-y-8">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">Membership Packages</h2>
-              <button className="px-6 py-3 bg-brand-teal text-black font-bold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all">
-                <Plus size={16} /> Create Package
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {packages.map((pkg) => (
-                <div key={pkg.id} className="card-gradient p-8 space-y-6 relative group">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-xl font-bold uppercase tracking-tight">{pkg.name}</h3>
-                      <p className="text-2xl font-bold text-brand-teal mt-2">${pkg.price}<span className="text-xs text-white/40 font-normal">/{pkg.interval}</span></p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/60 hover:text-white transition-all">
-                        <Edit2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Features</p>
-                    {pkg.features.map((feature, i) => (
-                      <div key={i} className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/60">
-                        <Check size={12} className="text-brand-teal" />
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-6 border-t border-white/5 flex justify-between items-center">
-                    <span className="text-[10px] text-white/20 uppercase tracking-widest">Users: {users.filter(u => u.package_id === pkg.id).length}</span>
-                    <span className={`text-[10px] uppercase tracking-widest font-bold ${pkg.status === 'active' ? 'text-emerald-500' : 'text-brand-coral'}`}>
-                      {pkg.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'logs' && (
-          <div className="space-y-8">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">System Activity Logs</h2>
-              <button className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all">
-                <Download size={16} />
-              </button>
-            </div>
-
-            <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/5">
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Admin</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Action</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Entity</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {activityLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-bold">{users.find(u => u.id === log.actor_id)?.full_name || 'System'}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-[10px] uppercase tracking-widest font-bold text-white/80">{log.action}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-[10px] uppercase tracking-widest text-white/40">{log.entity_type} • {log.entity_id.slice(-8)}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-[10px] text-white/40">{new Date(log.created_at).toLocaleString()}</p>
-                      </td>
-                    </tr>
-                  ))}
-                  {activityLogs.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No activity logs found</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'programs' && (
-          <div className="space-y-8">
-            <ProgramBuilder videos={videos} showToast={showToast} />
-          </div>
-        )}
-
-        {activeTab === 'content' && (
-          <div className="space-y-8">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">Content Management</h2>
-              <button 
-                onClick={() => setIsUploadModalOpen(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus size={16} /> Add Video
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {videos.map((video) => (
-                <div key={video.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden group">
-                  <div className="relative aspect-video">
-                    <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                    <div className="absolute top-4 right-4">
-                      <span className="bg-brand-black/60 backdrop-blur-md text-[9px] uppercase tracking-widest px-2 py-1 rounded font-bold text-brand-teal">
-                        {video.visibility_status}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-6 space-y-4">
-                    <div>
-                      <h3 className="font-bold uppercase tracking-tight">{video.title}</h3>
-                      <p className="text-[10px] text-white/40 uppercase tracking-widest">{video.category_id}</p>
-                    </div>
-                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                      <span className="text-[10px] text-white/40 uppercase tracking-widest">{video.duration}</span>
-                      <button 
-                        onClick={() => handleDeleteVideo(video.id)}
-                        className="text-brand-coral hover:text-white transition-colors"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'retreats' && (
-          <div className="space-y-12">
-            <div className="space-y-8">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold uppercase tracking-tight">Retreat Management</h2>
-                <button 
-                  onClick={handleAddRetreat}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  <Plus size={16} /> Add Retreat
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {retreats.map((retreat) => (
-                  <div key={retreat.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden group flex flex-col md:flex-row">
-                    <div className="relative w-full md:w-48 aspect-[4/5] md:aspect-auto">
-                      <img src={retreat.cover_image} alt={retreat.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                    </div>
-                    <div className="p-8 flex-1 space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-xl font-bold uppercase tracking-tight">{retreat.title}</h3>
-                          <p className="text-[10px] text-brand-teal uppercase tracking-[0.3em] font-bold">{retreat.location}</p>
-                        </div>
-                        <span className="text-lg font-bold text-white">${retreat.price}</span>
-                      </div>
-                      <p className="text-xs text-white/40 line-clamp-2">{retreat.description}</p>
-                      <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                        <span className={`text-[10px] uppercase tracking-widest ${retreat.isSoldOut ? 'text-brand-coral' : 'text-emerald-500'}`}>
-                          {retreat.isSoldOut ? 'Sold Out' : 'Available'}
-                        </span>
-                        <button 
-                          onClick={() => handleDeleteRetreat(retreat.id)}
-                          className="text-brand-coral hover:text-white transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-8">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">Applications Review</h2>
-              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 bg-white/5">
-                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Applicant</th>
-                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Retreat</th>
-                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
-                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {retreatApplications.map((app) => (
-                      <tr key={app.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="text-sm font-bold">{app.userName}</p>
-                          <p className="text-[10px] text-white/40">{app.userEmail}</p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="text-[10px] uppercase tracking-widest font-bold">
-                            {retreats.find(r => r.id === app.retreatId)?.title || 'Unknown Retreat'}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold ${
-                            app.status === 'accepted' ? 'bg-emerald-500/20 text-emerald-500' :
-                            app.status === 'declined' ? 'bg-brand-coral/20 text-brand-coral' :
-                            'bg-amber-500/20 text-amber-500'
-                          }`}>
-                            {app.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {app.status === 'pending' && (
-                            <div className="flex justify-end gap-2">
-                              <button 
-                                onClick={() => handleReviewRetreatApp(app.id, 'accepted')}
-                                className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 transition-all hover:text-white"
-                              >
-                                <Check size={14} />
-                              </button>
-                              <button 
-                                onClick={() => handleReviewRetreatApp(app.id, 'declined')}
-                                className="p-2 rounded-lg bg-brand-coral/10 text-brand-coral hover:bg-brand-coral transition-all hover:text-white"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {retreatApplications.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No applications to review</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'community' && (
-          <div className="space-y-12">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold uppercase tracking-tight">Community Management</h2>
-              <button 
-                onClick={() => setIsCreateCommunityModalOpen(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus size={16} /> Create Community
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {communities.map((community) => (
-                <div key={community.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden group">
-                  <div className="relative aspect-[16/9]">
-                    <img src={community.image} alt={community.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                    <div className="absolute top-4 right-4 flex gap-2">
-                      <button 
-                        onClick={() => setSelectedCommunityForMembers(community)}
-                        className="p-2 bg-brand-black/60 backdrop-blur-md rounded-lg text-white hover:bg-brand-teal transition-all"
-                        title="Manage Members"
-                      >
-                        <Users size={14} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteCommunity(community.id)}
-                        className="p-2 bg-brand-black/60 backdrop-blur-md rounded-lg text-white hover:bg-brand-coral transition-all"
-                        title="Delete Community"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <div className="absolute bottom-4 left-4">
-                      <span className="bg-brand-teal text-black text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold">
-                        {community.members.length} Members
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-8 space-y-4">
-                    <div>
-                      <h3 className="text-xl font-bold uppercase tracking-tight">{community.name}</h3>
-                      <p className="text-xs text-white/40 mt-2 line-clamp-2">{community.description}</p>
-                    </div>
-                    <div className="pt-4 border-t border-white/5 flex justify-between items-center">
-                      <span className="text-[10px] text-white/20 uppercase tracking-widest">Created {new Date(community.createdAt).toLocaleDateString()}</span>
-                      <button className="text-brand-teal text-[10px] uppercase tracking-widest font-bold hover:underline">View Feed</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
-                <h3 className="text-lg font-bold uppercase tracking-tight">Community Stats</h3>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Total Members', value: users.length },
-                    { label: 'Active Today', value: Math.floor(users.length * 0.4) },
-                    { label: 'Total Posts', value: posts.length },
-                    { label: 'Elite Tier', value: users.filter(u => u.tier === 'Elite').length }
-                  ].map((stat, i) => (
-                    <div key={i} className="flex justify-between items-center">
-                      <span className="text-[10px] uppercase tracking-widest text-white/40">{stat.label}</span>
-                      <span className="text-sm font-bold text-brand-teal">{stat.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="md:col-span-2 space-y-6">
-                <h3 className="text-lg font-bold uppercase tracking-tight">Recent Activity</h3>
-                <div className="space-y-4">
-                  {posts.slice(0, 5).map((post) => (
-                    <div key={post.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 flex justify-between items-center group">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold">
-                          {post.authorName[0]}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold">{post.authorName}</p>
-                          <p className="text-[10px] text-white/40 line-clamp-1">{post.content}</p>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => handleDeletePost(post.id)}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-brand-coral/20 text-white/20 hover:text-brand-coral transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      <AnimatePresence>
-        {isUploadModalOpen && (
-          <VideoUploadModal 
-            onClose={() => setIsUploadModalOpen(false)} 
-            onAdd={handleAddVideo}
-          />
-        )}
-        {selectedOrder && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-brand-black border border-white/10 p-10 rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-3xl font-bold uppercase tracking-tighter">Order <span className="text-brand-teal">Details</span></h2>
-                  <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Order #{selectedOrder.id.slice(-8).toUpperCase()}</p>
-                </div>
-                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="space-y-8">
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Customer</p>
-                    <p className="text-sm font-bold">{users.find(u => u.id === selectedOrder.user_id)?.full_name || 'Guest'}</p>
-                    <p className="text-xs text-white/60">{selectedOrder.shipping_address.email}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Status</p>
-                    <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold inline-block ${
-                      selectedOrder.status === 'delivered' ? 'bg-emerald-500/20 text-emerald-500' :
-                      selectedOrder.status === 'shipped' ? 'bg-brand-teal/20 text-brand-teal' :
-                      'bg-brand-coral/20 text-brand-coral'
-                    }`}>
-                      {selectedOrder.status}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <p className="text-[10px] text-white/20 uppercase tracking-widest font-bold">Items</p>
-                  <div className="space-y-2">
-                    {selectedOrder.items.map((item: any, i: number) => (
-                      <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
-                            <img src={item.product.featured_image} alt={item.product.name} className="w-full h-full object-cover" />
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold uppercase tracking-tight">{item.product.name}</p>
-                            <p className="text-[10px] text-white/40">Qty: {item.quantity}</p>
-                          </div>
-                        </div>
-                        <p className="text-xs font-bold">${(item.product.price * item.quantity).toFixed(2)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
-                  <p className="text-sm font-bold uppercase tracking-widest">Total Amount</p>
-                  <p className="text-2xl font-bold text-brand-teal">${selectedOrder.total_amount.toFixed(2)}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-4">
-                  <button className="btn-secondary w-full flex items-center justify-center gap-2">
-                    <Printer size={16} /> Print Invoice
-                  </button>
-                  <button className="btn-primary w-full flex items-center justify-center gap-2">
-                    <Truck size={16} /> Update Status
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-        {isAddAthleteModalOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-brand-black/90 backdrop-blur-xl">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-brand-black border border-white/10 p-10 rounded-3xl w-full max-w-2xl"
-            >
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-3xl font-bold uppercase tracking-tighter">Add New <span className="text-brand-teal">Athlete</span></h2>
-                  <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Create a new trainer profile</p>
-                </div>
-                <button onClick={() => setIsAddAthleteModalOpen(false)} className="p-2 hover:bg-white/5 rounded-full transition-colors">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form className="space-y-6" onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const newAthlete: Omit<Athlete, 'id'> = {
-                  name: formData.get('name') as string,
-                  specialties: [formData.get('specialty') as string],
-                  bio: formData.get('bio') as string,
-                  image_url: `https://picsum.photos/seed/${Date.now()}/800/1000`,
-                  is_active: true,
-                  is_banned: false,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                  profile_id: '', // Would link to a user profile
-                  age: Number(formData.get('age')),
-                  city: formData.get('city') as string,
-                  responsibilities: formData.get('responsibilities') as string,
-                  training_focus: formData.get('training_focus') as string
-                };
-                
-                supabase.from('athletes').insert(newAthlete)
-                  .then(({ error }) => {
-                    if (error) throw error;
-                    showToast('Athlete added successfully!', 'success');
-                    setIsAddAthleteModalOpen(false);
-                  })
-                  .catch(err => {
-                    console.error(err);
-                    showToast('Error adding athlete', 'error');
-                  });
-              }}>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Full Name</label>
-                    <input name="name" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Specialty</label>
-                    <input name="specialty" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Bio</label>
-                  <textarea name="bio" required rows={4} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors resize-none" />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Age</label>
-                    <input name="age" type="number" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">City</label>
-                    <input name="city" required className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal transition-colors" />
-                  </div>
-                </div>
-                <button type="submit" className="btn-primary w-full py-4 uppercase tracking-widest text-xs font-bold">
-                  Create Athlete Profile
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-        {selectedOrderForLabel && (
-          <ShippingLabelModal 
-            order={selectedOrderForLabel}
-            onClose={() => setSelectedOrderForLabel(null)}
-          />
-        )}
-        {selectedCommunityForMembers && (
-          <CommunityMemberModal 
-            community={selectedCommunityForMembers}
-            users={users}
-            onClose={() => setSelectedCommunityForMembers(null)}
-            showToast={showToast}
-          />
-        )}
-        {isCreateCommunityModalOpen && (
-          <CreateCommunityModal 
-            onClose={() => setIsCreateCommunityModalOpen(false)}
-            showToast={showToast}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
@@ -5445,36 +4209,20 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       highlight: false
     },
     {
-      name: 'Premium',
-      price: '$39',
-      period: 'per month',
-      features: [
-        'Full workout library',
-        'Structured training programs',
-        'Training calendar',
-        'Community features',
-        'Progress tracking',
-        'Exclusive mobility flows',
-        'Monthly live Q&A'
-      ],
-      button: 'Join Now',
-      highlight: true
-    },
-    {
       name: 'Elite',
-      price: '$79',
+      price: '$59',
       period: 'per month',
       features: [
         'Full training system',
         'Retreat priority access',
-        'Exclusive content',
+        'Community features & Live Q&A',
         'Special product drops',
         '1-on-1 mindset coaching',
         'Personalized nutrition plan',
         'Direct trainer messaging'
       ],
       button: 'Go Elite',
-      highlight: false,
+      highlight: true,
       badge: 'Priority Access'
     },
     {
@@ -5552,7 +4300,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
         await login(formData.email, formData.password);
         showToast('Logged in successfully');
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        // Don't navigate here — useEffect on user will close modal and redirect
+        // Don't navigate here â€” useEffect on user will close modal and redirect
       } else {
         if (formData.password !== formData.confirmPassword) {
           showToast('Passwords do not match', 'error');
@@ -5700,32 +4448,28 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                 <tr className="border-b border-white/10">
                   <th className="py-6 text-[10px] uppercase tracking-widest text-white/40 font-medium">Feature</th>
                   <th className="py-6 text-[10px] uppercase tracking-widest text-white font-bold text-center">Basic</th>
-                  <th className="py-6 text-[10px] uppercase tracking-widest text-brand-teal font-bold text-center">Premium</th>
                   <th className="py-6 text-[10px] uppercase tracking-widest text-brand-coral font-bold text-center">Elite</th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {[
-                  { name: 'Basic Workouts', basic: true, premium: true, elite: true },
-                  { name: 'Full Video Library', basic: false, premium: true, elite: true },
-                  { name: 'Structured Programs', basic: false, premium: true, elite: true },
-                  { name: 'Training Calendar', basic: false, premium: true, elite: true },
-                  { name: '30% Store Discount', basic: false, premium: true, elite: true },
-                  { name: 'Community Forum', basic: true, premium: true, elite: true },
-                  { name: 'Exclusive Mobility Flows', basic: false, premium: true, elite: true },
-                  { name: 'Monthly Live Q&A', basic: false, premium: true, elite: true },
-                  { name: 'Retreat Priority Access', basic: false, premium: false, elite: true },
-                  { name: '1-on-1 Mindset Coaching', basic: false, premium: false, elite: true },
-                  { name: 'Personalized Nutrition', basic: false, premium: false, elite: true },
-                  { name: 'Direct Trainer Messaging', basic: false, premium: false, elite: true },
+                  { name: 'Basic Workouts', basic: true, elite: true },
+                  { name: 'Full Video Library', basic: false, elite: true },
+                  { name: 'Structured Programs', basic: false, elite: true },
+                  { name: 'Training Calendar', basic: false, elite: true },
+                  { name: '30% Store Discount', basic: false, elite: true },
+                  { name: 'Community Forum', basic: true, elite: true },
+                  { name: 'Exclusive Mobility Flows', basic: false, elite: true },
+                  { name: 'Monthly Live Q&A', basic: false, elite: true },
+                  { name: 'Retreat Priority Access', basic: false, elite: true },
+                  { name: '1-on-1 Mindset Coaching', basic: false, elite: true },
+                  { name: 'Personalized Nutrition', basic: false, elite: true },
+                  { name: 'Direct Trainer Messaging', basic: false, elite: true },
                 ].map((row, idx) => (
                   <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                     <td className="py-6 text-white/60 font-light">{row.name}</td>
                     <td className="py-6 text-center">
                       {row.basic ? <Check size={18} className="mx-auto text-white/40" /> : <X size={18} className="mx-auto text-white/10" />}
-                    </td>
-                    <td className="py-6 text-center">
-                      {row.premium ? <Check size={18} className="mx-auto text-brand-teal" /> : <X size={18} className="mx-auto text-white/10" />}
                     </td>
                     <td className="py-6 text-center">
                       {row.elite ? <Check size={18} className="mx-auto text-brand-coral" /> : <X size={18} className="mx-auto text-white/10" />}
@@ -5796,7 +4540,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                 <p className="text-white text-sm font-light italic leading-relaxed">
                   "Being a Fitness Power Hour member isn't just about the workouts; it's about the standard you set for your life. The privileges are just a reflection of that commitment."
                 </p>
-                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">— Michael L, Founder</p>
+                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">â€” Michael L, Founder</p>
               </div>
             </div>
           </div>
@@ -5891,7 +4635,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                        placeholder="••••••••"
+                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       />
                     </div>
                     {!isLogin && (
@@ -5903,7 +4647,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                           value={formData.confirmPassword}
                           onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                          placeholder="••••••••"
+                          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         />
                       </div>
                     )}
@@ -6051,12 +4795,11 @@ const OrderHistory = () => {
 };
 
 const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateTier } = useAuth();
   const navigate = useNavigate();
   const [waited, setWaited] = useState(false);
+  const { showToast } = (window as any).fmfToast || { showToast: () => {} };
 
-  // Wait 2 seconds before deciding user isn't logged in
-  // This prevents redirect during the async auth loading
   useEffect(() => {
     if (user) return;
     const timer = setTimeout(() => setWaited(true), 2000);
@@ -6064,9 +4807,7 @@ const Profile = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user && waited) {
-      navigate('/membership?mode=login');
-    }
+    if (!user && waited) navigate('/membership?mode=login');
   }, [user, waited, navigate]);
 
   if (!user) {
@@ -6077,628 +4818,13 @@ const Profile = () => {
     );
   }
 
-  const perks = {
-    Basic: [
-      'Access to basic workouts',
-      'Limited training content',
-      'Community forum access',
-      'Public challenges'
-    ],
-    Premium: [
-      'Full workout library',
-      'Structured training programs',
-      'Training calendar',
-      'Community features',
-      'Progress tracking',
-      'Exclusive mobility flows',
-      'Monthly live Q&A',
-      '30% Store Discount'
-    ],
-    Elite: [
-      'Full training system',
-      'Retreat priority access',
-      'Exclusive content',
-      'Special product drops',
-      '1-on-1 mindset coaching',
-      'Personalized nutrition plan',
-      'Direct trainer messaging',
-      '30% Store Discount'
-    ]
-  };
-
-  const currentPerks = perks[user.tier as keyof typeof perks] || perks.Basic;
-
-  const orders = user.orderHistory || [];
-
-  const [activeTab, setActiveTab] = useState<'perks' | 'orders' | 'progress' | 'favorites' | 'programs' | 'athlete'>('progress');
-  const [isLoggingWorkout, setIsLoggingWorkout] = useState(false);
-  const [isLoggingPB, setIsLoggingPB] = useState(false);
-
-  const [logs, setLogs] = useState<WorkoutLog[]>(user.workoutLogs || []);
-  const [pbs, setPbs] = useState<PersonalBest[]>(user.personalBests || []);
-  const [localVideos, setLocalVideos] = useState<Video[]>([]);
-  const [userPrograms, setUserPrograms] = useState<ProgramType[]>([]);
-  const [retreatApps, setRetreatApps] = useState<RetreatApplication[]>([]);
-  const streak = user.streak || 0;
-
-  useEffect(() => {
-    const fetchProfileData = async () => {
-      // Fetch videos
-      let videoQuery = supabase.from('videos').select('*');
-      if (!(user.role === 'admin' || user.role === 'super_admin')) {
-        videoQuery = videoQuery.eq('visibility_status', 'published');
-      }
-      const { data: videoData, error: videoError } = await videoQuery;
-      if (videoError) console.error('Profile videos error:', videoError);
-      setLocalVideos(videoData && videoData.length > 0 ? videoData as Video[] : VIDEOS);
-
-      // Fetch user programs
-      const { data: progData } = await supabase.from('user_programs').select('*').eq('id', user.id).single();
-      if (progData) {
-        setUserPrograms(progData.programs as ProgramType[]);
-      }
-
-      // Fetch retreat applications if athlete
-      if (user.role === 'athlete') {
-        const { data: appsData } = await supabase.from('retreat_applications').select('*');
-        if (appsData) setRetreatApps(appsData as RetreatApplication[]);
-      }
-    };
-    fetchProfileData();
-  }, [user.id, user.role]);
-
-  const handleLogWorkout = (e: FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    const newLog: WorkoutLog = {
-      id: `log-${Date.now()}`,
-      user_id: user.id,
-      video_id: 'manual',
-      duration: parseInt(formData.get('duration') as string),
-      completed_at: new Date().toISOString()
-    };
-
-    setLogs([newLog, ...logs]);
-    setIsLoggingWorkout(false);
-  };
-
-  const handleLogPB = (e: FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    const newPB: PersonalBest = {
-      id: `pb-${Date.now()}`,
-      user_id: user.id,
-      exercise: formData.get('exercise') as string,
-      value: formData.get('value') as string,
-      date: new Date().toISOString().split('T')[0]
-    };
-
-    setPbs([newPB, ...pbs]);
-    setIsLoggingPB(false);
-  };
-
   return (
-    <div className="pt-40 pb-32 px-6">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-20 flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
-          <div className="space-y-6">
-            <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Member Profile</span>
-            <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">
-              Welcome, <span className="text-brand-coral">{(user.full_name || 'Member').split(' ')[0]}</span>
-            </h1>
-            <div className="flex items-center gap-4">
-              <div className="px-4 py-2 bg-brand-teal/10 border border-brand-teal/30 rounded-full text-brand-teal text-[10px] uppercase tracking-widest font-bold">
-                {user.tier || 'Basic'} Member
-              </div>
-              <span className="text-white/20 text-[10px] uppercase tracking-widest">Joined {new Date(user.signup_date || user.created_at).toLocaleDateString()}</span>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="flex flex-col items-center justify-center px-6 py-4 card-gradient border-brand-coral/30">
-              <span className="text-brand-coral text-2xl font-bold">{streak}</span>
-              <span className="text-[8px] uppercase tracking-widest text-white/40">Day Streak</span>
-            </div>
-            <button 
-              onClick={logout}
-              className="px-8 py-4 border border-white/10 text-[10px] uppercase tracking-widest hover:bg-white/5 transition-all"
-            >
-              Logout Session
-            </button>
-          </div>
-        </header>
-
-        <div className="flex gap-8 mb-12 border-b border-white/5 overflow-x-auto no-scrollbar">
-          {[
-            { id: 'progress', label: 'Progress Tracking' },
-            { id: 'favorites', label: 'Favorite Videos' },
-            { id: 'programs', label: 'My Programs' },
-            ...(user.role === 'athlete' ? [{ id: 'athlete', label: 'Athlete Dashboard' }] : []),
-            { id: 'perks', label: 'Member Privileges' },
-            { id: 'orders', label: 'Order History' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-4 text-[10px] uppercase tracking-[0.2em] font-bold transition-all border-b-2 whitespace-nowrap ${
-                activeTab === tab.id ? 'border-brand-teal text-white' : 'border-transparent text-white/40 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {activeTab === 'progress' && (
-            <>
-              {/* Stats Overview */}
-              <div className="lg:col-span-1 space-y-8">
-                <div className="card-gradient p-10 space-y-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-brand-coral/20 rounded-full flex items-center justify-center text-brand-coral">
-                      <Trophy size={24} />
-                    </div>
-                    <h3 className="text-xl font-bold uppercase tracking-tighter">Personal Bests</h3>
-                  </div>
-                  
-                  <div className="space-y-6">
-                    {pbs.map((pb, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">{pb.exercise}</p>
-                          <p className="text-lg font-bold text-white">{pb.value}</p>
-                        </div>
-                        <span className="text-[8px] text-white/20 uppercase tracking-widest">{pb.date}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button 
-                    onClick={() => setIsLoggingPB(true)}
-                    className="w-full py-4 border border-brand-coral/30 text-brand-coral text-[10px] uppercase tracking-widest font-bold hover:bg-brand-coral hover:text-black transition-all"
-                  >
-                    Log New Personal Best
-                  </button>
-                </div>
-
-                <div className="card-gradient p-10 space-y-6">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-white/40">Consistency</h4>
-                  <div className="grid grid-cols-7 gap-2">
-                    {Array.from({ length: 28 }).map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={`aspect-square rounded-sm ${i < 18 ? 'bg-brand-teal/40' : 'bg-white/5'}`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-white/20 uppercase tracking-widest text-center">Last 28 days activity</p>
-                </div>
-              </div>
-
-              {/* Workout History */}
-              <div className="lg:col-span-2 space-y-8">
-                <div className="card-gradient p-10">
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-brand-teal/20 rounded-full flex items-center justify-center text-brand-teal">
-                        <Calendar size={24} />
-                      </div>
-                      <h3 className="text-xl font-bold uppercase tracking-tighter">Recent Sessions</h3>
-                    </div>
-                    <button 
-                      onClick={() => setIsLoggingWorkout(true)}
-                      className="btn-primary py-3 px-8 text-[10px]"
-                    >
-                      Log Workout
-                    </button>
-                  </div>
-
-                  <div className="space-y-4">
-                    {logs.map((log) => (
-                      <motion.div 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        key={log.id} 
-                        className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center justify-between hover:bg-white/[0.05] transition-all group"
-                      >
-                        <div className="flex items-center gap-6">
-                          <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 group-hover:text-brand-teal transition-colors">
-                            <Dumbbell size={18} />
-                          </div>
-                          <div>
-                            <h4 className="text-sm font-bold uppercase tracking-tight">{(log as any).sessionTitle || `Workout Session`}</h4>
-                            <p className="text-[10px] text-white/40 uppercase tracking-widest">{new Date(log.completed_at).toLocaleDateString()} • {log.duration}min</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-lg font-mono text-brand-teal">{log.duration}m</span>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeTab === 'favorites' && (
-            <div className="lg:col-span-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {user.favorites && user.favorites.length > 0 ? (
-                  localVideos.filter(v => user.favorites?.includes(v.id)).map((video) => (
-                    <motion.div
-                      layout
-                      key={video.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="card-gradient overflow-hidden group cursor-pointer"
-                      onClick={() => navigate(`/video/${video.id}`)}
-                    >
-                      <div className="relative aspect-video">
-                        <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
-                        {video.isPremium && (
-                          <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
-                            <Zap size={10} fill="white" />
-                            Premium
-                          </div>
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-12 h-12 bg-brand-teal/80 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-2xl">
-                            <Play fill="white" size={20} className="translate-x-0.5" />
-                          </div>
-                        </div>
-                        <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-md px-2 py-1 rounded text-[10px] uppercase tracking-widest">
-                          {video.duration}
-                        </div>
-                      </div>
-                      <div className="p-6 space-y-2">
-                        <h3 className="text-sm font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{video.title}</h3>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{video.category}</p>
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="lg:col-span-3 py-20 text-center space-y-4">
-                    <Heart size={48} className="text-white/10 mx-auto" />
-                    <p className="text-white/40 uppercase tracking-widest text-xs">You haven't favorited any videos yet.</p>
-                    <Link to="/videos" className="btn-primary inline-block">Browse Library</Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'programs' && (
-            <div className="lg:col-span-3 space-y-12">
-              {userPrograms.length > 0 ? (
-                userPrograms.map((prog) => (
-                  <div key={prog.id} className="card-gradient p-10 space-y-8">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-2xl font-bold uppercase tracking-tighter">{prog.title}</h3>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest">Linked on {new Date(prog.createdAt).toLocaleDateString()}</p>
-                      </div>
-                      <span className="px-4 py-2 bg-brand-teal/10 text-brand-teal text-[10px] uppercase tracking-widest font-bold rounded-full">Active Program</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {localVideos.filter(v => prog.videoIds.includes(v.id)).map((video) => (
-                        <div 
-                          key={video.id}
-                          onClick={() => navigate(`/video/${video.id}`)}
-                          className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden group cursor-pointer hover:border-brand-teal transition-all"
-                        >
-                          <div className="relative aspect-video">
-                            <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="w-10 h-10 bg-brand-teal rounded-full flex items-center justify-center">
-                                <Play size={16} fill="white" className="translate-x-0.5" />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="p-4">
-                            <p className="text-xs font-bold uppercase tracking-tight truncate">{video.title}</p>
-                            <p className="text-[9px] text-white/40 uppercase tracking-widest">{video.duration} • {video.level}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-20 card-gradient">
-                  <p className="text-white/20 text-xs uppercase tracking-widest">No personalized programs linked to your profile yet.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'athlete' && user.role === 'athlete' && (
-            <div className="lg:col-span-3 space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="card-gradient p-8 space-y-4">
-                  <div className="w-12 h-12 bg-brand-teal/20 rounded-full flex items-center justify-center text-brand-teal">
-                    <Users size={24} />
-                  </div>
-                  <h4 className="text-xl font-bold uppercase tracking-tight">Class Attendees</h4>
-                  <p className="text-xs text-white/40 leading-relaxed">View who is signed up for your upcoming training sessions and retreats.</p>
-                </div>
-                <div className="card-gradient p-8 space-y-4">
-                  <div className="w-12 h-12 bg-brand-coral/20 rounded-full flex items-center justify-center text-brand-coral">
-                    <Calendar size={24} />
-                  </div>
-                  <h4 className="text-xl font-bold uppercase tracking-tight">Event Details</h4>
-                  <p className="text-xs text-white/40 leading-relaxed">Access full schedules and logistics for all FMF retreats and special events.</p>
-                </div>
-                <div className="card-gradient p-8 space-y-4">
-                  <div className="w-12 h-12 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400">
-                    <Zap size={24} />
-                  </div>
-                  <h4 className="text-xl font-bold uppercase tracking-tight">Elite Access</h4>
-                  <p className="text-xs text-white/40 leading-relaxed">As an FMF Athlete, you have full access to all Elite-tier content and perks.</p>
-                </div>
-              </div>
-
-              <div className="card-gradient p-10 space-y-8">
-                <h3 className="text-2xl font-bold uppercase tracking-tighter">Retreat Attendance</h3>
-                <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/10 bg-white/5">
-                        <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Attendee</th>
-                        <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Retreat</th>
-                        <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {retreatApps.filter(app => app.status === 'accepted').map((app) => (
-                        <tr key={app.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="px-6 py-4">
-                            <p className="text-sm font-bold">{app.userName}</p>
-                            <p className="text-[10px] text-white/40">{app.userEmail}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <p className="text-[10px] uppercase tracking-widest font-bold">{app.retreatTitle}</p>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-[8px] uppercase tracking-widest px-2 py-1 rounded font-bold bg-emerald-500/20 text-emerald-500">Confirmed</span>
-                          </td>
-                        </tr>
-                      ))}
-                      {retreatApps.filter(app => app.status === 'accepted').length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="px-6 py-12 text-center text-white/20 uppercase tracking-widest text-xs">No confirmed attendees found</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="lg:col-span-3 grid grid-cols-1 lg:grid-cols-3 gap-12">
-              <div className="lg:col-span-1 space-y-8">
-                <div className="card-gradient p-10 space-y-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-brand-teal/20 rounded-full flex items-center justify-center text-brand-teal">
-                      <Zap size={24} />
-                    </div>
-                    <h3 className="text-xl font-bold uppercase tracking-tighter">Your Privileges</h3>
-                  </div>
-                  
-                  <ul className="space-y-4">
-                    {currentPerks.map((perk, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <Check size={14} className="text-brand-teal mt-1 flex-shrink-0" />
-                        <span className="text-xs text-white/60 leading-relaxed uppercase tracking-wide">{perk}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {user.tier !== 'Elite' && (
-                    <div className="pt-6 border-t border-white/5">
-                      <Link to="/membership" className="text-brand-coral text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:gap-4 transition-all">
-                        Upgrade Membership <ArrowRight size={14} />
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="lg:col-span-2 card-gradient p-10">
-                <h3 className="text-xl font-bold uppercase tracking-tighter mb-8">Account Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-widest text-white/20">Email Address</p>
-                    <p className="text-sm text-white/60 uppercase tracking-widest">{user.email}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase tracking-widest text-white/20">Member ID</p>
-                    <p className="text-sm text-white/60 uppercase tracking-widest">{user.id}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'orders' && (
-            <div className="lg:col-span-3 space-y-8">
-              <div className="card-gradient p-10">
-                <div className="flex items-center justify-between mb-12">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-brand-coral/20 rounded-full flex items-center justify-center text-brand-coral">
-                      <ShoppingBag size={24} />
-                    </div>
-                    <h3 className="text-xl font-bold uppercase tracking-tighter">Order History</h3>
-                  </div>
-                  <Link to="/order-history" className="text-brand-teal text-[10px] font-bold uppercase tracking-widest hover:underline flex items-center gap-2">
-                    View Full History <ArrowRight size={14} />
-                  </Link>
-                </div>
-
-                <div className="space-y-6">
-                  {orders.length > 0 ? (
-                    orders.map((order: any) => (
-                      <div key={order.id} className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl flex flex-col md:flex-row justify-between gap-6 hover:bg-white/[0.05] transition-all">
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-4">
-                            <span className="text-xs font-bold uppercase tracking-widest text-white">{order.id}</span>
-                            <span className="text-[10px] text-white/40 uppercase tracking-widest">{new Date(order.created_at).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {order.items.map((item: string, i: number) => (
-                              <span key={i} className="px-3 py-1 bg-white/5 rounded-full text-[9px] uppercase tracking-widest text-white/60">{item}</span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="flex flex-row md:flex-col justify-between items-end gap-4">
-                          <span className={`px-3 py-1 rounded-full text-[9px] uppercase tracking-widest font-bold ${
-                            order.status === 'Delivered' ? 'bg-brand-teal/20 text-brand-teal' : 'bg-brand-coral/20 text-brand-coral'
-                          }`}>
-                            {order.status}
-                          </span>
-                          <span className="text-lg font-bold text-white">${order.total.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-20 space-y-4">
-                      <p className="text-white/20 text-xs uppercase tracking-widest">No orders found yet.</p>
-                      <Link to="/store" className="text-brand-teal text-[10px] font-bold uppercase tracking-widest hover:underline">Start Shopping</Link>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Log Workout Modal */}
-      <AnimatePresence>
-        {isLoggingWorkout && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsLoggingWorkout(false)}
-              className="absolute inset-0 bg-brand-black/90 backdrop-blur-xl"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg card-gradient p-10 space-y-8"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold uppercase tracking-tighter">Log Workout</h3>
-                <button onClick={() => setIsLoggingWorkout(false)} className="text-white/40 hover:text-white">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form onSubmit={handleLogWorkout} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40">Session Title</label>
-                  <input
-                    name="title"
-                    required
-                    placeholder="e.g. Upper Body Power"
-                    className="w-full bg-white/5 border border-white/10 px-6 py-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40">Duration (min)</label>
-                    <input
-                      name="duration"
-                      required
-                      type="number"
-                      placeholder="45"
-                      className="w-full bg-white/5 border border-white/10 px-6 py-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/40">Type</label>
-                    <select
-                      name="type"
-                      className="w-full bg-white/5 border border-white/10 px-6 py-4 text-sm focus:outline-none focus:border-brand-teal transition-colors appearance-none"
-                    >
-                      <option value="Strength">Strength</option>
-                      <option value="Mobility">Mobility</option>
-                      <option value="HIIT">HIIT</option>
-                      <option value="Yoga">Yoga</option>
-                    </select>
-                  </div>
-                </div>
-                <button type="submit" className="btn-primary w-full py-4">Save Session</button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Log PB Modal */}
-      <AnimatePresence>
-        {isLoggingPB && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsLoggingPB(false)}
-              className="absolute inset-0 bg-brand-black/90 backdrop-blur-xl"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg card-gradient p-10 space-y-8"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold uppercase tracking-tighter">New Personal Best</h3>
-                <button onClick={() => setIsLoggingPB(false)} className="text-white/40 hover:text-white">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form onSubmit={handleLogPB} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40">Exercise</label>
-                  <input
-                    name="exercise"
-                    required
-                    type="text"
-                    placeholder="e.g. Deadlift"
-                    className="w-full bg-white/5 border border-white/10 px-6 py-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40">Value</label>
-                  <input
-                    name="value"
-                    required
-                    type="text"
-                    placeholder="e.g. 150kg or 20 Reps"
-                    className="w-full bg-white/5 border border-white/10 px-6 py-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                  />
-                </div>
-                <button type="submit" className="btn-primary w-full py-4">Record Achievement</button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-      </AnimatePresence>
-    </div>
+    <ProfileDashboard 
+      user={user} 
+      logout={logout} 
+      updateTier={updateTier} 
+      showToast={showToast} 
+    />
   );
 };
 
@@ -6779,7 +4905,7 @@ const Philosophy = () => {
               <p className="text-2xl italic font-light text-white/80 leading-tight">
                 "We don't just build muscles. We build the character required to use them with purpose."
               </p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">— Michael Leggett</p>
+              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">â€” Michael Leggett</p>
             </div>
           </div>
           <div className="relative aspect-square rounded-3xl overflow-hidden">
@@ -7636,7 +5762,7 @@ const VideoDetail = () => {
               {isLocked ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md z-10 text-center p-12">
                   <Zap size={48} className="text-brand-coral mb-6 animate-pulse" />
-                  <h2 className="text-3xl font-bold uppercase tracking-tighter mb-4">Premium Content</h2>
+                  <h2 className="text-3xl font-bold uppercase tracking-tighter mb-4">Elite Content</h2>
                   <p className="text-white/60 max-w-md mx-auto mb-8 uppercase tracking-widest text-xs leading-relaxed">
                     This masterclass is exclusive to Power Hour members. Upgrade your account to unlock our full training library.
                   </p>
@@ -8213,6 +6339,76 @@ const About = () => (
 
 // --- Main App ---
 
+const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string, t?: 'success' | 'error') => void; toast: any; setToast: any }) => {
+  const { user, logout } = useAuth();
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-brand-black text-brand-white font-sans selection:bg-brand-teal selection:text-white">
+        <Navbar />
+        
+        <main>
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/philosophy" element={<Philosophy />} />
+              <Route path="/mission" element={<Mission />} />
+              <Route path="/run-club" element={<RunClub />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
+              <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
+              <Route path="/program" element={<ProgramPage />} />
+              <Route path="/videos" element={<VideoLibrary />} />
+              <Route path="/video/:id" element={<VideoDetail />} />
+              <Route path="/athletes" element={<Athletes />} />
+              <Route path="/membership" element={<Membership showToast={showToast} />} />
+              <Route path="/community" element={<CommunityPage />} />
+              <Route path="/schedule" element={<Schedule showToast={showToast} />} />
+              <Route path="/shop" element={<Store />} />
+              <Route path="/shop/:category" element={<Store />} />
+              <Route path="/shop/product/:id" element={<ProductDetail />} />
+              <Route path="/brand/:slug" element={<BrandPage />} />
+              <Route path="/profile" element={<ProfileDashboard user={user!} showToast={showToast} />} />
+              <Route path="/order-history" element={<OrderHistory />} />
+              <Route path="/recovery" element={<Recovery />} />
+              <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/admin" element={
+                user && (user.role === 'admin' || user.role === 'super_admin') ? (
+                  <AdminDashboard user={user} logout={logout} showToast={showToast} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              } />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AnimatePresence>
+        </main>
+
+        <Footer showToast={showToast} />
+
+        {/* Global Toast */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, x: '-50%' }}
+              animate={{ opacity: 1, y: 0, x: '-50%' }}
+              exit={{ opacity: 0, y: 20, x: '-50%' }}
+              className="fixed bottom-12 left-1/2 z-[200] px-8 py-4 card-gradient flex items-center gap-4 border-brand-teal/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+            >
+              <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-brand-teal' : 'bg-brand-coral'} animate-pulse`} />
+              <span className="text-[10px] uppercase tracking-[0.2em] font-bold">{toast.message}</span>
+              <button onClick={() => setToast(null)} className="ml-4 text-white/20 hover:text-white transition-colors">
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </Router>
+  );
+};
+
 export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -8226,63 +6422,7 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <CartProvider>
-        <Router>
-          <div className="min-h-screen bg-brand-black text-brand-white font-sans selection:bg-brand-teal selection:text-white">
-            <Navbar />
-            
-            <main>
-              <AnimatePresence mode="wait">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/philosophy" element={<Philosophy />} />
-                  <Route path="/mission" element={<Mission />} />
-                  <Route path="/run-club" element={<RunClub />} />
-                  <Route path="/services" element={<Services />} />
-                  <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
-                  <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
-                  <Route path="/program" element={<ProgramPage />} />
-                  <Route path="/videos" element={<VideoLibrary />} />
-                  <Route path="/video/:id" element={<VideoDetail />} />
-                  <Route path="/athletes" element={<Athletes />} />
-                  <Route path="/membership" element={<Membership showToast={showToast} />} />
-                  <Route path="/community" element={<CommunityPage />} />
-                  <Route path="/schedule" element={<Schedule showToast={showToast} />} />
-                  <Route path="/shop" element={<Store />} />
-                  <Route path="/shop/:category" element={<Store />} />
-                  <Route path="/shop/product/:id" element={<ProductDetail />} />
-                  <Route path="/brand/:slug" element={<BrandPage />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/order-history" element={<OrderHistory />} />
-                  <Route path="/recovery" element={<Recovery />} />
-                  <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/admin" element={<AdminDashboard showToast={showToast} />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </AnimatePresence>
-            </main>
-
-            <Footer showToast={showToast} />
-
-            {/* Global Toast */}
-            <AnimatePresence>
-              {toast && (
-                <motion.div
-                  initial={{ opacity: 0, y: 50, x: '-50%' }}
-                  animate={{ opacity: 1, y: 0, x: '-50%' }}
-                  exit={{ opacity: 0, y: 20, x: '-50%' }}
-                  className="fixed bottom-12 left-1/2 z-[200] px-8 py-4 card-gradient flex items-center gap-4 border-brand-teal/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                >
-                  <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-brand-teal' : 'bg-brand-coral'} animate-pulse`} />
-                  <span className="text-[10px] uppercase tracking-[0.2em] font-bold">{toast.message}</span>
-                  <button onClick={() => setToast(null)} className="ml-4 text-white/20 hover:text-white transition-colors">
-                    <X size={14} />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </Router>
+          <MainAppContent showToast={showToast} toast={toast} setToast={setToast} />
         </CartProvider>
       </AuthProvider>
     </ErrorBoundary>

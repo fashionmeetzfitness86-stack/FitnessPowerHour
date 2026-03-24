@@ -68,9 +68,14 @@ export interface Athlete {
 
 export interface Program {
   id: string;
+  athlete_id?: string;
   title: string;
   description: string;
+  type?: string;
+  duration_weeks?: number;
+  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
   video_ids: string[];
+  sessions?: any[];
   created_by: string;
   status: 'draft' | 'published' | 'archived';
   created_at: string;
@@ -95,6 +100,7 @@ export interface Retreat {
   end_date: string;
   location: string;
   price?: string;
+  is_sold_out?: boolean;
   visibility_status: 'draft' | 'published' | 'hidden' | 'archived';
   access_type: 'package_based' | 'manual';
   allowed_packages: string[];
@@ -216,6 +222,16 @@ export interface Order {
   updated_at: string;
 }
 
+export interface NotificationPreference {
+  billing_reminders: boolean;
+  payment_confirmations: boolean;
+  membership_renewals: boolean;
+  workout_reminders: boolean;
+  retreat_confirmations: boolean;
+  program_updates: boolean;
+  order_updates: boolean;
+}
+
 export interface UserProfile {
   id: string;
   full_name: string;
@@ -229,6 +245,7 @@ export interface UserProfile {
   profile_image?: string;
   role: 'user' | 'admin' | 'super_admin' | 'athlete' | 'flex_mob_admin';
   package_id?: string;
+  tier?: string;
   status: 'active' | 'suspended' | 'banned' | 'archived';
   banned_at?: string;
   preferences?: {
@@ -239,6 +256,27 @@ export interface UserProfile {
   };
   created_at: string;
   updated_at: string;
+
+  favorites?: string[];
+  streak?: number;
+  workoutLogs?: WorkoutLog[];
+  personalBests?: PersonalBest[];
+  orderHistory?: Order[];
+
+  last_tier_change_date?: string;
+  height?: string;
+  weight?: string;
+  workout_style?: string;
+  training_goals?: string;
+  preferred_workout_days?: string[];
+  preferred_workout_time?: string;
+  fitness_level?: 'Beginner' | 'Intermediate' | 'Advanced';
+  favorite_training_focus?: string;
+  limitations_or_injuries?: string;
+  short_bio?: string;
+  motivation?: string;
+  experience_level?: string;
+  notification_preferences?: NotificationPreference;
 }
 
 export interface Booking {
@@ -332,3 +370,26 @@ export interface PersonalBest {
 export type Post = CommunityPost;
 export type ProgramType = Program;
 export type CommunityType = Community;
+
+export interface CalendarSession {
+  id: string;
+  user_id: string;
+  title: string;
+  date: string;
+  duration: number;
+  type: string;
+  status: 'scheduled' | 'completed' | 'missed';
+  program_id?: string;
+  video_id?: string;
+  created_at: string;
+}
+
+export interface BillingHistory {
+  id: string;
+  user_id: string;
+  amount: number;
+  status: 'paid' | 'failed' | 'pending';
+  date: string;
+  description: string;
+  invoice_url?: string;
+}
