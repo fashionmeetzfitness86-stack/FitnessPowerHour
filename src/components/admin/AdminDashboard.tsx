@@ -89,7 +89,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20)
         ]);
 
-        if (usersRes.data) setUsers(usersRes.data);
+        if (usersRes.data) setUsers(usersRes.data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
         if (videosRes.data) setVideos(videosRes.data);
         if (videoCatsRes.data) setVideoCategories(videoCatsRes.data);
         if (productsRes.data) setProducts(productsRes.data);
