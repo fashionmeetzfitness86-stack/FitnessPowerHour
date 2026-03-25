@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, LayoutDashboard, LineChart, Calendar, 
@@ -39,10 +39,10 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
   const renderContent = () => {
     switch (activeTab) {
       case 'overview': return <Overview user={user} />;
-      case 'progress': return <Progress user={user} showToast={showToast} />;
-      case 'calendar': return <CalendarTab user={user} showToast={showToast} />;
+      case 'progress': return <Progress user={user} />;
+      case 'calendar': return <CalendarTab user={user} />;
       case 'programs': return <MyPrograms user={user} />;
-      case 'videos': return <MyVideos user={user} showToast={showToast} />;
+      case 'videos': return <MyVideos user={user} />;
       case 'membership': return <MembershipManager user={user} updateTier={updateTier} showToast={showToast} />;
       case 'billing': return <Billing user={user} showToast={showToast} />;
       case 'retreats': return <RetreatsTab user={user} />;

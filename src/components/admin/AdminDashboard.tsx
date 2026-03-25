@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Trophy, PlayCircle, 
-  ListChecks, MapPin, MessageSquare, ShoppingBag as ShoppingBagIcon, 
-  ClipboardList, Package as PackageIcon, History, LogOut, ChevronRight,
+  ListChecks, MapPin, MessageSquare, ShoppingBag, 
+  ClipboardList, Package, History, LogOut, ChevronRight,
   ShieldCheck, ArrowUpRight, Plus, Download, Search,
   Edit2, Eye, Ban, Trash2, Check, X, Printer,
   Filter, Activity, TrendingUp, DollarSign, Clock,
@@ -15,7 +15,7 @@ import {
   UserProfile, Video, Product, Order, Retreat, 
   Community, ActivityLog, Program, Athlete, 
   VideoCategory, ProductCategory, Brand, RetreatApplication,
-  CommunityPost, CommunityCategory, CommunityRequest, CommunityMember, Package
+  CommunityPost
 } from '../../types';
 
 import { AdminOverview } from './AdminOverview';
@@ -52,9 +52,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [programs, setPrograms] = useState<Program[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [communityCategories, setCommunityCategories] = useState<CommunityCategory[]>([]);
-  const [communityJoiningRequests, setCommunityJoiningRequests] = useState<CommunityRequest[]>([]);
-  const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   
@@ -73,7 +70,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           usersRes, videosRes, videoCatsRes, productsRes, 
           prodCatsRes, brandsRes, retreatsRes, packagesRes, 
           athletesRes, programsRes, communitiesRes, ordersRes, 
-          retreatAppsRes, postsRes, logsRes, commCatsRes, commReqsRes, commMembersRes
+          retreatAppsRes, postsRes, logsRes
         ] = await Promise.all([
           supabase.from('users').select('*'),
           supabase.from('videos').select('*'),
@@ -89,10 +86,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           supabase.from('orders').select('*'),
           supabase.from('retreat_applications').select('*'),
           supabase.from('posts').select('*'),
-          supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20),
-          supabase.from('community_categories').select('*'),
-          supabase.from('community_requests').select('*'),
-          supabase.from('community_members').select('*')
+          supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20)
         ]);
 
         if (usersRes.data) setUsers(usersRes.data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
@@ -107,17 +101,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         if (programsRes.data) setPrograms(programsRes.data);
         if (communitiesRes.data) setCommunities(communitiesRes.data);
         if (ordersRes.data) setOrders(ordersRes.data);
-        if (commCatsRes.data) setCommunityCategories(commCatsRes.data);
-        if (commReqsRes.data) setCommunityJoiningRequests(commReqsRes.data);
-        if (commMembersRes.data) setCommunityMembers(commMembersRes.data);
-        
-        if (communitiesRes.data && commMembersRes.data) {
-          setCommunities(communitiesRes.data.map(c => ({
-            ...c,
-            members: commMembersRes.data.filter(m => m.community_id === c.id).map(m => m.user_id)
-          })));
-        }
-
         if (retreatAppsRes.data) setRetreatApplications(retreatAppsRes.data.map((app: any) => ({
           ...app,
           userName: usersRes.data?.find(u => u.id === app.user_id)?.full_name || 'Unknown',
@@ -147,34 +130,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   }, [user]);
 
   // Handlers
-  const handleSaveCommunity = async (data: Partial<Community>) => {
-    try {
-      if (data.id) {
-        // Update
-        const { error } = await supabase.from('communities').update({
-          ...data,
-          members: undefined // Remove helper from DB update
-        }).eq('id', data.id);
-        if (error) throw error;
-        setCommunities(prev => prev.map(c => c.id === data.id ? { ...c, ...data } as Community : c));
-        showToast('Nexus configuration updated', 'success');
-      } else {
-        // Create
-        const { data: newComm, error } = await supabase.from('communities').insert({
-          ...data,
-          created_by: user.id,
-          created_at: new Date().toISOString()
-        }).select().single();
-        if (error) throw error;
-        if (newComm) setCommunities(prev => [{ ...newComm, members: [] }, ...prev]);
-        showToast('New node initialized in the matrix', 'success');
-      }
-    } catch (error) {
-      console.error('Error saving community:', error);
-      showToast('Nexus configuration failed', 'error');
-    }
-  };
-
   const handleDeleteCommunity = async (id: string) => {
     try {
       await supabase.from('communities').delete().eq('id', id);
@@ -223,9 +178,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'programs', label: 'System Protocols', icon: ListChecks },
     { id: 'retreats', label: 'Venture Board', icon: MapPin },
     { id: 'community', label: 'Collective Hub', icon: MessageSquare },
-    { id: 'shop', label: 'Global Store', icon: ShoppingBagIcon },
+    { id: 'shop', label: 'Global Store', icon: ShoppingBag },
     { id: 'orders', label: 'Fulfillment Logic', icon: ClipboardList },
-    { id: 'packages', label: 'Access Tiering', icon: PackageIcon, adminOnly: true },
+    { id: 'packages', label: 'Access Tiering', icon: Package, adminOnly: true },
     { id: 'logs', label: 'Quantum Logs', icon: History, adminOnly: true },
   ];
 
@@ -297,60 +252,10 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <CommunityManager 
           communities={communities} 
           posts={posts} 
-          categories={communityCategories}
-          joiningRequests={communityJoiningRequests}
           users={users} 
           onAdd={() => {}} 
           onDeleteCommunity={handleDeleteCommunity} 
           onDeletePost={handleDeletePost} 
-          onManageCategories={() => {}}
-          onHandleRequest={async (id, status) => {
-            try {
-              const request = communityJoiningRequests.find(r => r.id === id);
-              if (!request) return;
-
-              if (status === 'approved') {
-                const community = communities.find(c => c.id === request.community_id);
-                if (community) {
-                  // Insert into community_members table
-                  await supabase.from('community_members').insert({
-                    community_id: community.id,
-                    user_id: request.user_id,
-                    status: 'active',
-                    joined_at: new Date().toISOString()
-                  });
-
-                  // Update local helper array
-                  const newMembers = [...(community.members || []), request.user_id];
-                  setCommunities(prev => prev.map(c => c.id === community.id ? { ...c, members: newMembers } : c));
-                  
-                  // Also add a welcome post
-                  await supabase.from('community_posts').insert({
-                    community_id: community.id,
-                    user_id: 'system',
-                    user_name_snapshot: 'System Protocol',
-                    title: 'New Member Authorized',
-                    content: `Authorized access for candidate ${request.user_name_snapshot}. Welcome to the collective.`,
-                    likes: [],
-                    comments: [],
-                    tags: ['System'],
-                    created_at: new Date().toISOString()
-                  });
-                }
-              }
-
-              await supabase.from('community_requests').update({ 
-                status 
-              }).eq('id', id);
-              
-              setCommunityJoiningRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-              showToast(`Clearance Signal ${status === 'approved' ? 'Authorized' : 'Denied'}`, 'success');
-            } catch (error) {
-              console.error('Processing error:', error);
-              showToast('Signal processing failed', 'error');
-            }
-          }}
-          onSaveCommunity={handleSaveCommunity}
         />
       );
       case 'shop': return (

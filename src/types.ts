@@ -111,48 +111,15 @@ export interface Retreat {
   updated_at: string;
 }
 
-export interface CommunityCategory {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Community {
   id: string;
   name: string;
   description: string;
-  image: string;
-  category_id: string;
-  city: string;
-  access_type: 'public' | 'private';
-  required_package: 'basic' | 'premium' | 'elite' | 'custom';
-  created_by: string;
-  created_at: string;
+  image_url: string;
+  members: string[];
   status: 'active' | 'hidden' | 'archived';
-  // Frontend helpers
-  members?: string[]; 
-}
-
-export interface CommunityMember {
-  id: string;
-  user_id: string;
-  community_id: string;
-  status: 'active' | 'inactive';
-  joined_at: string;
-}
-
-export interface CommunityRequest {
-  id: string;
-  user_id: string;
-  community_id: string;
-  status: 'pending' | 'approved' | 'rejected';
-  requested_at: string;
-  // Snapshots for UI
-  user_name_snapshot?: string;
-  user_email_snapshot?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CommunityComment {
@@ -387,11 +354,9 @@ export interface ActivityLog {
 export interface WorkoutLog {
   id: string;
   user_id: string;
-  video_id?: string;
+  video_id: string;
   duration: number;
   completed_at: string;
-  status?: 'pending' | 'approved' | 'rejected' | 'completed';
-  check_in_image?: string;
 }
 
 export interface PersonalBest {
