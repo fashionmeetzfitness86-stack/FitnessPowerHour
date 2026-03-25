@@ -1,40 +1,128 @@
-import { useState } from 'react';
-import { motion } from 'motion/react';
-import { Trophy, Activity, Target, Zap, ChevronRight, Play } from 'lucide-react';
-import { UserProfile } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Trophy, Activity, Target, Zap, ChevronRight, Play, 
+  Camera, CheckCircle, Clock, Shield, Flame, 
+  Calendar as CalIcon, TrendingUp, AlertCircle
+} from 'lucide-react';
+import { UserProfile, WorkoutLog } from '../../types';
+import { supabase } from '../../supabase';
 
-export const Progress = ({ user }: { user: UserProfile }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'metrics'>('overview');
+export const Progress = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'audits' | 'achievements'>('overview');
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
+  const [logs, setLogs] = useState<WorkoutLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false });
+
+      if (error) throw error;
+      setLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [user.id]);
+
   const streak = user.streak || 0;
-  const hoursTrained = Math.floor((user.workoutLogs?.reduce((acc, log) => acc + log.duration, 0) || 0) / 60);
-  const completedSessions = user.workoutLogs?.length || 0;
+  const hoursTrained = Math.floor((logs.reduce((acc, log) => acc + log.duration, 0) || 0) / 60);
+  const completedSessions = logs.length;
 
   const milestones = [
-    { title: 'First Workout', completed: true },
+    { title: 'First Workout', completed: completedSessions > 0 },
     { title: '7 Day Streak', completed: streak >= 7 },
-    { title: '14 Day Streak', completed: streak >= 14 },
-    { title: '10 Hours Trained', completed: hoursTrained >= 10 },
+    { title: 'Physiological Base', completed: completedSessions >= 10 },
+    { title: 'Elite Sync Status', completed: streak >= 30 },
   ];
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const submitDailyCheckIn = async () => {
+    if (!file || !user) return;
+
+    try {
+      setIsUploading(true);
+      
+      const fileName = `${user.id}-${Date.now()}.jpg`;
+      const filePath = `check-ins/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+
+      const newLog: Partial<WorkoutLog> = {
+        user_id: user.id,
+        duration: 45, // Default for check-in
+        completed_at: new Date().toISOString(),
+        status: 'pending', // Awaiting admin audit
+        check_in_image: publicUrl
+      };
+
+      const { error: dbError } = await supabase
+        .from('workout_logs')
+        .insert(newLog);
+
+      if (dbError) throw dbError;
+
+      // Update user streak locally or via DB
+      await supabase.from('users').update({ 
+        streak: streak + 1,
+        last_workout_date: new Date().toISOString()
+      }).eq('id', user.id);
+
+      showToast('EOD Physiological Audit Received. Syncing status...', 'success');
+      setIsCheckingIn(false);
+      setFile(null);
+      fetchLogs();
+    } catch (error: any) {
+      showToast(error.message || 'Audit failed to sync.', 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <div className="space-y-12 fade-in">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 border-b border-white/5 pb-8">
         <div>
           <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
-            Progress <span className="text-brand-teal">Tracker</span>
+            Physiological <span className="text-brand-coral">Audit</span>
           </h2>
           <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2 font-bold">
-            Monitor your markers, performance, and milestones.
+            Authorized repository for performance tracking and EOD status protocols.
           </p>
         </div>
-        <div className="flex bg-white/5 rounded-full p-1 overflow-x-auto no-scrollbar">
-          {['overview', 'logs', 'metrics'].map((tab) => (
+        <div className="flex bg-white/5 rounded-xl p-1">
+          {['overview', 'audits', 'achievements'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as 'overview' | 'logs' | 'metrics')}
-              className={`px-6 py-2 text-[10px] uppercase tracking-widest font-bold rounded-full transition-all ${
-                activeTab === tab ? 'bg-brand-teal text-black shadow-lg' : 'text-white/40 hover:text-white'
+              onClick={() => setActiveTab(tab as any)}
+              className={`px-6 py-2 text-[8px] uppercase tracking-[0.2em] font-black rounded-lg transition-all ${
+                activeTab === tab ? 'bg-brand-coral text-white shadow-glow-coral' : 'text-white/40 hover:text-white'
               }`}
             >
               {tab}
@@ -44,130 +132,184 @@ export const Progress = ({ user }: { user: UserProfile }) => {
       </header>
 
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="space-y-8">
           {/* Main Stat Block */}
-          <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Current Streak', value: streak, unit: 'Days', icon: Zap },
-              { label: 'Sessions', value: completedSessions, unit: 'Total', icon: Activity },
-              { label: 'Time Trained', value: hoursTrained, unit: 'Hours', icon: Target },
-              { label: 'Check-ins', value: 2, unit: 'Videos', icon: Play },
+              { label: 'Neural Streak', value: streak, unit: 'Days', icon: Flame, color: 'text-brand-coral' },
+              { label: 'Active Logs', value: completedSessions, unit: 'Total', icon: Activity, color: 'text-brand-teal' },
+              { label: 'Time Sink', value: hoursTrained, unit: 'Hours', icon: Clock, color: 'text-white' },
+              { label: 'Audit Status', value: 'Clear', unit: 'Elite', icon: Shield, color: 'text-brand-teal' },
             ].map((stat, i) => (
-              <div key={i} className="card-gradient p-6 rounded-2xl flex flex-col items-center justify-center text-center space-y-2 border border-white/5 hover:border-brand-teal/30 transition-all group">
-                <stat.icon size={20} className="text-white/20 group-hover:text-brand-teal mb-2 transition-colors" />
-                <span className="text-3xl font-bold font-mono">{stat.value}</span>
-                <span className="text-[10px] uppercase tracking-widest text-white/40">{stat.label} <br/> ({stat.unit})</span>
+              <div key={i} className="card-gradient p-8 flex flex-col items-center justify-center text-center space-y-4 border border-white/5 group hover:border-brand-coral/30 transition-all">
+                <stat.icon size={24} className={`${stat.color} opacity-40 group-hover:opacity-100 transition-all`} />
+                <div>
+                  <div className="text-4xl font-black font-mono tracking-tighter">{stat.value}</div>
+                  <div className="text-[8px] uppercase tracking-[0.3em] text-white/40 font-black mt-2">{stat.label}</div>
+                  <div className="text-[7px] uppercase tracking-[0.2em] text-white/20 font-bold mt-1">{stat.unit}</div>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Milestones */}
-          <div className="card-gradient p-8 space-y-8 lg:col-span-1">
-            <div className="flex items-center gap-4">
-              <Trophy size={20} className="text-brand-teal" />
-              <h3 className="text-lg font-bold uppercase tracking-tight">Milestones</h3>
-            </div>
-            <div className="space-y-6">
-              {milestones.map((m, i) => (
-                <div key={i} className="flex items-center gap-4 relative">
-                  {i !== milestones.length - 1 && (
-                    <div className={`absolute top-6 bottom-0 left-[11px] w-0.5 ${m.completed ? 'bg-brand-teal' : 'bg-white/5'} transform -translate-y-4 h-full`} />
-                  )}
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center border-2 z-10 flex-shrink-0 ${
-                    m.completed ? 'border-brand-teal bg-brand-teal/20 text-brand-teal' : 'border-white/10 bg-brand-black text-white/20'
-                  }`}>
-                    {m.completed && <div className="w-1.5 h-1.5 bg-brand-teal rounded-full" />}
-                  </div>
-                  <span className={`text-xs uppercase tracking-widest font-bold ${m.completed ? 'text-white' : 'text-white/40'}`}>
-                    {m.title}
-                  </span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+             {/* Daily Audit Trigger */}
+             <div className="lg:col-span-2 card-gradient p-10 border border-brand-coral/20 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                  <TrendingUp size={160} className="text-brand-coral" />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Weekly Summary Chart Placeholder */}
-          <div className="card-gradient p-8 space-y-8 lg:col-span-2 flex flex-col">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold uppercase tracking-tight">Weekly Summary</h3>
-              <button className="text-[10px] uppercase tracking-widest text-brand-teal font-bold hover:underline py-1">View All</button>
-            </div>
-            
-            <div className="flex-grow flex items-end justify-between gap-2 md:gap-6 pt-12 relative border-b border-white/10 pb-6">
-              {/* Decorative Chart Lines */}
-              <div className="absolute top-0 w-full border-b border-dashed border-white/5" />
-              <div className="absolute top-1/2 w-full border-b border-dashed border-white/5" />
-              
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-                const height = i === 1 || i === 4 ? 80 : i === 2 ? 60 : i === 5 ? 40 : 20;
-                const active = day === 'Wed';
-                return (
-                  <div key={day} className="flex flex-col items-center gap-4 w-full group cursor-crosshair z-10">
-                    <motion.div 
-                      initial={{ height: 0 }}
-                      animate={{ height: `${height}%` }}
-                      transition={{ duration: 1, delay: i * 0.1 }}
-                      className={`w-full max-w-[40px] rounded-t-sm transition-all ${
-                        active ? 'bg-brand-teal' : 'bg-white/5 group-hover:bg-white/20'
-                      }`}
-                    />
-                    <span className={`text-[8px] uppercase tracking-widest font-bold ${active ? 'text-brand-teal' : 'text-white/40'}`}>{day}</span>
+                <div className="relative z-10 space-y-8">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">EOD <span className="text-brand-coral">Check-in</span></h3>
+                    <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold max-w-sm">
+                      Log your daily activity and submit visual verification to maintain your streak and sync status.
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-            <div className="grid grid-cols-2 gap-6 pt-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Target</p>
-                <p className="text-sm font-bold text-white">4 Sessions</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Achieved</p>
-                <p className="text-sm font-bold text-brand-teal">2 Sessions</p>
-              </div>
-            </div>
+                  
+                  {!isCheckingIn ? (
+                    <button 
+                      onClick={() => setIsCheckingIn(true)}
+                      className="flex items-center gap-4 px-10 py-5 bg-brand-coral text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl shadow-glow-coral hover:scale-[1.02] transition-all"
+                    >
+                      <Camera size={18} /> Initialize Daily Audit
+                    </button>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="p-10 border-2 border-dashed border-white/10 rounded-[2.5rem] text-center bg-white/[0.02]">
+                        {!file ? (
+                          <label className="cursor-pointer space-y-4 block">
+                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/20 border border-white/10 group-hover:border-brand-coral transition-colors">
+                              <Camera size={32} />
+                            </div>
+                            <p className="text-[10px] uppercase tracking-widest text-white/60 font-black">Authorize Photo Capture</p>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                          </label>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="w-24 h-24 rounded-2xl border-2 border-brand-coral overflow-hidden mx-auto shadow-glow-coral">
+                              <img src={URL.createObjectURL(file)} alt="Preview" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex gap-4 justify-center">
+                              <button 
+                                onClick={submitDailyCheckIn}
+                                disabled={isUploading}
+                                className="px-8 py-3 bg-brand-coral text-white text-[10px] uppercase tracking-widest font-black rounded-xl disabled:opacity-50"
+                              >
+                                {isUploading ? 'Syncing...' : 'Authorize Audit'}
+                              </button>
+                              <button onClick={() => setFile(null)} className="px-8 py-3 bg-white/5 text-white/40 text-[10px] uppercase tracking-widest font-black rounded-xl">Discard</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+             </div>
+
+             {/* Milestones */}
+             <div className="card-gradient p-10 space-y-10">
+                <div className="flex items-center gap-4">
+                  <Trophy size={20} className="text-brand-coral" />
+                  <h3 className="text-sm font-black uppercase tracking-widest">Achieved Milestones</h3>
+                </div>
+                <div className="space-y-8">
+                  {milestones.map((m, i) => (
+                    <div key={i} className="flex items-center gap-6 group">
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center border transition-all ${
+                        m.completed ? 'bg-brand-coral/20 border-brand-coral/40 text-brand-coral shadow-glow-coral' : 'bg-white/5 border-white/10 text-white/10'
+                      }`}>
+                        {m.completed ? <CheckCircle size={16} /> : <Shield size={16} />}
+                      </div>
+                      <div className="space-y-1">
+                        <p className={`text-[10px] uppercase tracking-widest font-black transition-colors ${m.completed ? 'text-white' : 'text-white/20'}`}>
+                          {m.title}
+                        </p>
+                        {m.completed && (
+                          <p className="text-[8px] uppercase tracking-widest text-brand-coral font-bold font-mono">Status: Authorized</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+             </div>
           </div>
         </div>
       )}
 
-      {activeTab === 'logs' && (
-        <div className="card-gradient p-8">
-          <div className="flex justify-between items-center mb-8 border-b border-white/5 pb-8">
-            <h3 className="text-lg font-bold uppercase tracking-tight">Workout Logs</h3>
-            <button className="px-6 py-2 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded">Log Session</button>
+      {activeTab === 'audits' && (
+        <div className="card-gradient p-10 space-y-10">
+          <div className="flex justify-between items-center border-b border-white/5 pb-10">
+            <h3 className="text-xl font-black uppercase tracking-tighter">Audit <span className="text-brand-coral">History</span></h3>
+            <div className="flex gap-4">
+              <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Sync Frequency: 24h</span>
+            </div>
           </div>
           
           <div className="space-y-4">
-            {user.workoutLogs && user.workoutLogs.length > 0 ? user.workoutLogs.map(log => (
-              <div key={log.id} className="p-4 bg-white/5 border border-white/5 rounded-xl flex justify-between items-center hover:border-brand-teal/30 transition-all cursor-pointer group">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-white/5 rounded flex flex-col items-center justify-center">
-                    <span className="text-[10px] font-bold uppercase">{new Date(log.completed_at).toLocaleDateString('en-US', { day: '2-digit' })}</span>
-                    <span className="text-[8px] uppercase tracking-widest text-white/40">{new Date(log.completed_at).toLocaleDateString('en-US', { month: 'short' })}</span>
+            {loading ? (
+              [1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-3xl animate-pulse" />)
+            ) : logs.length > 0 ? logs.map(log => (
+              <div key={log.id} className="p-8 bg-white/[0.02] border border-white/5 hover:border-brand-coral/30 rounded-[2.5rem] flex flex-col md:flex-row justify-between items-center gap-8 transition-all group overflow-hidden relative">
+                <div className="flex items-center gap-8 w-full md:w-auto">
+                  <div className="w-16 h-16 bg-white/5 rounded-2xl border border-white/10 flex flex-col items-center justify-center overflow-hidden shrink-0 group-hover:border-brand-coral/50 transition-colors">
+                    {log.check_in_image ? (
+                      <img src={log.check_in_image} alt="Log" className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" />
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <span className="text-xs font-black font-mono">{new Date(log.completed_at).getDate()}</span>
+                        <span className="text-[8px] uppercase tracking-widest text-white/40">{new Date(log.completed_at).toLocaleDateString('en-US', { month: 'short' })}</span>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold uppercase tracking-tight">{(log as any).sessionTitle || 'Training Session'}</h4>
-                    <p className="text-[10px] uppercase tracking-widest text-white/40 mt-1">{log.duration} Minutes</p>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-black uppercase tracking-tight text-white group-hover:text-brand-coral transition-colors">
+                      Physiological Sync #{log.id.slice(0, 4)}
+                    </h4>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Clock size={12} className="text-white/20" />
+                        <span className="text-[9px] uppercase tracking-widest font-black text-white/40">{log.duration} Min Session</span>
+                      </div>
+                      <span className={`px-2 py-0.5 text-[8px] uppercase tracking-widest font-black rounded-lg border ${
+                        log.status === 'approved' ? 'bg-brand-teal/20 border-brand-teal/30 text-brand-teal' : 'bg-brand-coral/20 border-brand-coral/30 text-brand-coral'
+                      }`}>
+                        {log.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-white/20 group-hover:text-brand-teal transition-colors" />
+                <div className="w-full md:w-auto flex items-center justify-end gap-6 text-white/10 group-hover:text-brand-coral transition-colors">
+                   <p className="text-[10px] uppercase tracking-widest font-black text-right hidden lg:block">Authorized @ {new Date(log.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                   <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" />
+                </div>
               </div>
             )) : (
-              <p className="text-xs uppercase tracking-widest text-white/40 text-center py-12">No workouts logged yet.</p>
+              <div className="py-32 text-center space-y-6">
+                <AlertCircle size={40} className="mx-auto text-white/5" />
+                <p className="text-[10px] uppercase tracking-[0.4em] font-black text-white/10">No authorized logs detected.</p>
+              </div>
             )}
           </div>
         </div>
       )}
 
-      {activeTab === 'metrics' && (
-        <div className="card-gradient p-8 text-center py-20">
-          <Target size={40} className="mx-auto text-brand-coral mb-6 opacity-50" />
-          <h3 className="text-xl font-bold uppercase tracking-tight mb-2">Metrics & Measurements</h3>
-          <p className="text-[10px] uppercase tracking-widest text-white/40 max-w-sm mx-auto">
-            Log your body metrics, measurements, and upload transformation photos to visually track your journey over time.
-          </p>
-          <button className="mt-8 px-8 py-3 bg-brand-coral text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(251,113,133,0.4)] transition-all">
-            Unlock Advanced Tracking
+      {activeTab === 'achievements' && (
+        <div className="card-gradient p-20 text-center space-y-10 rounded-[4rem]">
+          <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-white/10 relative">
+             <Trophy size={60} className="text-brand-coral/20" />
+             <div className="absolute inset-0 animate-spin-slow rotate-[45deg] transition-all">
+                <div className="w-2 h-2 bg-brand-coral rounded-full absolute -top-1 left-1/2 -ml-1 shadow-glow-coral" />
+             </div>
+          </div>
+          <div className="space-y-4">
+            <h3 className="text-3xl font-black uppercase tracking-tighter">Neuro-Skeletal <span className="text-brand-coral">Matrix</span></h3>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-white/20 max-w-sm mx-auto font-black leading-relaxed">
+              Maintain audit streaks to decrypt advanced achievements and unlock elite-tier physiological markers. 
+            </p>
+          </div>
+          <button className="px-12 py-5 border border-white/10 text-white/40 text-[10px] uppercase tracking-[0.4em] font-black rounded-2xl hover:border-brand-coral hover:text-white transition-all">
+            Decrypt Mastery Map
           </button>
         </div>
       )}

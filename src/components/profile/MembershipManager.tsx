@@ -26,25 +26,30 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
     }
   ];
 
+  const CHANGE_INTERVAL_DAYS = 20;
+
   const calculateDaysSinceChange = () => {
-    if (!user.last_tier_change_date) return 31; // Safe default
+    if (!user.last_tier_change_date) return CHANGE_INTERVAL_DAYS + 1; // Safe default
     const lastChange = new Date(user.last_tier_change_date);
     const splitDiff = Date.now() - lastChange.getTime();
     return Math.floor(splitDiff / (1000 * 3600 * 24));
   };
 
   const daysSince = calculateDaysSinceChange();
-  const canChange = daysSince >= 30;
+  
+  // Admin and athlete bypass restrictions
+  const isPrivileged = user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete';
+  const canChange = isPrivileged || daysSince >= CHANGE_INTERVAL_DAYS;
 
   const handleUpdate = () => {
     if (!selectedTier) return;
     if (!canChange) {
-      showToast('You cannot change tiers within 30 days of your last update.', 'error');
+      showToast(`Administrative restriction: You must wait ${CHANGE_INTERVAL_DAYS - daysSince} more days to re-sync your tier.`, 'error');
       return;
     }
     updateTier(selectedTier);
     setSelectedTier(null);
-    showToast(`Successfully upgraded to ${selectedTier}! Note: Next change restricted for 30 days.`, 'success');
+    showToast(`Matrix Update: Access tier synchronized to ${selectedTier}. Logic shift complete.`, 'success');
   };
 
   return (
@@ -64,8 +69,8 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
           <div className="space-y-2">
             <h4 className="text-sm font-bold uppercase tracking-widest text-brand-coral">Change Restriction Active</h4>
             <p className="text-xs text-brand-coral/80 uppercase tracking-widest leading-relaxed font-bold">
-              You changed your membership {daysSince} days ago. Note that you may only update your tier once every 30 days. 
-              You can change your tier again in {30 - daysSince} days.
+              You synchronized your membership {daysSince} days ago. Note that you may only update your tier once every {CHANGE_INTERVAL_DAYS} days. 
+              You can initiate a new sync in {CHANGE_INTERVAL_DAYS - daysSince} days.
             </p>
           </div>
         </div>
