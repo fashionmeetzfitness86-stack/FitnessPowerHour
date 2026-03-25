@@ -12,6 +12,8 @@ import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, us
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ProfileDashboard } from './components/profile/ProfileDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { CommunityPage } from './components/community/CommunityPage';
+import { CommunityDetail } from './components/community/CommunityDetail';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
@@ -319,6 +321,8 @@ interface AuthContextType {
   markAsRead: (id: string) => Promise<void>;
   clearNotifications: () => Promise<void>;
   toggleFavorite: (videoId: string) => Promise<void>;
+  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  updateSecurity: (email?: string, password?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -603,6 +607,45 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateProfile = async (profileUpdate: Partial<UserProfile>) => {
+    if (!user) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { error } = await supabase.from('users').update({
+        ...profileUpdate,
+        updated_at: new Date().toISOString()
+      }).eq('id', session.user.id);
+
+      if (error) throw error;
+      fetchUser(session.user.id);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
+  const updateSecurity = async (email?: string, password?: string) => {
+    try {
+      const updates: any = {};
+      if (email) updates.email = email;
+      if (password) updates.password = password;
+
+      const { error } = await supabase.auth.updateUser(updates);
+      if (error) throw error;
+
+      // If email was updated, update core profile too
+      if (email && user) {
+        await supabase.from('users').update({ email }).eq('id', user.id);
+        fetchUser(user.id);
+      }
+    } catch (error) {
+      console.error('Error updating security settings:', error);
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-black">
@@ -622,7 +665,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       addNotification, 
       markAsRead, 
       clearNotifications,
-      toggleFavorite
+      toggleFavorite,
+      updateProfile,
+      updateSecurity
     }}>
       {children}
     </AuthContext.Provider>
@@ -5269,415 +5314,9 @@ const challenges = [
   { title: 'Sunrise Beach Ritual', participants: 890, daysLeft: 20, reward: 'Retreat Discount' },
 ];
 
-const CommunityPage = () => {
-  const { user, addNotification } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [newPostContent, setNewPostContent] = useState('');
-  const [isPosting, setIsPosting] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [confirmDelete, setConfirmDelete] = useState<{ type: 'post' | 'comment', postId: string, commentId?: string } | null>(null);
-
-  useEffect(() => {
-    // In a real app, we'd fetch from Firestore here
-    setPosts(mockPosts);
-  }, []);
-
-  const handlePostSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!newPostContent.trim() || !user) return;
-
-    const newPost: Post = {
-      id: `p-${Date.now()}`,
-      community_id: '1',
-      user_id: user.id,
-      user_name_snapshot: user.full_name,
-      title: 'New Post',
-      content: newPostContent,
-      likes: [],
-      comments: [],
-      tags: ['General'],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    setPosts([newPost, ...posts]);
-    setNewPostContent('');
-    setIsPosting(false);
-  };
-
-  const handleLike = (postId: string) => {
-    if (!user) return;
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        const hasLiked = post.likes.includes(user.id);
-        if (!hasLiked) {
-          addNotification({
-            user_id: post.user_id,
-            type: 'like',
-            fromUserId: user.id,
-            fromUserName: user.full_name,
-            postId: post.id,
-            postContent: post.content.substring(0, 50) + '...'
-          });
-        }
-        return {
-          ...post,
-          likes: hasLiked 
-            ? post.likes.filter(id => id !== user.id)
-            : [...post.likes, user.id]
-        };
-      }
-      return post;
-    }));
-  };
-
-  const handleDeletePost = (postId: string) => {
-    setPosts(posts.filter(p => p.id !== postId));
-  };
-
-  const handleDeleteComment = (postId: string, commentId: string) => {
-    setPosts(posts.map(p => {
-      if (p.id === postId) {
-        return {
-          ...p,
-          comments: p.comments.filter(c => c.id !== commentId)
-        };
-      }
-      return p;
-    }));
-  };
-
-  return (
-    <div className="pt-40 pb-32 px-6">
-      <div className="max-w-7xl mx-auto">
-        <header className="mb-20 text-center space-y-6">
-          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">The Collective</span>
-          <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">FMF <span className="text-brand-coral">Community</span></h1>
-          <p className="text-white/40 uppercase tracking-widest text-xs max-w-xl mx-auto leading-relaxed">
-            Connect with athletes worldwide. Share your journey, ask questions, and rise with the collective.
-          </p>
-        </header>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Confirmation Modal */}
-          <ConfirmationModal 
-            isOpen={confirmDelete !== null}
-            onClose={() => setConfirmDelete(null)}
-            onConfirm={() => {
-              if (!confirmDelete) return;
-              if (confirmDelete.type === 'post') {
-                handleDeletePost(confirmDelete.postId);
-              } else if (confirmDelete.type === 'comment' && confirmDelete.commentId) {
-                handleDeleteComment(confirmDelete.postId, confirmDelete.commentId);
-              }
-            }}
-            title={`Delete ${confirmDelete?.type === 'post' ? 'Post' : 'Comment'}`}
-            message={`Are you sure you want to delete this ${confirmDelete?.type}? This action cannot be undone.`}
-          />
-
-          {/* Main Forum Feed */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Create Post */}
-            {user && (user.role === 'admin' || user.role === 'athlete') ? (
-              <div className="card-gradient p-8 space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-brand-teal/20 flex items-center justify-center text-brand-teal font-bold text-xs">
-                    {user.full_name.charAt(0)}
-                  </div>
-                  <button 
-                    onClick={() => setIsPosting(true)}
-                    className="flex-grow text-left px-6 py-3 bg-white/5 border border-white/10 rounded-full text-white/40 text-xs uppercase tracking-widest hover:bg-white/10 transition-all"
-                  >
-                    Share your progress, {user.full_name.split(' ')[0]}...
-                  </button>
-                </div>
-              </div>
-            ) : user ? (
-              <div className="card-gradient p-8 text-center space-y-4">
-                <p className="text-xs text-white/40 uppercase tracking-widest">Only Admins and Athletes can post on the feed. You can still like posts!</p>
-              </div>
-            ) : (
-              <div className="card-gradient p-8 text-center space-y-4">
-                <p className="text-xs text-white/40 uppercase tracking-widest">Join the collective to participate in the forum</p>
-                <Link to="/membership" className="btn-primary inline-block">Join Now</Link>
-              </div>
-            )}
-
-            {/* Filters */}
-            <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-              {['All', 'Progress', 'Training', 'Lifestyle', 'Questions'].map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setActiveFilter(filter)}
-                  className={`px-6 py-2 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all border ${
-                    activeFilter === filter ? 'bg-brand-teal border-brand-teal text-black' : 'border-white/10 text-white/40 hover:border-white/20'
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-
-            {/* Posts List */}
-            <div className="space-y-8">
-              {posts.map((post) => (
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={post.id} 
-                  className="card-gradient p-8 space-y-6"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-brand-teal font-bold">
-                        {post.user_name_snapshot.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-sm font-bold uppercase tracking-tight">{post.user_name_snapshot}</h4>
-                        </div>
-                        <p className="text-[10px] text-white/20 uppercase tracking-widest">
-                          {new Date(post.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      {post.user_id === user?.id && (
-                        <button 
-                          onClick={() => setConfirmDelete({ type: 'post', postId: post.id })}
-                          className="text-white/20 hover:text-brand-coral transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                      <button className="text-white/20 hover:text-white transition-colors">
-                        <Share2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <p className="text-white/80 text-sm leading-relaxed">{post.content}</p>
-                    {post.image_url && (
-                      <div className="rounded-2xl overflow-hidden border border-white/5">
-                        <img src={post.image_url} alt="Post content" className="w-full h-auto grayscale hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {post.tags.map((tag) => (
-                        <span key={tag} className="text-[8px] text-brand-coral uppercase tracking-widest font-bold">#{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-6 border-t border-white/5 flex items-center gap-8">
-                    <button 
-                      onClick={() => handleLike(post.id)}
-                      className={`flex items-center gap-2 transition-colors group ${
-                        post.likes.includes(user?.id || '') ? 'text-brand-coral' : 'text-white/40 hover:text-brand-coral'
-                      }`}
-                    >
-                      <Heart size={18} className={post.likes.includes(user?.id || '') ? 'fill-brand-coral' : ''} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">{post.likes.length}</span>
-                    </button>
-                    <button 
-                      onClick={() => {
-                        // Toggle comments visibility or focus
-                      }}
-                      className="flex items-center gap-2 text-white/40 hover:text-brand-teal transition-colors"
-                    >
-                      <Quote size={18} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">{post.comments.length}</span>
-                    </button>
-                  </div>
-
-                  {/* Comments Section (Simplified) */}
-                  {post.comments.length > 0 && (
-                    <div className="pt-6 space-y-4">
-                      {post.comments.map((comment) => (
-                        <div key={comment.id} className="flex gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/5">
-                          <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-brand-teal">
-                            {comment.authorName.charAt(0)}
-                          </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold uppercase tracking-tight">{comment.user_name_snapshot}</span>
-                              <span className="text-[8px] text-white/20 uppercase tracking-widest">
-                                {new Date(comment.created_at).toLocaleDateString()}
-                              </span>
-                              {comment.user_id === user?.id && (
-                                <button 
-                                  onClick={() => setConfirmDelete({ type: 'comment', postId: post.id, commentId: comment.id })}
-                                  className="text-white/20 hover:text-brand-coral transition-colors"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-white/60 leading-relaxed">{comment.content}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Add Comment Input */}
-                  {user && (user.role === 'admin' || user.role === 'athlete') && (
-                    <div className="pt-4 flex gap-4">
-                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold text-brand-teal">
-                        {user.full_name.charAt(0)}
-                      </div>
-                      <form 
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const form = e.target as HTMLFormElement;
-                          const input = form.elements.namedItem('comment') as HTMLInputElement;
-                          if (!input.value.trim()) return;
-                          
-                          const newComment: CommunityComment = {
-                            id: `c-${Date.now()}`,
-                            user_id: user.id,
-                            user_name_snapshot: user.full_name,
-                            content: input.value,
-                            created_at: new Date().toISOString()
-                          };
-
-                          setPosts(posts.map(p => 
-                            p.id === post.id ? { ...p, comments: [...p.comments, newComment] } : p
-                          ));
-                          addNotification({
-                            user_id: post.user_id,
-                            type: 'comment',
-                            fromUserId: user.id,
-                            fromUserName: user.full_name,
-                            postId: post.id,
-                            postContent: post.content.substring(0, 50) + '...'
-                          });
-                          input.value = '';
-                        }}
-                        className="flex-grow flex gap-2"
-                      >
-                        <input
-                          name="comment"
-                          placeholder="Add a comment..."
-                          className="flex-grow bg-white/5 border border-white/10 px-4 py-2 rounded-full text-[10px] focus:outline-none focus:border-brand-teal transition-all"
-                        />
-                        <button type="submit" className="text-brand-teal hover:text-white transition-colors">
-                          <Send size={14} />
-                        </button>
-                      </form>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-12">
-            {/* Leaderboard */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold uppercase tracking-tighter">Top Athletes</h2>
-              <div className="card-gradient overflow-hidden">
-                <div className="p-6 space-y-4">
-                  {leaderboard.slice(0, 3).map((athlete) => (
-                    <div key={athlete.rank} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
-                      <div className="flex items-center gap-4">
-                        <span className="text-brand-coral font-mono text-xs">#{athlete.rank}</span>
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-tight">{athlete.name}</p>
-                          <p className="text-[8px] text-white/40 uppercase tracking-widest">{athlete.level}</p>
-                        </div>
-                      </div>
-                      <span className="text-[10px] font-mono text-brand-teal">{athlete.points.toLocaleString()}</span>
-                    </div>
-                  ))}
-                </div>
-                <button className="w-full py-4 bg-white/5 text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-all border-t border-white/5">
-                  View Full Leaderboard
-                </button>
-              </div>
-            </div>
-
-            {/* Active Challenges */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold uppercase tracking-tighter">Active Challenges</h2>
-              <div className="space-y-4">
-                {challenges.map((challenge, idx) => (
-                  <div key={idx} className="card-gradient p-6 space-y-4 group cursor-pointer hover:border-brand-coral transition-all">
-                    <div className="flex justify-between items-start">
-                      <h4 className="text-sm font-bold uppercase tracking-tight group-hover:text-brand-coral transition-colors">{challenge.title}</h4>
-                      <span className="text-[8px] px-2 py-1 bg-brand-coral/10 text-brand-coral rounded uppercase font-bold tracking-widest">
-                        {challenge.daysLeft}d Left
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] uppercase tracking-widest text-white/40">
-                      <span>{challenge.participants.toLocaleString()} Athletes</span>
-                      <span className="text-brand-teal">{challenge.reward}</span>
-                    </div>
-                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-coral w-2/3" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Post Modal */}
-      <AnimatePresence>
-        {isPosting && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsPosting(false)}
-              className="absolute inset-0 bg-brand-black/90 backdrop-blur-xl"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-lg card-gradient p-10 space-y-8"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-bold uppercase tracking-tighter">Create Post</h3>
-                <button onClick={() => setIsPosting(false)} className="text-white/40 hover:text-white">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <form onSubmit={handlePostSubmit} className="space-y-6">
-                <textarea
-                  required
-                  value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
-                  placeholder="What's on your mind? Share your progress or ask a question..."
-                  className="w-full h-40 bg-white/5 border border-white/10 p-6 text-sm focus:outline-none focus:border-brand-teal transition-colors resize-none"
-                />
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-4">
-                    <button type="button" className="p-2 text-white/40 hover:text-brand-teal transition-colors">
-                      <Upload size={20} />
-                    </button>
-                    <button type="button" className="p-2 text-white/40 hover:text-brand-teal transition-colors">
-                      <Link2 size={20} />
-                    </button>
-                  </div>
-                  <button type="submit" className="btn-primary px-10 py-4">Post to Collective</button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
+/* 
+Legacy CommunityPage removed. Now using modular component in ./components/community/CommunityPage
+*/
 
 const Recovery = () => (
   <div className="pt-40 pb-32 px-6">
@@ -6461,8 +6100,8 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/videos" element={<VideoLibrary />} />
               <Route path="/video/:id" element={<VideoDetail />} />
               <Route path="/athletes" element={<Athletes />} />
-              <Route path="/membership" element={<Membership showToast={showToast} />} />
-              <Route path="/community" element={<CommunityPage />} />
+              <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
+              <Route path="/community/:id" element={<CommunityDetail user={user} showToast={showToast} />} />
               <Route path="/schedule" element={<Schedule showToast={showToast} />} />
               <Route path="/shop" element={<Store />} />
               <Route path="/shop/:category" element={<Store />} />
