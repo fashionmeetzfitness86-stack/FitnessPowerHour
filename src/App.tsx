@@ -58,7 +58,7 @@ import {
   CommunityType
 } from './types';
 
-import { supabase, authRedirectError } from './supabase';
+import { supabase } from './supabase';
 
 // --- Error Boundary ---
 interface ErrorBoundaryProps {
@@ -101,13 +101,16 @@ class ErrorBoundary extends React.Component<any, any> {
             <div className="w-16 h-16 bg-brand-teal/20 rounded-full flex items-center justify-center mx-auto text-brand-teal">
               <Clock size={32} />
             </div>
-            <h2 className="text-2xl font-bold uppercase tracking-tighter">Coming Soon</h2>
-            <p className="text-white/40 text-sm leading-relaxed">This feature is currently under development. Stay tuned!</p>
+            <h2 className="text-2xl font-bold uppercase tracking-tighter">Something Went Wrong</h2>
+            <p className="text-white/40 text-sm leading-relaxed">{errorMessage}</p>
             <button
-              onClick={() => { window.location.href = window.location.origin + window.location.pathname + '#/'; }}
+              onClick={() => {
+                (this as any).setState({ hasError: false, error: null });
+                window.location.href = window.location.origin + window.location.pathname + '#/';
+              }}
               className="btn-primary w-full"
             >
-              Go Back
+              Try Again
             </button>
           </div>
         </div>
@@ -413,31 +416,50 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchUser = async (userId: string) => {
     const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
     if (data) {
-      setUser(data as UserProfile);
+      // Map DB columns (name, joinedAt) to app's UserProfile shape
+      const profile: any = {
+        ...data,
+        full_name: data.name || data.full_name || data.email || 'Member',
+        signup_date: data.joinedAt || data.signup_date || data.created_at || new Date().toISOString(),
+        role: data.role || (data.email === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user'),
+        status: data.status || 'active',
+        created_at: data.created_at || data.joinedAt || new Date().toISOString(),
+        updated_at: data.updated_at || new Date().toISOString()
+      };
+      setUser(profile as UserProfile);
       return;
     }
 
-    // No profile row found â€” build user from auth session
+    // No profile row found - build user from auth session
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const meta = session.user.user_metadata || {};
-      const newUser: any = {
+      const displayName = meta.display_name || meta.full_name || session.user.email?.split('@')[0] || 'Member';
+      const now = new Date().toISOString();
+
+      // In-memory user for immediate UI
+      const memUser: any = {
         id: session.user.id,
-        full_name: meta.display_name || meta.full_name || session.user.email?.split('@')[0] || 'Member',
+        full_name: displayName,
         email: session.user.email || '',
         role: session.user.email === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
-        tier: 'Basic',
+        tier: 'Free Access',
         status: 'active',
-        signup_date: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        signup_date: now,
+        created_at: now,
+        updated_at: now
       };
+      setUser(memUser as UserProfile);
 
-      // Always set user in state â€” don't block on DB insert
-      setUser(newUser as UserProfile);
-
-      // Try to persist to DB in background
-      supabase.from('users').upsert(newUser).then(({ error: insertErr }) => {
+      // Persist to DB using actual DB column names
+      const dbRow = {
+        id: session.user.id,
+        name: displayName,
+        email: session.user.email || '',
+        tier: 'Free Access',
+        joinedAt: now
+      };
+      supabase.from('users').upsert(dbRow).then(({ error: insertErr }) => {
         if (insertErr) console.error('Auto-create user error:', insertErr);
       });
     }
@@ -486,23 +508,23 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email, password,
-        options: { data: { display_name: name } }
+        options: {
+          data: { display_name: name },
+          emailRedirectTo: window.location.origin
+        }
       });
       if (error) throw error;
 
       if (data.user) {
-        const newUser: UserProfile = {
+        // Use actual DB column names
+        const dbRow = {
           id: data.user.id,
-          full_name: name,
+          name,
           email,
-          role: email === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
-          signup_date: new Date().toISOString(),
-          status: 'active',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          tier: tier || 'Free Access',
+          joinedAt: new Date().toISOString()
         };
-
-        await supabase.from('users').insert(newUser);
+        await supabase.from('users').insert(dbRow);
       }
     } catch (error) {
       console.error('Signup error:', error);
@@ -523,10 +545,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      await supabase.from('users').update({ 
-        tier,
-        last_tier_change_date: new Date().toISOString()
-      }).eq('id', session.user.id);
+      await supabase.from('users').update({ tier }).eq('id', session.user.id);
       fetchUser(session.user.id);
     } catch (error) {
       console.error('Error updating tier:', error);
@@ -542,7 +561,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       await supabase.from('notifications').insert({
         ...notif,
         created_at: new Date().toISOString(),
-        status: 'sent'
+        is_read: false
       });
     } catch (error) {
       console.error('Error adding notification:', error);
@@ -551,7 +570,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const markAsRead = async (id: string) => {
     try {
-      await supabase.from('notifications').update({ status: 'read' }).eq('id', id);
+      await supabase.from('notifications').update({ is_read: true }).eq('id', id);
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) fetchNotifications(session.user.id);
     } catch (error) {
@@ -563,7 +582,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      await supabase.from('notifications').update({ status: 'read' }).eq('user_id', session.user.id).neq('status', 'read');
+      await supabase.from('notifications').update({ is_read: true }).eq('user_id', session.user.id).eq('is_read', false);
       fetchNotifications(session.user.id);
     } catch (error) {
       console.error('Error clearing notifications:', error);
@@ -691,7 +710,7 @@ const LANDING_ATHLETES: LandingAthlete[] = [
 const NotificationBell = () => {
   const { notifications, markAsRead, clearNotifications } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const unreadCount = notifications.filter(n => n.status !== 'read').length;
+  const unreadCount = notifications.filter((n: any) => !n.is_read && n.status !== 'read').length;
 
   return (
     <div className="relative">
@@ -745,20 +764,20 @@ const NotificationBell = () => {
                         markAsRead(notif.id);
                         // In a real app, navigate to the post
                       }}
-                      className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer ${notif.status !== 'read' ? 'bg-brand-teal/5' : ''}`}
+                      className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer ${!(notif as any).is_read ? 'bg-brand-teal/5' : ''}`}
                     >
                       <div className="flex gap-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${notif.type === 'like' ? 'bg-brand-coral/20 text-brand-coral' : 'bg-brand-teal/20 text-brand-teal'}`}>
-                          {notif.fromUserName.charAt(0)}
+                          {((notif as any).from_user_name || (notif as any).fromUserName || '?').charAt(0)}
                         </div>
                         <div className="flex-grow space-y-1">
                           <p className="text-[11px] text-white/80 leading-tight">
-                            <span className="font-bold text-white">{notif.fromUserName}</span> {notif.type === 'like' ? 'liked' : 'commented on'} your post:
+                            <span className="font-bold text-white">{(notif as any).from_user_name || (notif as any).fromUserName || 'Someone'}</span> {notif.type === 'like' ? 'liked' : 'commented on'} your post:
                           </p>
-                          <p className="text-[10px] text-white/40 italic truncate max-w-[180px]">"{notif.postContent}"</p>
+                          <p className="text-[10px] text-white/40 italic truncate max-w-[180px]">"{(notif as any).post_content || (notif as any).postContent || ''}"</p>
                           <p className="text-[8px] text-white/20 uppercase tracking-widest">{new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
-                        {notif.status !== 'read' && (
+                        {!(notif as any).is_read && (
                           <div className="w-1.5 h-1.5 rounded-full bg-brand-teal mt-1" />
                         )}
                       </div>
@@ -2607,6 +2626,43 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
   const { user } = useAuth();
   const isMember = user && user.tier !== 'Basic';
   const discount = 0.3;
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) return;
+    setCheckoutLoading(true);
+    try {
+      const items = cart.map((item: any) => ({
+        id: item.product.id,
+        name: item.product.name,
+        description: item.product.description,
+        price: isMember ? Math.floor(item.product.price * (1 - discount)) : item.product.price,
+        quantity: item.quantity
+      }));
+
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'shop',
+          items,
+          userId: user?.id || '',
+          userEmail: user?.email || ''
+        })
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Checkout error:', data.error);
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -2715,8 +2771,12 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full btn-primary py-5 text-xs rounded-xl flex items-center justify-center gap-3">
-                    Proceed to Checkout <ArrowRight size={16} />
+                  <button
+                    onClick={handleCheckout}
+                    disabled={checkoutLoading}
+                    className="w-full btn-primary py-5 text-xs rounded-xl flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {checkoutLoading ? 'Redirecting to Stripe...' : 'Proceed to Checkout'} {!checkoutLoading && <ArrowRight size={16} />}
                   </button>
                   <button 
                     onClick={clearCart}
@@ -3062,7 +3122,33 @@ const Store = () => {
                         </>
                       )}
                     </button>
-                    <button className="w-full border border-white/10 py-6 rounded-full font-bold text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all">
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/.netlify/functions/create-checkout', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              type: 'shop',
+                              items: [{
+                                id: selectedProduct.id,
+                                name: selectedProduct.name,
+                                description: selectedProduct.description,
+                                price: isMember ? Math.floor(selectedProduct.price * 0.7) : selectedProduct.price,
+                                quantity: 1
+                              }],
+                              userId: user?.id || '',
+                              userEmail: user?.email || ''
+                            })
+                          });
+                          const data = await res.json();
+                          if (data.url) window.location.href = data.url;
+                        } catch (err) {
+                          console.error('Buy now error:', err);
+                        }
+                      }}
+                      className="w-full border border-white/10 py-6 rounded-full font-bold text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all"
+                    >
                       Buy It Now
                     </button>
                   </div>
@@ -4200,11 +4286,16 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<any>(null);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
+  const params = new URLSearchParams(location.search);
+  const wantsLogin = params.get('mode') === 'login';
+  const wasConfirmed = params.get('confirmed') === 'true';
+  const shouldOpenModal = !user && (wantsLogin || wasConfirmed);
+
+  const [isRegistering, setIsRegistering] = useState(shouldOpenModal);
+  const [isLogin, setIsLogin] = useState(shouldOpenModal);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isConfirmed, setIsConfirmed] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(authRedirectError || '');
+  const [isConfirmed, setIsConfirmed] = useState(wasConfirmed);
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Close modal and go to profile when user logs in
   useEffect(() => {
@@ -4214,21 +4305,19 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
     }
   }, [user]);
 
-  // Open login modal from URL params
+  // Open login modal when URL params change (e.g. clicking Login from another page)
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (!user) {
-      if (params.get('mode') === 'login') {
-        setIsLogin(true);
-        setIsRegistering(true);
-      }
-      if (params.get('confirmed') === 'true') {
-        setIsConfirmed(true);
-        setIsLogin(true);
-        setIsRegistering(true);
-      }
+    const p = new URLSearchParams(location.search);
+    if (!user && p.get('mode') === 'login') {
+      setIsLogin(true);
+      setIsRegistering(true);
     }
-  }, [location.search]);
+    if (!user && p.get('confirmed') === 'true') {
+      setIsConfirmed(true);
+      setIsLogin(true);
+      setIsRegistering(true);
+    }
+  }, [location.search, location.key]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -4841,6 +4930,20 @@ const Profile = () => {
   const navigate = useNavigate();
   const [waited, setWaited] = useState(false);
   const { showToast } = (window as any).fmfToast || { showToast: () => {} };
+
+  // Handle payment success redirect from Stripe
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    if (params.get('payment') === 'success') {
+      const tier = params.get('tier');
+      if (tier && user) {
+        updateTier(tier);
+      }
+      if (showToast) showToast('Payment successful! Welcome to your new plan.', 'success');
+      // Clean URL
+      window.history.replaceState(null, '', window.location.pathname + '#/profile');
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) return;
