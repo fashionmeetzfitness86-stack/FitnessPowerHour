@@ -88,7 +88,13 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    if (item.id === 'membership' && (!user.tier || user.tier === 'Free Access')) {
+                      window.location.href = '/shop'; // Redirect to public membership page (shop)
+                      return;
+                    }
+                    setActiveTab(item.id);
+                  }}
                   className={`flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${
                     activeTab === item.id 
                       ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20' 

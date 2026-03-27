@@ -1,8 +1,36 @@
-import { ShoppingBag, Search, Package, ArrowUpRight } from 'lucide-react';
-import { UserProfile } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { ShoppingBag, Search, Package, ArrowUpRight, Loader2, ArrowRight, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { UserProfile, Order } from '../../types';
+import { supabase } from '../../supabase';
 
 export const OrderHistoryTab = ({ user }: { user: UserProfile }) => {
-  const orders = user.orderHistory || [];
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          items:order_items(*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [user.id]);
 
   return (
     <div className="space-y-8 fade-in">
@@ -25,10 +53,24 @@ export const OrderHistoryTab = ({ user }: { user: UserProfile }) => {
         </div>
       </header>
 
-      {orders.length > 0 ? (
-        <div className="space-y-6">
-          {orders.map(order => (
-            <div key={order.id} className="card-gradient p-8 border border-white/5 hover:border-brand-teal/30 transition-all rounded-3xl">
+      {loading ? (
+        <div className="flex items-center justify-center py-40">
+          <Loader2 className="text-brand-coral animate-spin" size={40} />
+        </div>
+      ) : orders.length > 0 ? (
+        <div className="space-y-8">
+          <AnimatePresence mode="popLayout">
+            {orders.map((order, i) => (
+              <motion.div 
+                key={order.id} 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="card-gradient p-10 border border-white/5 hover:border-brand-teal/30 transition-all rounded-[3rem] group relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 p-8 opacity-0 group-hover:opacity-[0.02] transition-opacity">
+                   <ShoppingBag size={200} />
+                </div>
               <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-6 border-b border-white/5 pb-6 mb-6">
                 <div className="flex items-center gap-6">
                   <div className="w-12 h-12 bg-white/5 border border-white/10 flex items-center justify-center rounded-xl text-white/40">
@@ -96,16 +138,26 @@ export const OrderHistoryTab = ({ user }: { user: UserProfile }) => {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
+          </AnimatePresence>
         </div>
       ) : (
-        <div className="card-gradient p-16 text-center rounded-3xl border-dashed border-2 border-white/10 flex flex-col items-center justify-center space-y-4">
-          <ShoppingBag size={48} className="text-brand-coral opacity-50 mb-2" />
-          <h3 className="text-xl font-bold uppercase tracking-tighter">No Order History</h3>
-          <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold max-w-sm">You haven't purchased any apparel, supplements, or equipment from the shop yet.</p>
-          <button className="mt-4 px-8 py-4 bg-brand-coral text-black transition-all text-[10px] uppercase font-bold tracking-widest rounded-xl shadow-[0_0_20px_rgba(251,113,133,0.3)] hover:bg-white">
-            Visit Store
+        <div className="card-gradient p-24 text-center rounded-[4rem] border-dashed border-2 border-white/10 flex flex-col items-center justify-center space-y-8 bg-brand-coral/[0.02]">
+          <div className="w-24 h-24 rounded-full bg-brand-coral/10 flex items-center justify-center text-brand-coral border border-brand-coral/20 shadow-glow-coral">
+             <ShoppingBag size={40} />
+          </div>
+          <div className="space-y-4">
+             <h3 className="text-4xl font-black uppercase tracking-tighter">No Neural <span className="text-brand-coral">Artifacts</span></h3>
+             <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold max-w-sm mx-auto leading-relaxed">
+               Your inventory is currently empty. Initialize a transmission from the FMF catalog to begin your physical collection.
+             </p>
+          </div>
+          <button 
+            onClick={() => window.location.href = '/shop'}
+            className="px-16 py-6 bg-brand-coral text-white transition-all text-[11px] uppercase font-black tracking-[0.4em] rounded-3xl shadow-glow-coral hover:bg-white hover:text-black flex items-center gap-4 group"
+          >
+            Visit Emporium <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
           </button>
         </div>
       )}

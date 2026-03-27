@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Bell, CreditCard, Shield, Camera, Package, Save } from 'lucide-react';
+import { Bell, CreditCard, Shield, Camera, Package, Save, Loader2 } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { supabase } from '../../supabase';
 
 export const Notifications = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
   const [prefs, setPrefs] = useState({
@@ -12,9 +13,30 @@ export const Notifications = ({ user, showToast }: { user: UserProfile, showToas
     program_updates: user.notification_preferences?.program_updates ?? true,
     order_updates: user.notification_preferences?.order_updates ?? true,
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleToggle = (key: keyof typeof prefs) => {
     setPrefs(p => ({ ...p, [key]: !p[key] }));
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          notification_preferences: prefs,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      showToast('Neural notification matrix updated.', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Synchronization failed.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -29,10 +51,12 @@ export const Notifications = ({ user, showToast }: { user: UserProfile, showToas
           </p>
         </div>
         <button 
-          onClick={() => showToast('Notification settings saved successfully', 'success')}
-          className="flex items-center gap-2 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="flex items-center gap-2 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all disabled:opacity-50"
         >
-          <Save size={14} /> Update Settings
+          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {isSaving ? 'Synchronizing...' : 'Update Settings'}
         </button>
       </header>
 

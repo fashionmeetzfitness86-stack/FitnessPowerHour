@@ -15,11 +15,14 @@ interface UsersManagerProps {
   statusFilter: string;
   setStatusFilter: (s: string) => void;
   onEdit: (user: UserProfile) => void;
+  onUpdateUser: (userId: string, updates: Partial<UserProfile>) => Promise<void>;
+  currentUser: UserProfile;
 }
 
 export const UsersManager = ({ 
   users, packages, searchQuery, setSearchQuery, 
-  roleFilter, setRoleFilter, statusFilter, setStatusFilter, onEdit 
+  roleFilter, setRoleFilter, statusFilter, setStatusFilter, onEdit,
+  onUpdateUser, currentUser
 }: UsersManagerProps) => {
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
@@ -117,6 +120,18 @@ export const UsersManager = ({
                     }`}>
                       {u.role.replace('_', ' ')}
                     </span>
+                    {currentUser.role === 'super_admin' && u.id !== currentUser.id && (
+                      <select
+                        value={u.role}
+                        onChange={(e) => onUpdateUser(u.id, { role: e.target.value as any })}
+                        className="ml-3 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[8px] uppercase tracking-widest font-bold outline-none focus:border-brand-teal transition-all cursor-pointer"
+                      >
+                        <option value="user">User</option>
+                        <option value="athlete">Athlete</option>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                      </select>
+                    )}
                   </td>
                   <td className="px-8 py-6">
                     <div className="space-y-1">
@@ -140,6 +155,17 @@ export const UsersManager = ({
                       }`}>
                         {u.status}
                       </span>
+                      {currentUser.role === 'super_admin' && u.id !== currentUser.id && (
+                        <select
+                          value={u.status}
+                          onChange={(e) => onUpdateUser(u.id, { status: e.target.value as any })}
+                          className="ml-2 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-[8px] uppercase tracking-widest font-bold outline-none focus:border-brand-teal transition-all cursor-pointer"
+                        >
+                          <option value="active">Active</option>
+                          <option value="suspended">Suspended</option>
+                          <option value="banned">Banned</option>
+                        </select>
+                      )}
                     </div>
                   </td>
                   <td className="px-8 py-6 text-right">

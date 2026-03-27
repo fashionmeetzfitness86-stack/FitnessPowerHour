@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Shield, Check, Lock, Info, Loader2 } from 'lucide-react';
+import { Shield, Check, Lock, Info, Loader2, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile } from '../../types';
 
 export const MembershipManager = ({ user, updateTier, showToast }: { user: UserProfile, updateTier: any, showToast: any }) => {
@@ -143,38 +144,86 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
 
               <button
                 disabled={isCurrent || !canChange}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedTier(tier.name);
+                }}
                 className={`w-full py-4 text-[10px] uppercase font-bold tracking-widest rounded-xl transition-all ${
                   isCurrent ? 'bg-brand-teal/10 text-brand-teal cursor-not-allowed' :
                   !canChange ? 'bg-white/5 border border-white/10 text-white/20 cursor-not-allowed' :
-                  isSelected ? 'bg-brand-coral text-brand-black shadow-lg shadow-brand-coral/20' :
-                  'bg-white text-black hover:bg-brand-teal'
+                  'bg-white text-black hover:bg-brand-teal hover:shadow-lg transition-all'
                 }`}
               >
-                {isCurrent ? 'Active Plan' : isSelected ? 'Confirm Selection' : 'Select Plan'}
+                {isCurrent ? 'Active Plan' : 'Select Plan'}
               </button>
             </div>
           );
         })}
       </div>
 
-      {selectedTier && canChange && (
-        <div className="p-8 border border-brand-teal/30 bg-brand-teal/5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <Info className="text-brand-teal" size={24} />
-            <div>
-              <p className="text-sm font-bold uppercase tracking-tight text-white">Ready to switch to {selectedTier}?</p>
-              <p className="text-[10px] uppercase tracking-widest text-white/60 mt-1">You'll be redirected to Stripe for secure payment.</p>
-            </div>
+      <AnimatePresence>
+        {selectedTier && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="card-gradient w-full max-w-xl p-12 space-y-10 rounded-[4rem] border border-brand-teal/20 shadow-2xl relative"
+            >
+              <div className="flex justify-between items-start">
+                <div className="space-y-4">
+                  <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center text-brand-teal">
+                    <Shield size={32} />
+                  </div>
+                  <h3 className="text-4xl font-black uppercase tracking-tighter">Sync <span className="text-brand-teal">{selectedTier}</span> Protocol</h3>
+                </div>
+                <button 
+                  onClick={() => setSelectedTier(null)}
+                  className="p-3 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                >
+                  <X className="text-white/40 hover:text-white" size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-8">
+                <div className="p-8 bg-white/5 rounded-3xl space-y-4 border border-white/10">
+                  <h4 className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Protocol Parameters</h4>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {tiers.find(t => t.name === selectedTier)?.features.map((f, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <Check size={14} className="text-brand-teal mt-1 shrink-0" />
+                        <span className="text-[11px] text-white/60 uppercase tracking-wide font-medium">{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div className="flex items-baseline justify-center gap-2 border-y border-white/5 py-8">
+                   <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold">Authorized Rate:</span>
+                   <span className="text-5xl font-black text-white">{tiers.find(t => t.name === selectedTier)?.price}</span>
+                   <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold">/ MONTH</span>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleUpdate}
+                  disabled={loading}
+                  className="flex-1 py-5 bg-brand-teal text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:scale-105 transition-all shadow-glow-teal flex items-center justify-center gap-3"
+                >
+                  {loading ? <><Loader2 size={18} className="animate-spin" /> Synchronizing...</> : 'Authorize Sync'}
+                </button>
+                <button 
+                  onClick={() => setSelectedTier(null)}
+                  className="flex-1 py-5 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
           </div>
-          <button
-            onClick={handleUpdate}
-            disabled={loading}
-            className="w-full md:w-auto px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {loading ? <><Loader2 size={14} className="animate-spin" /> Processing...</> : 'Pay & Upgrade'}
-          </button>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -89,7 +89,7 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: an
       if (dbError) throw dbError;
 
       // Update user streak locally or via DB
-      await supabase.from('users').update({ 
+      await supabase.from('profiles').update({ 
         streak: streak + 1,
         last_workout_date: new Date().toISOString()
       }).eq('id', user.id);

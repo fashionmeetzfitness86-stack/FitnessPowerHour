@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Clock, Plus, AlertTriangle, CheckCircle, Trash2, Shield } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, AlertTriangle, CheckCircle, Trash2, Shield, Video, Search, ChevronRight, X, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile, CalendarSession } from '../../types';
 import { supabase } from '../../supabase';
@@ -11,9 +11,13 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
-    duration: '30',
-    title: ''
+    time: '08:00',
+    title: '',
+    selectedVideos: [] as any[]
   });
+  const [availableVideos, setAvailableVideos] = useState<any[]>([]);
+  const [videoCategories, setVideoCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [errorMsg, setErrorMsg] = useState('');
 
   const fetchSessions = async () => {
@@ -33,22 +37,35 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
     }
   };
 
+  const fetchVideos = async () => {
+    try {
+      const { data: videos } = await supabase.from('videos').select('*');
+      const { data: categories } = await supabase.from('video_categories').select('*');
+      setAvailableVideos(videos || []);
+      setVideoCategories(categories || []);
+    } catch (err) {
+      console.error('Error fetching video data:', err);
+    }
+  };
+
   useEffect(() => {
     fetchSessions();
+    fetchVideos();
   }, [user.id]);
+
+  const totalDuration = formData.selectedVideos.reduce((acc, v) => acc + (parseInt(v.duration) || 0), 0);
 
   const handleAddSession = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     
-    const durationNeeded = parseInt(formData.duration);
-    
-    // Verify 1 hour max limit for a specific day
-    const daySessions = sessions.filter(s => s.date === formData.date);
-    const totalScheduledDuration = daySessions.reduce((acc, curr) => acc + curr.duration, 0);
+    if (totalDuration > 60) {
+      setErrorMsg(`Daily load limit exceeded. Max 60 mins/day. Current: ${totalDuration} mins.`);
+      return;
+    }
 
-    if (totalScheduledDuration + durationNeeded > 60) {
-      setErrorMsg(`Daily load limit exceeded. Max 60 mins/day. Current: ${totalScheduledDuration} mins.`);
+    if (formData.selectedVideos.length === 0) {
+      setErrorMsg("Select at least one video to build your session.");
       return;
     }
 
@@ -57,8 +74,9 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
         user_id: user.id,
         title: formData.title || 'Mastery Session',
         date: formData.date,
-        duration: durationNeeded,
-        type: 'custom',
+        video_ids: formData.selectedVideos.map(v => v.id),
+        duration: totalDuration,
+        type: 'custom_builder',
         status: 'scheduled',
         created_at: new Date().toISOString()
       };
@@ -69,12 +87,31 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
 
       if (error) throw error;
 
-      showToast('Neural track scheduled successfully.', 'success');
+      showToast('Neural track synchronized successfully.', 'success');
       setIsAdding(false);
-      setFormData({ ...formData, title: '' });
+      setFormData({ 
+        date: new Date().toISOString().split('T')[0],
+        time: '08:00',
+        title: '',
+        selectedVideos: [] 
+      });
       fetchSessions();
     } catch (error: any) {
       showToast(error.message || 'Scheduling failed.', 'error');
+    }
+  };
+
+  const toggleVideo = (video: any) => {
+    const isSelected = formData.selectedVideos.find(v => v.id === video.id);
+    if (isSelected) {
+      setFormData(prev => ({ ...prev, selectedVideos: prev.selectedVideos.filter(v => v.id !== video.id) }));
+    } else {
+      const videoDuration = parseInt(video.duration) || 0;
+      if (totalDuration + videoDuration > 60) {
+        showToast('Daily load limit exceeded. Remove sessions to add this block.', 'error');
+        return;
+      }
+      setFormData(prev => ({ ...prev, selectedVideos: [...prev.selectedVideos, video] }));
     }
   };
 
@@ -119,12 +156,20 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
             Mastery block programming. 60-minute daily load limit strictly enforced.
           </p>
         </div>
-        <button 
-          onClick={() => setIsAdding(!isAdding)}
-          className="flex items-center gap-4 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl shadow-glow-teal hover:scale-105 transition-all"
-        >
-          {isAdding ? 'De-initialize' : <><Plus size={16} /> Schedule Session</>}
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => showToast('Full Neural Matrix currently in development.')}
+            className="hidden md:flex items-center gap-4 px-8 py-4 bg-white/5 border border-white/10 text-white/40 text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl hover:text-white hover:bg-white/10 transition-all"
+          >
+            <CalendarIcon size={16} /> View Full Calendar
+          </button>
+          <button 
+            onClick={() => setIsAdding(!isAdding)}
+            className="flex items-center gap-4 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl shadow-glow-teal hover:scale-105 transition-all"
+          >
+            {isAdding ? 'De-initialize' : <><Plus size={16} /> Schedule Session</>}
+          </button>
+        </div>
       </header>
 
       <AnimatePresence>
@@ -141,8 +186,8 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
                 <h3 className="text-sm font-black uppercase tracking-[0.3em]">Configure Appointment</h3>
               </div>
               
-              <form onSubmit={handleAddSession} className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <form onSubmit={handleAddSession} className="space-y-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-white/5">
                   <div className="space-y-2">
                     <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-2">Temporal Marker</label>
                     <input 
@@ -154,41 +199,111 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
                     />
                   </div>
                   <div className="space-y-2">
+                    <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-2">Execution Time</label>
+                    <input 
+                      type="time" 
+                      value={formData.time} 
+                      required
+                      onChange={e => setFormData({...formData, time: e.target.value})} 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-brand-teal outline-none transition-all text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-2">Logic Label</label>
                     <input 
                       type="text" 
                       value={formData.title} 
                       required
                       onChange={e => setFormData({...formData, title: e.target.value})} 
-                      placeholder="e.g. Upper Body Mastery"
+                      placeholder="e.g. AM Power Block"
                       className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-brand-teal outline-none transition-all text-white"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-2">Load Duration</label>
-                    <select 
-                      value={formData.duration} 
-                      onChange={e => setFormData({...formData, duration: e.target.value})} 
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-brand-teal outline-none transition-all appearance-none text-white"
-                    >
-                      <option value="15">15 Minutes</option>
-                      <option value="30">30 Minutes</option>
-                      <option value="45">45 Minutes</option>
-                      <option value="60">60 Minutes</option>
-                    </select>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+                    <div className="space-y-2">
+                      <h4 className="text-lg font-black uppercase tracking-tighter">Video Selection <span className="text-brand-teal">Protocol</span></h4>
+                      <p className="text-[9px] uppercase tracking-widest text-white/40 font-bold">Construct your 60-minute mastery cycle from verified content categories.</p>
+                    </div>
+                    <div className="flex gap-2 pb-1 overflow-x-auto no-scrollbar max-w-full">
+                       <button 
+                         type="button" 
+                         onClick={() => setSelectedCategory('all')}
+                         className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${selectedCategory === 'all' ? 'bg-brand-teal text-black' : 'bg-white/5 text-white/40 hover:text-white'}`}
+                       >
+                         All Content
+                       </button>
+                       {videoCategories.map(cat => (
+                         <button 
+                           key={cat.id}
+                           type="button" 
+                           onClick={() => setSelectedCategory(cat.id)}
+                           className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat.id ? 'bg-brand-teal text-black' : 'bg-white/5 text-white/40 hover:text-white'}`}
+                         >
+                           {cat.name}
+                         </button>
+                       ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {availableVideos
+                      .filter(v => selectedCategory === 'all' || v.category_id === selectedCategory)
+                      .map(video => {
+                        const isSelected = formData.selectedVideos.find((v: any) => v.id === video.id);
+                        return (
+                          <div 
+                            key={video.id} 
+                            onClick={() => toggleVideo(video)}
+                            className={`group relative aspect-video rounded-2xl overflow-hidden border-2 cursor-pointer transition-all ${isSelected ? 'border-brand-teal shadow-glow-teal scale-95' : 'border-white/5 hover:border-brand-teal/30'}`}
+                          >
+                            <img src={video.thumbnail_url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-4">
+                              <p className="text-[10px] font-black uppercase tracking-tight text-white mb-1 truncate">{video.title}</p>
+                              <div className="flex items-center gap-2 text-[8px] uppercase tracking-widest text-white/40 font-black">
+                                <Clock size={10} /> {video.duration}M
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <div className="absolute top-2 right-2 w-6 h-6 bg-brand-teal text-black rounded-full flex items-center justify-center shadow-lg">
+                                <CheckCircle size={14} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                   </div>
                 </div>
                 
-                {errorMsg && (
-                  <div className="flex items-center gap-4 text-brand-coral bg-brand-coral/5 p-4 rounded-2xl border border-brand-coral/20">
-                    <AlertTriangle size={18} />
-                    <span className="text-[9px] uppercase font-black tracking-widest">{errorMsg}</span>
+                <div className="p-8 bg-brand-teal/5 border border-brand-teal/20 rounded-[2rem] flex flex-col md:flex-row justify-between items-center gap-8">
+                  <div className="flex items-center gap-8 px-6 py-2">
+                    <div className="space-y-1">
+                      <p className="text-[9px] uppercase tracking-widest text-white/40 font-black">Total Cycle Load</p>
+                      <div className="flex items-baseline gap-2">
+                        <span className={`text-4xl font-black ${totalDuration > 60 ? 'text-brand-coral' : 'text-brand-teal'}`}>{totalDuration}</span>
+                        <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">/ 60 MIN</span>
+                      </div>
+                    </div>
+                    <div className="w-px h-12 bg-white/5" />
+                    <div className="space-y-1">
+                      <p className="text-[9px] uppercase tracking-widest text-white/40 font-black">Block Selection</p>
+                      <p className="text-xl font-black text-white">{formData.selectedVideos.length} <span className="text-[10px] uppercase tracking-widest text-white/20">Videos</span></p>
+                    </div>
                   </div>
-                )}
 
-                <button type="submit" className="w-full md:w-auto px-12 py-5 bg-brand-teal text-black text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl shadow-glow-teal hover:scale-105 active:scale-95 transition-all">
-                  Synchronize Appointment
-                </button>
+                  {errorMsg && (
+                    <div className="flex-grow flex items-center gap-4 text-brand-coral bg-brand-coral/5 p-4 rounded-2xl border border-brand-coral/20">
+                      <AlertTriangle size={18} />
+                      <span className="text-[9px] uppercase font-black tracking-widest">{errorMsg}</span>
+                    </div>
+                  )}
+
+                  <button type="submit" className="w-full md:w-auto px-16 py-6 bg-brand-teal text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-3xl shadow-glow-teal hover:scale-105 active:scale-95 transition-all">
+                    Initiate Neural Cycle
+                  </button>
+                </div>
               </form>
             </div>
           </motion.div>

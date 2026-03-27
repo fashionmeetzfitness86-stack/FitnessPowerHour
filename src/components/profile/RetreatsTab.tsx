@@ -1,41 +1,55 @@
-import { useState } from 'react';
-import { Map, MapPin, Calendar, Users, ExternalLink, CheckCircle } from 'lucide-react';
-import { UserProfile } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { Map, MapPin, Calendar, Users, ExternalLink, CheckCircle, Loader2 } from 'lucide-react';
+import { UserProfile, Retreat, RetreatApplication } from '../../types';
+import { supabase } from '../../supabase';
 
 export const RetreatsTab = ({ user }: { user: UserProfile }) => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'requests'>('upcoming');
+  const [retreats, setRetreats] = useState<(Retreat & { status?: string })[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const retreats = [
-    {
-      id: 'r1',
-      title: 'Miami Beach Immersion',
-      location: 'Miami, FL',
-      dates: 'Oct 12 - 15, 2026',
-      status: 'confirmed',
-      image: 'https://picsum.photos/seed/miami/800/450',
-      type: 'upcoming'
-    },
-    {
-      id: 'r2',
-      title: 'Costa Rica Reset',
-      location: 'Guanacaste, CR',
-      dates: 'Jan 5 - 12, 2027',
-      status: 'pending',
-      image: 'https://picsum.photos/seed/costarica/800/450',
-      type: 'requests'
-    },
-    {
-      id: 'r3',
-      title: 'Austin Lifting Camp',
-      location: 'Austin, TX',
-      dates: 'Mar 1 - 4, 2025',
-      status: 'completed',
-      image: 'https://picsum.photos/seed/austin/800/450',
-      type: 'past'
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      // Fetch all published retreats
+      const { data: allRetreats, error: rError } = await supabase
+        .from('retreats')
+        .select('*')
+        .eq('visibility_status', 'published');
+
+      if (rError) throw rError;
+
+      // Fetch user requests 
+      const { data: requests, error: qError } = await supabase
+        .from('user_retreat_requests')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (qError) throw qError;
+
+      // Map requests to retreats
+      const mapped = (allRetreats || []).map(r => {
+        const req = (requests || []).find(q => q.retreat_id === r.id);
+        return { ...r, status: req?.status || 'none', requested_at: req?.requested_at };
+      });
+
+      setRetreats(mapped);
+    } catch (err) {
+      console.error('Error fetching retreats:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filtered = retreats.filter(r => r.type === activeTab);
+  useEffect(() => {
+    fetchData();
+  }, [user.id]);
+
+  const upcoming = retreats.filter(r => r.status === 'approved' && new Date(r.start_date) > new Date());
+  const past = retreats.filter(r => r.status === 'approved' && new Date(r.start_date) <= new Date());
+  const pending = retreats.filter(r => r.status === 'pending');
+
+  const filtered = activeTab === 'upcoming' ? upcoming : activeTab === 'past' ? past : pending;
 
   return (
     <div className="space-y-12 fade-in">
@@ -63,20 +77,24 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
         </div>
       </header>
 
-      {filtered.length > 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-40">
+          <Loader2 className="text-brand-teal animate-spin" size={40} />
+        </div>
+      ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
           {filtered.map(retreat => (
             <div key={retreat.id} className="card-gradient rounded-3xl overflow-hidden group border border-transparent hover:border-brand-teal/30 transition-all flex flex-col">
               <div className="aspect-video relative bg-brand-black">
                 <div className="absolute inset-0 bg-black/40 z-10 group-hover:bg-black/20 transition-all" />
-                <img src={retreat.image} className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 transition-all duration-700" alt={retreat.title} />
+                <img src={retreat.cover_image} className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 transition-all duration-700" alt={retreat.title} />
                 <div className="absolute top-4 right-4 z-20">
                   <span className={`px-4 py-2 text-[8px] uppercase tracking-widest font-bold rounded-full ${
-                    retreat.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' :
+                    retreat.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' :
                     retreat.status === 'pending' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50' :
                     'bg-white/10 text-white border border-white/20'
                   }`}>
-                    {retreat.status}
+                    {retreat.status === 'approved' ? 'Confirmed' : retreat.status}
                   </span>
                 </div>
               </div>
@@ -91,7 +109,9 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
                     </div>
                     <div className="flex items-center gap-3 text-white/60">
                       <Calendar size={16} className="text-brand-teal" />
-                      <span className="text-[10px] uppercase tracking-widest font-bold">{retreat.dates}</span>
+                      <span className="text-[10px] uppercase tracking-widest font-bold">
+                        {new Date(retreat.start_date).toLocaleDateString()} - {new Date(retreat.end_date).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </div>

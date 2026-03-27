@@ -25,11 +25,13 @@ export interface VideoCategory {
 export interface UserVideoUpload {
   id: string;
   user_id: string;
-  video_url: string;
-  thumbnail_url: string;
-  title: string;
-  description: string;
-  uploaded_by: string;
+  media_type: 'photo' | 'video'; // Brief requirement
+  file_url: string; // Brief requirement
+  thumbnail_url?: string;
+  caption?: string; // Brief requirement
+  previous_weight?: string; // Brief requirement
+  current_weight?: string; // Brief requirement
+  media_date?: string; // Brief requirement
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
   updated_at: string;
@@ -265,8 +267,25 @@ export interface NotificationPreference {
   order_updates: boolean;
 }
 
+export interface UserMembership {
+  id: string;
+  user_id: string;
+  package_id: string;
+  status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid';
+  started_at: string;
+  renews_at: string;
+  ends_at?: string;
+  auto_pay_enabled: boolean;
+  payment_method_id?: string;
+  last_changed_at?: string;
+  next_package_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserProfile {
   id: string;
+  auth_user_id?: string; // Matching brief field
   full_name: string;
   email: string;
   phone?: string;
@@ -279,8 +298,12 @@ export interface UserProfile {
   role: 'user' | 'admin' | 'super_admin' | 'athlete' | 'flex_mob_admin';
   package_id?: string;
   tier?: string;
+  membership_package_id?: string; // Matching brief
+  membership_status?: 'active' | 'suspended' | 'banned' | 'archived';
+  last_membership_change_at?: string;
   status: 'active' | 'suspended' | 'banned' | 'archived';
   banned_at?: string;
+  bio?: string; // Matching brief
   preferences?: {
     notifications: boolean;
     marketing_emails: boolean;
@@ -289,6 +312,10 @@ export interface UserProfile {
   };
   created_at: string;
   updated_at: string;
+  profile_images?: string[]; // Up to 10 images
+  is_auto_pay?: boolean;
+  payment_method_id?: string;
+  last_billing_update?: string;
 
   favorites?: string[];
   streak?: number;
@@ -415,7 +442,8 @@ export interface CalendarSession {
   type: string;
   status: 'scheduled' | 'completed' | 'missed';
   program_id?: string;
-  video_id?: string;
+  video_ids?: string[];
+  time?: string;
   created_at: string;
 }
 

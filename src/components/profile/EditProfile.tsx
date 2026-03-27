@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Save, UserCircle, Camera, Activity, AlertCircle, Shield, Key, Mail, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Save, UserCircle, Camera, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
 
@@ -20,6 +21,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
     profile_image: user?.profile_image || '',
     city: user?.city || '',
     country: user?.country || '',
+    date_of_birth: user?.date_of_birth || '',
     age: user?.age || undefined,
     height: user?.height || '',
     weight: user?.weight || '',
@@ -28,7 +30,8 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
     fitness_level: user?.fitness_level || 'Intermediate',
     limitations_or_injuries: user?.limitations_or_injuries || '',
     short_bio: user?.short_bio || '',
-    motivation: user?.motivation || ''
+    motivation: user?.motivation || '',
+    profile_images: user?.profile_images || []
   });
 
   const [securityData, setSecurityData] = useState({
@@ -36,6 +39,9 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
     newPassword: '',
     confirmPassword: ''
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -55,27 +61,44 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
+    const files = e.target.files;
+    if (!files || !user) return;
+    
+    const remainingSlots = 10 - (formData.profile_images?.length || 0);
+    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+
+    if (filesToUpload.length === 0) {
+      return showToast('Maximum limit of 10 profile images reached.', 'error');
+    }
 
     try {
       setIsUploading(true);
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
+      const newUrls: string[] = [];
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+      for (const file of filesToUpload as any) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+        const filePath = `profiles/${fileName}`;
 
-      if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, file);
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+        if (uploadError) throw uploadError;
 
-      setFormData(prev => ({ ...prev, profile_image: publicUrl }));
-      showToast('Image uploaded! Click "Save Changes" to apply.', 'success');
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+        
+        newUrls.push(publicUrl);
+      }
+
+      setFormData(prev => ({ 
+        ...prev, 
+        profile_images: [...(prev.profile_images || []), ...newUrls],
+        profile_image: prev.profile_image || newUrls[0] // Set first as main if none
+      }));
+      showToast(`${filesToUpload.length} image(s) uploaded!`, 'success');
     } catch (error: any) {
       showToast(error.message || 'Error uploading image', 'error');
     } finally {
@@ -83,9 +106,13 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
     }
   };
 
-  const handleRemoveImage = () => {
-    setFormData(prev => ({ ...prev, profile_image: '' }));
-    showToast('Image removed. Click "Save Changes" to apply.', 'success');
+  const handleRemoveImage = (url: string) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      profile_images: prev.profile_images?.filter(u => u !== url),
+      profile_image: prev.profile_image === url ? (prev.profile_images?.find(u => u !== url) || '') : prev.profile_image
+    }));
+    showToast('Image removed.', 'success');
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -95,7 +122,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
     try {
       setIsSaving(true);
       const { error } = await supabase
-        .from('users')
+        .from('profiles')
         .update({
           ...formData,
           updated_at: new Date().toISOString()
@@ -130,7 +157,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
       if (error) throw error;
 
       if (type === 'email') {
-        await supabase.from('users').update({ email: securityData.newEmail }).eq('id', user.id);
+        await supabase.from('profiles').update({ email: securityData.newEmail }).eq('id', user.id);
       }
 
       showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} update initiated! Check your inbox.`, 'success');
@@ -174,46 +201,46 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
               <h3 className="text-lg font-bold uppercase tracking-tight">Basic Information</h3>
             </div>
 
-            <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
-              <div className="w-32 h-32 rounded-full border-4 border-brand-teal/20 bg-white/5 overflow-hidden flex items-center justify-center relative group">
-                {formData.profile_image ? (
-                  <img src={formData.profile_image} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  <UserCircle size={48} className="text-white/20" />
-                )}
-                {isUploading && (
-                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
-                    <div className="w-8 h-8 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                  <label className="cursor-pointer p-4 hover:scale-110 transition-transform">
-                    <Camera size={24} className="text-white" />
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                  </label>
-                  {formData.profile_image && (
-                    <button onClick={handleRemoveImage} className="p-2 text-brand-coral hover:scale-110 transition-transform">
-                      <Trash2 size={20} />
+            <div className="flex flex-col gap-6">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Identity Asset Protocol (Max 10 Images)</label>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {(formData.profile_images || []).map((img, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white/5 group">
+                    <img src={img} alt={`Profile ${idx}`} className="w-full h-full object-cover" />
+                    <button 
+                      onClick={() => handleRemoveImage(img)}
+                      className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-lg text-brand-coral opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash2 size={12} />
                     </button>
-                  )}
-                </div>
-              </div>
-              <div className="space-y-2 flex-grow">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Identity Asset Protocol</label>
-                <div className="flex gap-4">
-                  <input 
-                    type="text" 
-                    name="profile_image"
-                    value={formData.profile_image}
-                    onChange={handleChange}
-                    placeholder="https://..."
-                    className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] uppercase tracking-widest text-white/60 focus:border-brand-teal outline-none transition-colors"
-                  />
-                  <label className="cursor-pointer px-6 py-3 border border-brand-teal text-brand-teal text-[10px] uppercase tracking-widest font-bold rounded-xl hover:bg-brand-teal hover:text-black transition-all whitespace-nowrap">
-                    Upload New
-                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    {formData.profile_image === img && (
+                      <div className="absolute inset-x-0 bottom-0 py-1 bg-brand-teal text-black text-[8px] font-black uppercase tracking-widest text-center">
+                        Main
+                      </div>
+                    )}
+                    {formData.profile_image !== img && (
+                      <button 
+                        onClick={() => setFormData({...formData, profile_image: img})}
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"
+                      >
+                        <span className="text-[8px] font-black uppercase tracking-widest bg-white text-black px-2 py-1 rounded">Set Main</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {(formData.profile_images?.length || 0) < 10 && (
+                  <label className="aspect-square rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-brand-teal transition-all bg-white/[0.02] group">
+                    {isUploading ? (
+                      <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Camera size={24} className="text-white/20 group-hover:text-brand-teal transition-colors" />
+                        <span className="text-[8px] uppercase tracking-widest text-white/20 mt-2 font-bold group-hover:text-white transition-colors">Add Photo</span>
+                      </>
+                    )}
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
                   </label>
-                </div>
+                )}
               </div>
             </div>
 
@@ -231,8 +258,12 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                 <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Age</label>
-                <input type="number" name="age" value={formData.age || ''} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors" />
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Date of Birth</label>
+                <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Workout Style</label>
+                <input type="text" name="workout_style" value={formData.workout_style} onChange={handleChange} placeholder="e.g. Strength, Yoga, HIIT" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">City</label>
@@ -303,23 +334,13 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/60 font-bold mb-2">
                   <Mail size={12} /> Email Rotation
                 </div>
-                <div className="flex gap-4">
-                  <input 
-                    type="email" 
-                    name="newEmail"
-                    value={securityData.newEmail}
-                    onChange={handleSecurityChange}
-                    placeholder="Enter new email address" 
-                    className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors" 
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => handleUpdateSecurity('email')}
-                    className="px-6 py-3 bg-brand-coral text-black text-[10px] uppercase tracking-widest font-bold rounded-xl whitespace-nowrap"
-                  >
-                    Request Change
-                  </button>
-                </div>
+                <button 
+                  type="button"
+                  onClick={() => setShowEmailModal(true)}
+                  className="flex items-center gap-3 px-8 py-4 border border-white/10 hover:border-brand-coral/50 bg-white/5 rounded-2xl text-[10px] uppercase tracking-widest font-bold text-white transition-all w-full"
+                >
+                  <Mail size={16} className="text-brand-coral" /> Request Email Change Sync
+                </button>
               </div>
 
               <div className="space-y-4 pt-4 border-t border-white/5">
@@ -327,27 +348,42 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   <Key size={12} /> Access Credentials
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      name="newPassword"
+                      value={securityData.newPassword}
+                      onChange={handleSecurityChange}
+                      placeholder="New Password" 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors pr-12" 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   <input 
-                    type="password" 
-                    name="newPassword"
-                    value={securityData.newPassword}
-                    onChange={handleSecurityChange}
-                    placeholder="New Password" 
-                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors" 
-                  />
-                  <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"} 
                     name="confirmPassword"
                     value={securityData.confirmPassword}
                     onChange={handleSecurityChange}
                     placeholder="Confirm New Password" 
-                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors" 
+                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors ${
+                      securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword ? 'border-brand-coral' : 'border-white/10'
+                    }`} 
                   />
                 </div>
+                {securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword && (
+                  <p className="text-[10px] uppercase tracking-widest text-brand-coral font-bold mt-2">Passwords do not sync. Error detected.</p>
+                )}
                 <button 
                   type="button"
+                  disabled={!securityData.newPassword || securityData.newPassword !== securityData.confirmPassword}
                   onClick={() => handleUpdateSecurity('password')}
-                  className="w-full py-3 bg-white text-black text-[10px] uppercase tracking-widest font-bold rounded-xl"
+                  className="w-full py-4 bg-white text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:bg-brand-teal transition-all disabled:opacity-50"
                 >
                   Authorize Password Sync
                 </button>
@@ -356,6 +392,66 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
           </div>
         </div>
       </form>
+
+      {/* Email Change Modal */}
+      <AnimatePresence>
+        {showEmailModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="card-gradient w-full max-w-lg p-12 space-y-10 rounded-[3rem] border border-brand-coral/20 shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowEmailModal(false)}
+                className="absolute top-8 right-8 text-white/20 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+              <div className="space-y-4">
+                <div className="w-16 h-16 bg-brand-coral/10 rounded-2xl flex items-center justify-center text-brand-coral mx-auto">
+                  <Mail size={32} />
+                </div>
+                <h3 className="text-3xl font-black uppercase tracking-tighter text-center">Email <span className="text-brand-coral">Rotation</span></h3>
+                <p className="text-center text-[10px] uppercase tracking-widest text-white/40 font-bold">Initiate a secure transfer for your primary login credential.</p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-black">Authorized New Email</label>
+                  <input 
+                    type="email"
+                    name="newEmail"
+                    value={securityData.newEmail}
+                    onChange={handleSecurityChange}
+                    placeholder="Enter new email address"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-brand-coral outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    handleUpdateSecurity('email');
+                    setShowEmailModal(false);
+                  }}
+                  className="flex-1 py-5 bg-brand-coral text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:scale-105 transition-all shadow-glow-coral"
+                >
+                  Authorize Change
+                </button>
+                <button 
+                  onClick={() => setShowEmailModal(false)}
+                  className="flex-1 py-5 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
+                >
+                  Cancel Protocol
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

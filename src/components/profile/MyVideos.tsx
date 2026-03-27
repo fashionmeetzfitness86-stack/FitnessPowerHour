@@ -108,15 +108,19 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
         .from('media')
         .getPublicUrl(filePath);
 
+      const isVideo = file.type.startsWith('video/');
       const newUpload: Partial<UserVideoUpload> = {
         user_id: user.id,
-        video_url: publicUrl,
-        thumbnail_url: publicUrl, // Default to same for photos, real thumbnail later for vids
-        title: uploadMeta.title || file.name,
-        description: `Weight: ${uploadMeta.currentWeight} lbs. Purpose: ${uploadMeta.purpose}`,
-        uploaded_by: user.id,
+        media_type: isVideo ? 'video' : 'photo',
+        file_url: publicUrl,
+        thumbnail_url: publicUrl, 
+        caption: uploadMeta.title || file.name,
+        previous_weight: uploadMeta.previousWeight,
+        current_weight: uploadMeta.currentWeight,
+        media_date: new Date().toISOString(),
         status: 'pending',
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
       const { error: dbError } = await supabase
@@ -141,8 +145,8 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
 
   const filteredUploads = uploads.filter(u => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'form-checks') return u.description.includes('Form Check');
-    if (activeTab === 'progress') return u.description.includes('Progress');
+    if (activeTab === 'form-checks') return u.caption?.includes('Form Check');
+    if (activeTab === 'progress') return u.caption?.includes('Progress');
     return true;
   });
 
@@ -342,7 +346,7 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                   >
                     <div className="aspect-video relative bg-brand-black flex-shrink-0">
                       <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent z-10 opacity-60" />
-                      {vid.video_url.match(/\.(mp4|webm|ogg|mov)$/) ? (
+                      {vid.file_url.match(/\.(mp4|webm|ogg|mov)$/) ? (
                         <div className="w-full h-full flex items-center justify-center bg-white/5 relative">
                            <Video size={48} className="text-brand-teal/20" />
                            <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -353,7 +357,7 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                         </div>
                       ) : (
                         <img 
-                          src={vid.video_url} 
+                          src={vid.file_url} 
                           className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-1000 scale-105 group-hover:scale-100" 
                           alt="thumbnail" 
                         />
@@ -376,16 +380,16 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                     <div className="p-8 flex-grow space-y-6 text-left">
                       <div className="flex justify-between items-start gap-4">
                         <div>
-                          <h4 className="font-black text-sm uppercase tracking-tight text-white/90 group-hover:text-brand-teal transition-colors line-clamp-1">{vid.title}</h4>
+                          <h4 className="font-black text-sm uppercase tracking-tight text-white/90 group-hover:text-brand-teal transition-colors line-clamp-1">{vid.caption}</h4>
                           <div className="flex items-center gap-4 mt-2 text-white/20">
                             <div className="flex items-center gap-1">
                               <CalIcon size={12} />
                               <span className="text-[9px] uppercase tracking-widest font-bold font-mono">{new Date(vid.created_at).toLocaleDateString()}</span>
                             </div>
-                            {vid.description.match(/\d+ lbs/) && (
+                            {vid.current_weight && (
                               <div className="flex items-center gap-1">
                                 <Weight size={12} />
-                                <span className="text-[9px] uppercase tracking-widest font-bold font-mono">{vid.description.match(/\d+ lbs/)}</span>
+                                <span className="text-[9px] uppercase tracking-widest font-bold font-mono">{vid.current_weight} lbs</span>
                               </div>
                             )}
                           </div>

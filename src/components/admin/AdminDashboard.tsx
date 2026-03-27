@@ -11,6 +11,7 @@ import {
   Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck
 } from 'lucide-react';
 import { supabase } from '../../supabase';
+import { useAuth } from '../../App';
 import { 
   UserProfile, Video, Product, Order, Retreat, 
   Community, ActivityLog, Program, Athlete, 
@@ -27,6 +28,8 @@ import { RetreatManager } from './RetreatManager';
 import { CommunityManager } from './CommunityManager';
 import { ShopManager } from './ShopManager';
 import { OrderManager } from './OrderManager';
+import { PackageManager } from './PackageManager';
+import { LogManager } from './LogManager';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -57,6 +60,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const { logActivity } = useAuth();
   
   const [stats, setStats] = useState<any>({});
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,7 +79,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           athletesRes, programsRes, communitiesRes, ordersRes, 
           retreatAppsRes, postsRes, logsRes, commCatsRes, commReqsRes, commMembersRes
         ] = await Promise.all([
-          supabase.from('users').select('*'),
+          supabase.from('profiles').select('*'),
           supabase.from('videos').select('*'),
           supabase.from('video_categories').select('*'),
           supabase.from('products').select('*'),
@@ -157,6 +161,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         }).eq('id', data.id);
         if (error) throw error;
         setCommunities(prev => prev.map(c => c.id === data.id ? { ...c, ...data } as Community : c));
+        logActivity('UPDATE_COMMUNITY', 'community', data.id, data);
         showToast('Nexus configuration updated', 'success');
       } else {
         // Create
@@ -166,7 +171,10 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           created_at: new Date().toISOString()
         }).select().single();
         if (error) throw error;
-        if (newComm) setCommunities(prev => [{ ...newComm, members: [] }, ...prev]);
+        if (newComm) {
+          setCommunities(prev => [{ ...newComm, members: [] }, ...prev]);
+          logActivity('CREATE_COMMUNITY', 'community', newComm.id, newComm);
+        }
         showToast('New node initialized in the matrix', 'success');
       }
     } catch (error) {
@@ -179,6 +187,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     try {
       await supabase.from('communities').delete().eq('id', id);
       setCommunities(prev => prev.filter(c => c.id !== id));
+      logActivity('DELETE_COMMUNITY', 'community', id);
       showToast('Nexus space collapsed', 'success');
     } catch (error) {
       showToast('Failed to collapse space', 'error');
@@ -189,6 +198,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     try {
       await supabase.from('posts').delete().eq('id', id);
       setPosts(prev => prev.filter(p => p.id !== id));
+      logActivity('DELETE_POST', 'post', id);
       showToast('Transmission purged', 'success');
     } catch (error) {
       showToast('Failed to purge transmission', 'error');
@@ -199,6 +209,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     try {
       await supabase.from('retreats').delete().eq('id', id);
       setRetreats(prev => prev.filter(r => r.id !== id));
+      logActivity('DELETE_RETREAT', 'retreat', id);
       showToast('Expedition cancelled', 'success');
     } catch (error) {
       showToast('Failed to cancel expedition', 'error');
@@ -209,9 +220,121 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     try {
       await supabase.from('retreat_applications').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
       setRetreatApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+      logActivity('REVIEW_RETREAT_APP', 'retreat_application', id, { status });
       showToast(`Applicant ${status}`, 'success');
     } catch (error) {
       showToast('Decision transmission failed', 'error');
+    }
+  };
+
+  const handleSaveVideo = async (data: Partial<Video>) => {
+    try {
+      if (data.id) {
+        const { error } = await supabase.from('videos').update(data).eq('id', data.id);
+        if (error) throw error;
+        setVideos(prev => prev.map(v => v.id === data.id ? { ...v, ...data } as Video : v));
+        logActivity('UPDATE_VIDEO', 'video', data.id, data);
+        showToast('Video metadata synchronized', 'success');
+      } else {
+        const { data: newV, error } = await supabase.from('videos').insert({ ...data, created_by: user.id }).select().single();
+        if (error) throw error;
+        if (newV) {
+          setVideos(prev => [newV, ...prev]);
+          logActivity('CREATE_VIDEO', 'video', newV.id, newV);
+        }
+        showToast('New media asset published', 'success');
+      }
+    } catch (err) { showToast('Video sync failed', 'error'); }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    try {
+      await supabase.from('videos').delete().eq('id', id);
+      setVideos(prev => prev.filter(v => v.id !== id));
+      logActivity('DELETE_VIDEO', 'video', id);
+      showToast('Media asset purged', 'success');
+    } catch (err) { showToast('Purge failed', 'error'); }
+  };
+
+  const handleSaveAthlete = async (data: Partial<Athlete>) => {
+    try {
+      if (data.id) {
+        const { error } = await supabase.from('athletes').update(data).eq('id', data.id);
+        if (error) throw error;
+        setAthletes(prev => prev.map(a => a.id === data.id ? { ...a, ...data } as Athlete : a));
+        logActivity('UPDATE_ATHLETE', 'athlete', data.id, data);
+        showToast('Athlete dossier updated', 'success');
+      } else {
+        const { data: newA, error } = await supabase.from('athletes').insert(data).select().single();
+        if (error) throw error;
+        if (newA) {
+          setAthletes(prev => [newA, ...prev]);
+          logActivity('CREATE_ATHLETE', 'athlete', newA.id, newA);
+        }
+        showToast('New athlete authorized', 'success');
+      }
+    } catch (err) { showToast('Athlete sync failed', 'error'); }
+  };
+
+  const handleSaveProgram = async (data: Partial<Program>) => {
+    try {
+      if (data.id) {
+        const { error } = await supabase.from('programs').update(data).eq('id', data.id);
+        if (error) throw error;
+        setPrograms(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Program : p));
+        logActivity('UPDATE_PROGRAM', 'program', data.id, data);
+        showToast('System protocol updated', 'success');
+      } else {
+        const { data: newP, error } = await supabase.from('programs').insert({ ...data, created_by: user.id }).select().single();
+        if (error) throw error;
+        if (newP) {
+          setPrograms(prev => [newP, ...prev]);
+          logActivity('CREATE_PROGRAM', 'program', newP.id, newP);
+        }
+        showToast('New system protocol initialized', 'success');
+      }
+    } catch (err) { showToast('Protocol sync failed', 'error'); }
+  };
+
+  const handleSavePackage = async (data: Partial<Package>) => {
+    try {
+      if (data.id) {
+        const { error } = await supabase.from('packages').update(data).eq('id', data.id);
+        if (error) throw error;
+        setPackages(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Package : p));
+        logActivity('UPDATE_PACKAGE', 'package', data.id, data);
+        showToast('Access tier updated', 'success');
+      } else {
+        const { data: newP, error } = await supabase.from('packages').insert(data).select().single();
+        if (error) throw error;
+        if (newP) {
+          setPackages(prev => [newP, ...prev]);
+          logActivity('CREATE_PACKAGE', 'package', newP.id, newP);
+        }
+        showToast('New access tier protocol established', 'success');
+      }
+    } catch (err) { showToast('Package sync failed', 'error'); }
+  };
+
+  const handleDeletePackage = async (id: string) => {
+    try {
+      await supabase.from('packages').delete().eq('id', id);
+      setPackages(prev => prev.filter(p => p.id !== id));
+      logActivity('DELETE_PACKAGE', 'package', id);
+      showToast('Access tier decommissioned', 'success');
+    } catch (err) { showToast('Decommissioning failed', 'error'); }
+  };
+
+  const handleUpdateUser = async (userId: string, updates: Partial<UserProfile>) => {
+    try {
+      const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+      if (error) throw error;
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+      logActivity('UPDATE_USER_PERMISSIONS', 'user', userId, updates);
+      showToast('User clearance updated', 'success');
+    } catch (error) {
+      console.error('Update error:', error);
+      showToast('Update failed', 'error');
     }
   };
 
@@ -253,6 +376,8 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           statusFilter={statusFilter} 
           setStatusFilter={setStatusFilter} 
           onEdit={() => {}} 
+          onUpdateUser={handleUpdateUser}
+          currentUser={user}
         />
       );
       case 'athletes': return (
@@ -270,17 +395,17 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           videos={videos} 
           categories={videoCategories} 
           athletes={athletes} 
-          onUpload={() => {}} 
-          onEdit={() => {}} 
-          onDelete={() => {}} 
+          onUpload={() => handleSaveVideo({ title: 'New Transmission', visibility_status: 'draft', level: 'Beginner' })} 
+          onEdit={handleSaveVideo} 
+          onDelete={handleDeleteVideo} 
         />
       );
       case 'programs': return (
         <ProgramManager 
           programs={programs} 
           athletes={athletes} 
-          onAdd={() => {}} 
-          onEdit={() => {}} 
+          onAdd={() => handleSaveProgram({ title: 'New Protocol', status: 'draft' })} 
+          onEdit={handleSaveProgram} 
           onDelete={() => {}} 
         />
       );
@@ -371,6 +496,16 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onUpdateStatus={() => {}} 
           onViewDetails={() => {}} 
         />
+      );
+      case 'packages': return (
+        <PackageManager 
+          packages={packages} 
+          onSave={handleSavePackage} 
+          onDelete={handleDeletePackage} 
+        />
+      );
+      case 'logs': return (
+        <LogManager logs={activityLogs} />
       );
       default: return (
         <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-8">

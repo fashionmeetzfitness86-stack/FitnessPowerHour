@@ -14,6 +14,7 @@ import { ProfileDashboard } from './components/profile/ProfileDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { CommunityPage } from './components/community/CommunityPage';
 import { CommunityDetail } from './components/community/CommunityDetail';
+import { AthleteApplication } from './components/AthleteApplication';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
@@ -320,14 +321,14 @@ interface AuthContextType {
   addNotification: (notif: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   clearNotifications: () => Promise<void>;
-  toggleFavorite: (videoId: string) => Promise<void>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   updateSecurity: (email?: string, password?: string) => Promise<void>;
+  logActivity: (action: string, entityType: string, entityId?: string, metadata?: any) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const useAuth = () => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
@@ -414,19 +415,19 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async (userId: string) => {
-    const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (data) {
-      // Map DB columns (name, joinedAt) to app's UserProfile shape
-      const profile: any = {
+      // Map DB columns to app's UserProfile shape
+      const profile: UserProfile = {
         ...data,
-        full_name: data.name || data.full_name || data.email || 'Member',
-        signup_date: data.joinedAt || data.signup_date || data.created_at || new Date().toISOString(),
-        role: data.role || (data.email === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user'),
+        full_name: data.full_name || data.name || data.email || 'Member',
+        signup_date: data.signup_date || data.joinedAt || data.created_at || new Date().toISOString(),
+        role: data.role || (data.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user'),
         status: data.status || 'active',
-        created_at: data.created_at || data.joinedAt || new Date().toISOString(),
+        created_at: data.created_at || data.signup_date || data.joinedAt || new Date().toISOString(),
         updated_at: data.updated_at || new Date().toISOString()
       };
-      setUser(profile as UserProfile);
+      setUser(profile);
       return;
     }
 
@@ -442,7 +443,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: session.user.id,
         full_name: displayName,
         email: session.user.email || '',
-        role: session.user.email === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
+        role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
         tier: 'Free Access',
         status: 'active',
         signup_date: now,
@@ -451,19 +452,21 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       setUser(memUser as UserProfile);
 
-      // Persist to DB using actual DB column names
+      // Persist to DB
       const dbRow = {
         id: session.user.id,
-        name: displayName,
+        full_name: displayName,
         email: session.user.email || '',
+        role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
         tier: 'Free Access',
-        joinedAt: now
+        status: 'active',
+        signup_date: now
       };
-      supabase.from('users').upsert(dbRow).then(({ error: insertErr }) => {
-        if (insertErr) console.error('Auto-create user error:', insertErr);
+      supabase.from('profiles').upsert(dbRow).then(({ error: insertErr }) => {
+        if (insertErr) console.error('Auto-create profile error:', insertErr);
       });
     }
-    if (error && error.code !== 'PGRST116') console.error('Fetch user error:', error);
+    if (error && error.code !== 'PGRST116') console.error('Fetch profile error:', error);
   };
 
   const fetchNotifications = async (userId: string) => {
@@ -516,15 +519,17 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       if (data.user) {
-        // Use actual DB column names
+        // Use profiles table
         const dbRow = {
           id: data.user.id,
-          name,
+          full_name: name,
           email,
+          role: email.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
           tier: tier || 'Free Access',
-          joinedAt: new Date().toISOString()
+          status: 'active',
+          signup_date: new Date().toISOString()
         };
-        await supabase.from('users').insert(dbRow);
+        await supabase.from('profiles').insert(dbRow);
       }
     } catch (error) {
       console.error('Signup error:', error);
@@ -545,7 +550,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
-      await supabase.from('users').update({ tier }).eq('id', session.user.id);
+      await supabase.from('profiles').update({ tier }).eq('id', session.user.id);
       fetchUser(session.user.id);
     } catch (error) {
       console.error('Error updating tier:', error);
@@ -600,7 +605,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         ? currentFavorites.filter(id => id !== videoId)
         : [...currentFavorites, videoId];
 
-      await supabase.from('users').update({ favorites: newFavorites }).eq('id', session.user.id);
+      await supabase.from('profiles').update({ favorites: newFavorites }).eq('id', session.user.id);
       fetchUser(session.user.id);
     } catch (error) {
       console.error('Error toggling favorite:', error);
@@ -613,7 +618,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
-      const { error } = await supabase.from('users').update({
+      const { error } = await supabase.from('profiles').update({
         ...profileUpdate,
         updated_at: new Date().toISOString()
       }).eq('id', session.user.id);
@@ -637,12 +642,28 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // If email was updated, update core profile too
       if (email && user) {
-        await supabase.from('users').update({ email }).eq('id', user.id);
+        await supabase.from('profiles').update({ email }).eq('id', user.id);
         fetchUser(user.id);
       }
     } catch (error) {
       console.error('Error updating security settings:', error);
       throw error;
+    }
+  };
+
+  const logActivity = async (action: string, entityType: string, entityId?: string, metadata?: any) => {
+    if (!user) return;
+    try {
+      await supabase.from('activity_logs').insert({
+        actor_id: user.id,
+        action,
+        entity_type: entityType,
+        entity_id: entityId,
+        metadata: metadata || {},
+        created_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error logging activity:', error);
     }
   };
 
@@ -667,7 +688,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearNotifications,
       toggleFavorite,
       updateProfile,
-      updateSecurity
+      updateSecurity,
+      logActivity
     }}>
       {children}
     </AuthContext.Provider>
@@ -4809,6 +4831,23 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           </div>
         )}
       </AnimatePresence>
+
+      {/* Athlete Application CTA */}
+      <section className="mt-40 py-24 border-t border-white/5 text-center space-y-8">
+        <div className="max-w-xl mx-auto space-y-4">
+           <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em] font-bold">Elite Affiliation</span>
+           <h2 className="text-4xl font-bold uppercase tracking-tighter">Interested in becoming an <br/> <span className="text-brand-teal">FMF Athlete?</span></h2>
+           <p className="text-white/40 uppercase tracking-widest text-[10px] leading-relaxed">
+             Join our inner circle of elite performers and lead the collective. We are looking for professional coaches and high-performance individuals to represent the brand.
+           </p>
+        </div>
+        <Link 
+          to="/athlete-application" 
+          className="inline-flex items-center gap-2 text-brand-teal text-xs uppercase tracking-[0.3em] font-bold hover:underline group"
+        >
+          Apply for Athlete Status <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+        </Link>
+      </section>
     </div>
   );
 };
@@ -6099,6 +6138,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/program" element={<ProgramPage />} />
               <Route path="/videos" element={<VideoLibrary />} />
               <Route path="/video/:id" element={<VideoDetail />} />
+              <Route path="/athlete-application" element={<AthleteApplication showToast={showToast} />} />
               <Route path="/athletes" element={<Athletes />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
               <Route path="/community/:id" element={<CommunityDetail user={user} showToast={showToast} />} />
