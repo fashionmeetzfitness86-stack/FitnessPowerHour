@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Trophy, PlayCircle, 
-  ListChecks, MapPin, MessageSquare, ShoppingBag as ShoppingBagIcon, 
+  ListChecks, MapPin, MessageSquare, ShoppingBag, 
   ClipboardList, Package as PackageIcon, History, LogOut, ChevronRight,
   ShieldCheck, ArrowUpRight, Plus, Download, Search,
   Edit2, Eye, Ban, Trash2, Check, X, Printer,
@@ -17,7 +17,7 @@ import {
   UserProfile, Video, Product, Order, Retreat, 
   Community, ActivityLog, Program, Athlete, 
   VideoCategory, ProductCategory, Brand, RetreatApplication,
-  CommunityPost, CommunityCategory, CommunityRequest, CommunityMember, Package
+  CommunityPost, Package
 } from '../../types';
 
 import { AdminOverview } from './AdminOverview';
@@ -61,10 +61,10 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [communities, setCommunities] = useState<Community[]>([]);
+  const [communityCategories, setCommunityCategories] = useState<any[]>([]);
+  const [communityJoiningRequests, setCommunityJoiningRequests] = useState<any[]>([]);
+  const [communityMembers, setCommunityMembers] = useState<any[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [communityCategories, setCommunityCategories] = useState<CommunityCategory[]>([]);
-  const [communityJoiningRequests, setCommunityJoiningRequests] = useState<CommunityRequest[]>([]);
-  const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [bookingRequests, setBookingRequests] = useState<any[]>([]);
@@ -132,7 +132,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
             members: commMembersRes.data.filter(m => m.community_id === c.id).map(m => m.user_id)
           })));
         }
-
         if (retreatAppsRes.data) setRetreatApplications(retreatAppsRes.data.map((app: any) => ({
           ...app,
           userName: usersRes.data?.find(u => u.id === app.user_id)?.full_name || 'Unknown',
@@ -189,7 +188,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         }).select().single();
         if (error) throw error;
         if (newComm) {
-          setCommunities(prev => [{ ...newComm, members: [] }, ...prev]);
+          setCommunities(prev => [{ ...newComm, members: [] } as any, ...prev]);
           logActivity('CREATE_COMMUNITY', 'community', newComm.id, newComm);
         }
         showToast('New node initialized in the matrix', 'success');
@@ -199,7 +198,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       showToast('Nexus configuration failed', 'error');
     }
   };
-
   const handleDeleteCommunity = async (id: string) => {
     try {
       await supabase.from('communities').delete().eq('id', id);
@@ -371,7 +369,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'athletes', label: 'Athlete Roster', icon: Trophy },
     { id: 'programs', label: 'System Protocols', icon: ListChecks },
     { id: 'content', label: 'Media Vault', icon: PlayCircle },
-    { id: 'shop', label: 'Global Store', icon: ShoppingBagIcon },
+    { id: 'shop', label: 'Global Store', icon: ShoppingBag },
     { id: 'orders', label: 'Fulfillment Logic', icon: ClipboardList },
     { id: 'packages', label: 'Access Tiering', icon: PackageIcon },
     { id: 'community', label: 'Collective Hub', icon: MessageSquare },
@@ -453,60 +451,10 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <CommunityManager 
           communities={communities} 
           posts={posts} 
-          categories={communityCategories}
-          joiningRequests={communityJoiningRequests}
           users={users} 
           onAdd={() => {}} 
           onDeleteCommunity={handleDeleteCommunity} 
           onDeletePost={handleDeletePost} 
-          onManageCategories={() => {}}
-          onHandleRequest={async (id, status) => {
-            try {
-              const request = communityJoiningRequests.find(r => r.id === id);
-              if (!request) return;
-
-              if (status === 'approved') {
-                const community = communities.find(c => c.id === request.community_id);
-                if (community) {
-                  // Insert into community_members table
-                  await supabase.from('community_members').insert({
-                    community_id: community.id,
-                    user_id: request.user_id,
-                    status: 'active',
-                    joined_at: new Date().toISOString()
-                  });
-
-                  // Update local helper array
-                  const newMembers = [...(community.members || []), request.user_id];
-                  setCommunities(prev => prev.map(c => c.id === community.id ? { ...c, members: newMembers } : c));
-                  
-                  // Also add a welcome post
-                  await supabase.from('community_posts').insert({
-                    community_id: community.id,
-                    user_id: 'system',
-                    user_name_snapshot: 'System Protocol',
-                    title: 'New Member Authorized',
-                    content: `Authorized access for candidate ${request.user_name_snapshot}. Welcome to the collective.`,
-                    likes: [],
-                    comments: [],
-                    tags: ['System'],
-                    created_at: new Date().toISOString()
-                  });
-                }
-              }
-
-              await supabase.from('community_requests').update({ 
-                status 
-              }).eq('id', id);
-              
-              setCommunityJoiningRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-              showToast(`Clearance Signal ${status === 'approved' ? 'Authorized' : 'Denied'}`, 'success');
-            } catch (error) {
-              console.error('Processing error:', error);
-              showToast('Signal processing failed', 'error');
-            }
-          }}
-          onSaveCommunity={handleSaveCommunity}
         />
       );
       case 'shop': return (

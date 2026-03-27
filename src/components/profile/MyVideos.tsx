@@ -1,25 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Video, Upload, AlertCircle, Play, X, 
-  Calendar as CalIcon, Camera, Clock, 
-  Weight, ChevronRight, Filter, Search, Trash2, CheckCircle, Shield
-} from 'lucide-react';
+import { Video, Upload, AlertCircle, Play, X, Calendar as CalIcon, Camera, Weight, CheckCircle, Clock, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserProfile, UserVideoUpload } from '../../types';
 import { supabase } from '../../supabase';
+import { UserProfile, UserVideoUpload } from '../../types';
 
-export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
-  const isBasic = !user.tier || user.tier === 'Basic';
-  const uploadLimit = isBasic ? 5 : 100; // Updated limits
+export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: (msg: string, type?: any) => void }) => {
+  const isBasic = user.tier === 'Basic';
+  const uploadLimit = isBasic ? 3 : 50; 
   
-  const [activeTab, setActiveTab] = useState<'all' | 'form-checks' | 'progress' | 'programs'>('all');
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  
-  const [uploads, setUploads] = useState<UserVideoUpload[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploads, setUploads] = useState<UserVideoUpload[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState('all');
 
   const [uploadMeta, setUploadMeta] = useState({
     title: '',
@@ -32,6 +27,7 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
 
   const fetchUploads = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('user_video_uploads')
         .select('*')
@@ -48,8 +44,8 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
   };
 
   useEffect(() => {
-    fetchUploads();
-  }, [user.id]);
+    if (user?.id) fetchUploads();
+  }, [user?.id]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -76,11 +72,15 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
   const processFile = (selectedFile: File) => {
     const isVideo = selectedFile.type.startsWith('video/');
     if (isBasic && isVideo) {
-      showToast('Video uploads restricted. Upgrade to Elite to store training sessions.', 'error');
+      showToast('Video uploads restricted. Upgrade to Elite for video support.', 'error');
       return;
     }
     if (selectedFile.size > 500 * 1024 * 1024) {
       showToast('Maximum file size is 500MB.', 'error');
+      return;
+    }
+    if (uploads.length >= uploadLimit) {
+      showToast(`Storage limit reached (${uploadLimit} items).`, 'error');
       return;
     }
     setFile(selectedFile);
@@ -120,7 +120,8 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
         media_date: new Date().toISOString(),
         status: 'pending',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        description: uploadMeta.purpose
       };
 
       const { error: dbError } = await supabase
@@ -132,7 +133,6 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
       setUploadProgress(100);
       showToast('Transmission received. Awaiting administrative review.', 'success');
       setFile(null);
-      setIsUploading(false);
       setUploadMeta({ title: '', purpose: 'Form Check', programId: '', previousWeight: '', currentWeight: '', duration: '1 day' });
       fetchUploads();
     } catch (error: any) {
@@ -145,8 +145,8 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
 
   const filteredUploads = uploads.filter(u => {
     if (activeTab === 'all') return true;
-    if (activeTab === 'form-checks') return u.caption?.includes('Form Check');
-    if (activeTab === 'progress') return u.caption?.includes('Progress');
+    if (activeTab === 'form-checks') return u.description?.includes('Form Check');
+    if (activeTab === 'progress') return u.description?.includes('Progress');
     return true;
   });
 
@@ -155,43 +155,43 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 border-b border-white/5 pb-8">
         <div>
           <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
-            Ecosystem <span className="text-brand-teal">Vault</span>
+            My <span className="text-brand-teal">Videos</span>
           </h2>
           <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2 font-bold">
-            Authorized repository for progress check-ins and form audit protocols.
+            Upload progress check-ins and form audit requests.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-4 w-full md:w-auto">
-          <div className="flex gap-2 bg-white/5 p-1 rounded-xl">
-            {(['all', 'form-checks', 'progress', 'programs'] as const).map((tab) => (
-              <button 
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-[8px] uppercase tracking-widest font-black rounded-lg transition-all ${
-                  activeTab === tab ? 'bg-brand-teal text-black' : 'text-white/40 hover:text-white'
-                }`}
-              >
-                {tab.replace('-', ' ')}
-              </button>
-            ))}
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-4 mb-4">
+             <div className="flex gap-2">
+                {['all', 'form-checks', 'progress'].map(tab => (
+                  <button 
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 rounded-lg text-[9px] uppercase tracking-widest font-black transition-all ${activeTab === tab ? 'bg-brand-teal text-black' : 'bg-white/5 text-white/40 hover:text-white'}`}
+                  >
+                    {tab.replace('-', ' ')}
+                  </button>
+                ))}
+             </div>
           </div>
-          <div className="flex items-center gap-3 w-full">
-            <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Sync Quota</span>
-            <div className="flex-grow md:w-48 h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Storage Quota</span>
+            <div className="w-32 h-1 bg-white/10 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-brand-teal shadow-[0_0_10px_rgba(45,212,191,0.5)]" 
-                style={{ width: `${Math.min((uploads.length / uploadLimit) * 100, 100)}%` }}
+                className="h-full bg-brand-teal transition-all duration-500" 
+                style={{ width: `${(uploads.length / uploadLimit) * 100}%` }}
               />
             </div>
-            <span className="text-xs font-mono font-black text-brand-teal">
+            <span className={`text-[10px] uppercase tracking-widest font-bold ${uploads.length >= uploadLimit ? 'text-brand-coral' : 'text-brand-teal'}`}>
               {uploads.length}/{uploadLimit}
             </span>
           </div>
         </div>
       </header>
 
-      {/* Upload Interface */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-12">
+        {/* Upload Interface */}
         <div className="xl:col-span-1 space-y-6">
           <div className="card-gradient p-8 space-y-8 border-brand-teal/20">
             <div className="flex items-center gap-4">
@@ -216,7 +216,7 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                   <Video size={32} className={isBasic ? "text-white/5" : "text-white/10"} />
                 </div>
                 <h4 className="text-xs font-black uppercase tracking-[0.2em] mb-2">Protocol Ready</h4>
-                <p className="text-[8px] uppercase tracking-widest text-white/20 mb-8 max-w-[180px] mx-auto font-bold">
+                <p className="text-[8px] uppercase tracking-widest text-white/20 mb-8 max-w-[180px] mx-auto font-bold text-center">
                   {isBasic ? 'Image sync authorized. Upgrade to Elite for video support.' : 'Authorizing media sync up to 500MB.'}
                 </p>
                 
@@ -266,14 +266,14 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                           placeholder="Prev" 
                           value={uploadMeta.previousWeight}
                           onChange={e => setUploadMeta({...uploadMeta, previousWeight: e.target.value})}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-center focus:border-brand-teal outline-none" 
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-center focus:border-brand-teal outline-none text-white font-mono" 
                         />
                         <input 
                           type="text" 
                           placeholder="Current" 
                           value={uploadMeta.currentWeight}
                           onChange={e => setUploadMeta({...uploadMeta, currentWeight: e.target.value})}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-center focus:border-brand-teal outline-none" 
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-center focus:border-brand-teal outline-none text-white font-mono" 
                         />
                        </div>
                     </div>
@@ -346,7 +346,7 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                   >
                     <div className="aspect-video relative bg-brand-black flex-shrink-0">
                       <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-transparent z-10 opacity-60" />
-                      {vid.file_url.match(/\.(mp4|webm|ogg|mov)$/) ? (
+                      {vid.media_type === 'video' ? (
                         <div className="w-full h-full flex items-center justify-center bg-white/5 relative">
                            <Video size={48} className="text-brand-teal/20" />
                            <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -365,11 +365,11 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                       
                       <div className="absolute top-6 left-6 z-20 flex gap-2">
                         <span className={`px-3 py-1 text-[8px] uppercase tracking-widest font-black rounded-full backdrop-blur-md border ${
-                          vid.status === 'approved' ? 'bg-brand-teal/20 border-brand-teal/30 text-brand-teal' : 'bg-brand-coral/20 border-brand-coral/30 text-brand-coral'
+                          vid.status === 'approved' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' : 'bg-amber-500/20 border-amber-500/30 text-amber-500'
                         }`}>
                           {vid.status}
                         </span>
-                        {vid.description.includes('Form Check') && (
+                        {vid.description?.includes('Form Check') && (
                           <span className="px-3 py-1 bg-white/10 backdrop-blur-md border border-white/10 text-[8px] uppercase tracking-widest font-black rounded-full text-white/60">
                             Form Audit
                           </span>
@@ -379,7 +379,7 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                     
                     <div className="p-8 flex-grow space-y-6 text-left">
                       <div className="flex justify-between items-start gap-4">
-                        <div>
+                        <div className="min-w-0">
                           <h4 className="font-black text-sm uppercase tracking-tight text-white/90 group-hover:text-brand-teal transition-colors line-clamp-1">{vid.caption}</h4>
                           <div className="flex items-center gap-4 mt-2 text-white/20">
                             <div className="flex items-center gap-1">
@@ -394,7 +394,7 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
                             )}
                           </div>
                         </div>
-                        <button className="p-2 hover:bg-white/5 rounded-xl text-white/10 hover:text-white transition-all"><ChevronRight size={18} /></button>
+                        <button className="p-2 hover:bg-white/5 rounded-xl text-white/10 hover:text-white transition-all shrink-0"><ChevronRight size={18} /></button>
                       </div>
 
                       {vid.status === 'approved' ? (
@@ -416,35 +416,13 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: an
               </AnimatePresence>
             </div>
           ) : (
-            <div className="py-40 text-center card-gradient rounded-[4rem] border border-white/5 flex flex-col items-center justify-center space-y-8">
-              <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center text-white/10 border border-white/10">
-                <Video size={40} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black uppercase tracking-tight text-white/20">No Authorized Transmissions</h3>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/10 font-bold mt-4">Initialize your first media sync to populate this node.</p>
-              </div>
+            <div className="p-24 text-center bg-white/[0.02] rounded-[3rem] border border-dashed border-white/10">
+               <Video size={48} className="mx-auto text-white/5 mb-6" />
+               <p className="text-white/20 text-[10px] uppercase tracking-[0.4em] font-black">Matrix empty. No media transmissions located.</p>
             </div>
           )}
         </div>
       </div>
-
-      {isBasic && (
-        <div className="p-8 bg-brand-coral/5 border border-brand-coral/20 rounded-[2.5rem] flex flex-col md:flex-row items-center gap-10 mt-12 group">
-          <div className="w-20 h-20 bg-brand-coral/10 rounded-full flex items-center justify-center text-brand-coral shrink-0 border border-brand-coral/20 group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(255,95,95,0.2)]">
-            <Shield size={32} />
-          </div>
-          <div className="text-center md:text-left space-y-2">
-            <h4 className="text-lg font-black uppercase tracking-tight text-white">Advanced Media Restricted</h4>
-            <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold leading-relaxed max-w-2xl">
-              Basic synchronization allows for photo progress check-ins only. To unlock high-resolution video form audits and full session archiving, an Elite Tier sync is required.
-            </p>
-          </div>
-          <button className="ml-auto w-full md:w-auto px-10 py-5 bg-brand-coral text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl shadow-[0_0_20px_rgba(255,95,95,0.3)] hover:bg-white hover:text-black transition-all">
-            Initiate Upgrade
-          </button>
-        </div>
-      )}
     </div>
   );
 };

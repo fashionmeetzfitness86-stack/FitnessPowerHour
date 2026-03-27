@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Save, UserCircle, Camera, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X } from 'lucide-react';
-import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
-
-// useAuth is handled via Props or standard export if we want to be clean
-// But for now, we'll keep it simple as this is a large file refactor
+import { UserProfile } from '../../types';
 
 export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
-  // We use direct imports since they are exported in App.tsx
-  // But App.tsx is huge, so we'll rely on props or hook if available.
-  // Actually, I'll assume useAuth is available if I export it or use it here.
-  // Since I can't easily export/import across this huge App.tsx without full refactor,
-  // I'll use the user object and supabase directly if needed, but App.tsx has the logic.
-  
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     full_name: user?.full_name || '',
     email: user?.email || '',
@@ -47,10 +38,10 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
   const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
+    setFormData({
+      ...formData,
       [e.target.name]: e.target.value
-    }));
+    });
   };
 
   const handleSecurityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,7 +107,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
   };
 
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!user) return;
 
     try {
@@ -131,7 +122,6 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
       if (error) throw error;
       showToast('Profile updated successfully!', 'success');
-      // Trigger a re-fetch of user if needed via parent
     } catch (error: any) {
       showToast(error.message || 'Error updating profile', 'error');
     } finally {
@@ -183,12 +173,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
           disabled={isSaving}
           className="flex items-center gap-2 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all disabled:opacity-50"
         >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Save size={14} />
-          )} 
-          {isSaving ? 'Synchronizing...' : 'Save Changes'}
+          {isSaving ? 'Processing...' : <><Save size={14} /> Save Changes</>}
         </button>
       </header>
 
@@ -208,6 +193,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white/5 group">
                     <img src={img} alt={`Profile ${idx}`} className="w-full h-full object-cover" />
                     <button 
+                      type="button"
                       onClick={() => handleRemoveImage(img)}
                       className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-lg text-brand-coral opacity-0 group-hover:opacity-100 transition-opacity"
                     >
@@ -220,6 +206,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                     )}
                     {formData.profile_image !== img && (
                       <button 
+                        type="button"
                         onClick={() => setFormData({...formData, profile_image: img})}
                         className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"
                       >
@@ -303,7 +290,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Fitness Level</label>
-              <select name="fitness_level" value={formData.fitness_level} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors appearance-none">
+              <select name="fitness_level" value={formData.fitness_level} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors appearance-none outline-none">
                 <option value="Beginner">Beginner</option>
                 <option value="Intermediate">Intermediate</option>
                 <option value="Advanced">Advanced - Elite</option>
@@ -355,7 +342,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                       value={securityData.newPassword}
                       onChange={handleSecurityChange}
                       placeholder="New Password" 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors pr-12" 
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors pr-12 text-white" 
                     />
                     <button 
                       type="button"
@@ -371,7 +358,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                     value={securityData.confirmPassword}
                     onChange={handleSecurityChange}
                     placeholder="Confirm New Password" 
-                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors ${
+                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors text-white ${
                       securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword ? 'border-brand-coral' : 'border-white/10'
                     }`} 
                   />
@@ -426,13 +413,14 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                     value={securityData.newEmail}
                     onChange={handleSecurityChange}
                     placeholder="Enter new email address"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-brand-coral outline-none transition-colors"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-brand-coral outline-none transition-colors text-white"
                   />
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <button 
+                  type="button"
                   onClick={() => {
                     handleUpdateSecurity('email');
                     setShowEmailModal(false);
@@ -442,6 +430,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   Authorize Change
                 </button>
                 <button 
+                  type="button"
                   onClick={() => setShowEmailModal(false)}
                   className="flex-1 py-5 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
                 >
