@@ -135,7 +135,13 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    if (item.id === 'membership' && (!user.tier || user.tier === 'Free Access')) {
+                      window.location.href = '/shop';
+                      return;
+                    }
+                    setActiveTab(item.id);
+                  }}
                   className={`flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl transition-all flex-shrink-0 ${
                     activeTab === item.id 
                       ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20' 

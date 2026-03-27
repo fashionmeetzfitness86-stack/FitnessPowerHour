@@ -6,6 +6,9 @@ export interface Video {
   video_url: string;
   duration: string;
   category_id: string;
+  category?: string;
+  athlete_id?: string;
+  is_premium?: boolean;
   visibility_status: 'published' | 'draft' | 'hidden' | 'archived';
   allowed_packages: string[];
   level?: 'Beginner' | 'Intermediate' | 'Advanced';
