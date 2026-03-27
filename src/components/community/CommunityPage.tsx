@@ -12,7 +12,7 @@ import { Community, CommunityCategory, CommunityRequest, UserProfile } from '../
 
 interface CommunityPageProps {
   user: UserProfile | null;
-  showToast: (msg: string, type?: 'success' | 'error') => void;
+  showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export const CommunityPage = ({ user, showToast }: CommunityPageProps) => {
@@ -70,7 +70,7 @@ export const CommunityPage = ({ user, showToast }: CommunityPageProps) => {
 
   const handleJoinLeave = async (community: Community) => {
     if (!user) {
-      showToast('Join the collective to participate', 'error');
+      showToast('Nexus profile required for interaction.', 'info');
       return;
     }
 

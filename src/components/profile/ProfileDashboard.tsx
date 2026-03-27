@@ -19,12 +19,14 @@ import { RetreatsTab } from './RetreatsTab';
 import { OrderHistoryTab } from './OrderHistoryTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
+import { AthleteDashboard } from '../athlete/AthleteDashboard';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
   const [activeTab, setActiveTab] = useState('overview');
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    ...(user?.role === 'athlete' ? [{ id: 'athlete', label: 'Athlete Intel', icon: Shield }] : []),
     { id: 'progress', label: 'Progress Tracking', icon: LineChart },
     { id: 'calendar', label: 'Workout Calendar', icon: Calendar },
     { id: 'programs', label: 'My Programs', icon: PlaySquare },
@@ -50,6 +52,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'orders': return <OrderHistoryTab user={user} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
+      case 'athlete': return <AthleteDashboard athleteUser={user} showToast={showToast} />;
       default: return <Overview user={user} />;
     }
   };

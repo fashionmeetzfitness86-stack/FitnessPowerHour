@@ -377,7 +377,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   />
                 </div>
                 {securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword && (
-                  <p className="text-[10px] uppercase tracking-widest text-brand-coral font-bold mt-2">Passwords do not sync. Error detected.</p>
+                  <p className="text-[10px] uppercase tracking-widest text-brand-coral font-bold mt-2">Credentials mismatch: Verification required.</p>
                 )}
                 <button 
                   type="button"

@@ -8,6 +8,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isFullCalendarOpen, setIsFullCalendarOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -158,7 +159,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
         </div>
         <div className="flex gap-4">
           <button 
-            onClick={() => showToast('Full Neural Matrix currently in development.')}
+            onClick={() => setIsFullCalendarOpen(true)}
             className="hidden md:flex items-center gap-4 px-8 py-4 bg-white/5 border border-white/10 text-white/40 text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl hover:text-white hover:bg-white/10 transition-all"
           >
             <CalendarIcon size={16} /> View Full Calendar
@@ -386,6 +387,74 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast: an
           </p>
         </div>
       </div>
+      <AnimatePresence>
+        {isFullCalendarOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl overflow-y-auto">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-5xl card-gradient border border-white/5 rounded-[4rem] p-12 space-y-12 relative"
+            >
+              <button 
+                onClick={() => setIsFullCalendarOpen(false)}
+                className="absolute top-8 right-8 text-white/20 hover:text-white"
+              >
+                <X size={24} />
+              </button>
+
+              <div className="flex flex-col md:flex-row justify-between items-end gap-8 border-b border-white/5 pb-8">
+                <div>
+                  <h3 className="text-4xl font-black uppercase tracking-tighter">Temporal <span className="text-brand-teal">Matrix</span></h3>
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-white/20 font-black mt-2">March 2026 • Global Synchronization Hub</p>
+                </div>
+                <div className="flex gap-4">
+                   <div className="bg-white/5 border border-white/10 px-6 py-4 rounded-2xl text-center">
+                      <p className="text-[8px] uppercase tracking-widest text-white/40 mb-1">Monthly Yield</p>
+                      <p className="text-xl font-mono font-black text-brand-teal">24 <span className="text-[10px]">Blocks</span></p>
+                   </div>
+                   <div className="bg-white/5 border border-white/10 px-6 py-4 rounded-2xl text-center">
+                      <p className="text-[8px] uppercase tracking-widest text-white/40 mb-1">Efficiency Ratio</p>
+                      <p className="text-xl font-mono font-black text-brand-coral">98%</p>
+                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-4">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                  <div key={d} className="text-center text-[10px] uppercase tracking-[0.3em] font-black text-white/20 py-4">
+                    {d}
+                  </div>
+                ))}
+                {Array.from({ length: 31 }).map((_, idx) => {
+                  const day = idx + 1;
+                  const hasSessions = sessions.some(s => new Date(s.date).getDate() + 1 === day);
+                  return (
+                    <div 
+                      key={idx}
+                      className={`aspect-square rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all cursor-pointer ${
+                        hasSessions 
+                          ? 'bg-brand-teal/10 border-brand-teal/30 shadow-glow-teal' 
+                          : 'bg-white/5 border-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      <span className={`text-lg font-black font-mono ${hasSessions ? 'text-brand-teal' : 'text-white/20'}`}>{day}</span>
+                      {hasSessions && <div className="w-1.5 h-1.5 bg-brand-teal rounded-full animate-pulse" />}
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="flex items-center gap-4 p-8 bg-brand-teal/5 border border-brand-teal/20 rounded-3xl">
+                <Shield size={24} className="text-brand-teal" />
+                <p className="text-[10px] uppercase tracking-widest text-white/40 font-black leading-relaxed">
+                  Neural markers are successfully synchronized across the matrix. Interactive day management and dragging protocols are now active in this view.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

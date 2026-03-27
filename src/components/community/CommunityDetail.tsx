@@ -12,7 +12,7 @@ import { Community, CommunityPost, CommunityComment, UserProfile } from '../../t
 
 interface CommunityDetailProps {
   user: UserProfile | null;
-  showToast: (msg: string, type?: 'success' | 'error') => void;
+  showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {

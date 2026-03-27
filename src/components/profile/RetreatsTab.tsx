@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Map, MapPin, Calendar, Users, ExternalLink, CheckCircle, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { UserProfile, Retreat, RetreatApplication } from '../../types';
 import { supabase } from '../../supabase';
 
@@ -133,9 +134,9 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
           <Map size={48} className="text-brand-teal opacity-50 mb-2" />
           <h3 className="text-xl font-bold uppercase tracking-tighter">No {activeTab} Retreats</h3>
           <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold max-w-sm">Join the mailing list to get priority access to our upcoming global events.</p>
-          <button className="mt-4 px-8 py-4 border border-brand-teal hover:bg-brand-teal hover:text-black text-brand-teal transition-all text-[10px] uppercase font-bold tracking-widest rounded-xl">
+          <Link to="/retreats" className="mt-4 px-8 py-4 border border-brand-teal hover:bg-brand-teal hover:text-black text-brand-teal transition-all text-[10px] uppercase font-bold tracking-widest rounded-xl">
             Browse Opportunities
-          </button>
+          </Link>
         </div>
       )}
 

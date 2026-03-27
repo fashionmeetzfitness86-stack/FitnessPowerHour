@@ -62,6 +62,12 @@ export interface Athlete {
   training_focus: string;
   bio: string;
   image_url: string;
+  social_links?: {
+    instagram?: string;
+    tiktok?: string;
+    twitter?: string;
+    facebook?: string;
+  };
   is_active: boolean;
   is_banned: boolean;
   created_at: string;

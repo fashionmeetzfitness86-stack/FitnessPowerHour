@@ -32,10 +32,16 @@ import { OrderManager } from './OrderManager';
 import { PackageManager } from './PackageManager';
 import { LogManager } from './LogManager';
 
+import { ServiceManager } from './ServiceManager';
+import { NotificationManager } from './NotificationManager';
+import { RoleManager } from './RoleManager';
+import { SettingsManager } from './SettingsManager';
+import { Settings as SettingsIcon } from 'lucide-react';
+
 interface AdminDashboardProps {
   user: UserProfile;
   logout: () => void;
-  showToast: (msg: string, type?: 'success' | 'error') => void;
+  showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps) => {
@@ -61,6 +67,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
   const { logActivity } = useAuth();
   
   const [stats, setStats] = useState<any>({});
@@ -78,7 +85,8 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           usersRes, videosRes, videoCatsRes, productsRes, 
           prodCatsRes, brandsRes, retreatsRes, packagesRes, 
           athletesRes, programsRes, communitiesRes, ordersRes, 
-          retreatAppsRes, postsRes, logsRes, commCatsRes, commReqsRes, commMembersRes
+          retreatAppsRes, postsRes, logsRes, commCatsRes, commReqsRes, commMembersRes,
+          bookingsRes
         ] = await Promise.all([
           supabase.from('profiles').select('*'),
           supabase.from('videos').select('*'),
@@ -97,7 +105,8 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20),
           supabase.from('community_categories').select('*'),
           supabase.from('community_requests').select('*'),
-          supabase.from('community_members').select('*')
+          supabase.from('community_members').select('*'),
+          supabase.from('bookings').select('*').eq('status', 'pending')
         ]);
 
         if (usersRes.data) setUsers(usersRes.data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
@@ -115,6 +124,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         if (commCatsRes.data) setCommunityCategories(commCatsRes.data);
         if (commReqsRes.data) setCommunityJoiningRequests(commReqsRes.data);
         if (commMembersRes.data) setCommunityMembers(commMembersRes.data);
+        if (bookingsRes.data) setBookingRequests(bookingsRes.data);
         
         if (communitiesRes.data && commMembersRes.data) {
           setCommunities(communitiesRes.data.map(c => ({
@@ -136,8 +146,14 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
 
         setStats({
           users: usersRes.data?.length || 0,
-          videos: videosRes.data?.length || 0,
+          activeMembers: usersRes.data?.filter(u => u.status === 'active' && u.tier && u.tier !== 'Free Access').length || 0,
+          athletes: athletesRes.data?.length || 0,
+          programs: programsRes.data?.filter(p => p.status === 'published').length || 0,
+          products: productsRes.data?.length || 0,
           orders: ordersRes.data?.length || 0,
+          communities: communitiesRes.data?.length || 0,
+          retreatRequests: retreatAppsRes.data?.filter(a => a.status === 'pending').length || 0,
+          serviceRequests: bookingsRes.data?.length || 0,
           revenue: ordersRes.data?.reduce((acc, curr) => acc + curr.total_amount, 0).toFixed(2) || '0.00'
         });
       } catch (error) {
@@ -339,23 +355,37 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     }
   };
 
+  const handleUpdateBookingStatus = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
+      if (error) throw error;
+      setBookingRequests(prev => prev.filter(b => b.id !== id));
+      logActivity('UPDATE_BOOKING', 'booking', id, { status });
+      showToast(`Service stream ${status}`, 'success');
+    } catch (err) { showToast('Stream sync failed', 'error'); }
+  };
+
   const sidebarItems = [
     { id: 'overview', label: 'Ecosystem Overview', icon: LayoutDashboard },
     { id: 'users', label: 'Member Directory', icon: Users },
     { id: 'athletes', label: 'Athlete Roster', icon: Trophy },
-    { id: 'content', label: 'Media Vault', icon: PlayCircle },
     { id: 'programs', label: 'System Protocols', icon: ListChecks },
-    { id: 'retreats', label: 'Venture Board', icon: MapPin },
-    { id: 'community', label: 'Collective Hub', icon: MessageSquare },
+    { id: 'content', label: 'Media Vault', icon: PlayCircle },
     { id: 'shop', label: 'Global Store', icon: ShoppingBagIcon },
     { id: 'orders', label: 'Fulfillment Logic', icon: ClipboardList },
-    { id: 'packages', label: 'Access Tiering', icon: PackageIcon, adminOnly: true },
+    { id: 'packages', label: 'Access Tiering', icon: PackageIcon },
+    { id: 'community', label: 'Collective Hub', icon: MessageSquare },
+    { id: 'retreats', label: 'Venture Board', icon: MapPin },
+    { id: 'services', label: 'Service Streams', icon: Activity },
+    { id: 'notifications', label: 'Comm Signal', icon: Mail },
+    { id: 'roles', label: 'Encryption Keys', icon: ShieldAlert, adminOnly: true },
+    { id: 'settings', label: 'System Core', icon: SettingsIcon, adminOnly: true },
     { id: 'logs', label: 'Quantum Logs', icon: History, adminOnly: true },
   ];
 
   const renderContent = () => {
     if (loading) return (
-      <div className="flex flex-col items-center justify-center h-[60vh] space-y-6">
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
         <div className="w-16 h-16 border-4 border-brand-teal border-t-transparent rounded-full animate-spin shadow-[0_0_30px_rgba(45,212,191,0.2)]" />
         <div className="text-center space-y-2">
           <p className="text-[12px] uppercase tracking-[0.4em] text-white/60 font-black animate-pulse">Syncing Ecosystem...</p>
@@ -508,15 +538,32 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       case 'logs': return (
         <LogManager logs={activityLogs} />
       );
+      case 'services': return (
+        <ServiceManager 
+          bookings={bookingRequests} 
+          onUpdateStatus={handleUpdateBookingStatus} 
+          showToast={showToast} 
+        />
+      );
+      case 'notifications': return <NotificationManager showToast={showToast} />;
+      case 'roles': return (
+        <RoleManager 
+          users={users} 
+          onUpdateRole={(id, role) => handleUpdateUser(id, { role: role as any })} 
+          showToast={showToast} 
+          currentUser={user}
+        />
+      );
+      case 'settings': return <SettingsManager showToast={showToast} />;
       default: return (
-        <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-8">
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-8">
           <div className="w-24 h-24 rounded-[2rem] bg-brand-teal/5 flex items-center justify-center text-brand-teal/20 border-2 border-dashed border-white/5 animate-pulse">
             <LayoutDashboard size={48} />
           </div>
           <div className="space-y-3">
-            <h3 className="text-2xl font-black uppercase tracking-tighter text-white/80">Quantum State: Development</h3>
+            <h3 className="text-2xl font-black uppercase tracking-tighter text-white/80">Quantum State: Build Mode</h3>
             <p className="text-[10px] uppercase tracking-[0.3em] text-white/20 font-bold max-w-xs mx-auto leading-relaxed">
-              This module is currently being modularized and optimized for peak performance.
+              Our engineering team is currently initializing this module. System deployment expected imminently.
             </p>
           </div>
         </div>
@@ -525,139 +572,124 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   };
 
   return (
-    <div className="pt-32 pb-32 min-h-screen bg-brand-black text-white relative overflow-hidden">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-0 right-0 w-[50vw] h-[50vh] bg-brand-teal/5 blur-[120px] -mr-[10vw] -mt-[10vh] animate-pulse" />
-      <div className="absolute bottom-0 left-0 w-[40vw] h-[40vh] bg-brand-coral/5 blur-[120px] -ml-[10vw] -mb-[10vh]" />
-
-      <div className="max-w-[1700px] mx-auto px-6 lg:px-12 flex flex-col lg:flex-row gap-16 relative z-10">
-        {/* Modern Sidebar Column */}
-        <aside className="lg:w-80 flex-shrink-0 space-y-10">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="card-gradient p-10 space-y-8 border-2 border-brand-teal/10 relative overflow-hidden group rounded-[2.5rem] shadow-2xl"
-          >
-            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-20 transition-all duration-700 transform rotate-12 group-hover:rotate-0">
-              <ShieldCheck size={100} className="text-brand-teal shadow-glow-teal" />
-            </div>
-            
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-2xl bg-brand-teal/10 border-2 border-brand-teal/30 flex items-center justify-center text-brand-teal font-black text-2xl shadow-[0_0_25px_rgba(45,212,191,0.3)] group-hover:scale-110 transition-transform duration-500">
-                  {user.full_name?.[0] || 'A'}
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-4 border-brand-black rounded-full" />
-              </div>
-              <div>
-                <h2 className="text-xl font-black uppercase tracking-tighter group-hover:text-brand-teal transition-colors">
-                  {user.full_name?.split(' ')[0] || 'Admin'} <span className="text-white/40">{user.full_name?.split(' ')[1] || ''}</span>
-                </h2>
-                <span className="inline-block px-3 py-1 bg-brand-teal text-black text-[9px] font-black uppercase tracking-[0.2em] rounded-lg mt-1.5 shadow-lg">
-                  {user.role?.replace('_', ' ')}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-8 border-t border-white/5 space-y-6">
-              <div className="flex justify-between items-center text-[10px] uppercase tracking-[0.2em] font-black">
-                <span className="text-white/20">System Phase</span>
-                <span className="text-emerald-500 flex items-center gap-3">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" /> Synchronized
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] uppercase tracking-[0.2em] font-black border-t border-white/5 pt-6">
-                <span className="text-white/20">Uptime</span>
-                <span className="text-white/80 font-mono tracking-tighter">99.98%</span>
-              </div>
-            </div>
-          </motion.div>
-
-          <nav className="card-gradient p-4 space-y-2 rounded-[2.5rem] border border-white/5">
-            {sidebarItems.map((item, i) => {
-              if (item.adminOnly && user.role !== 'super_admin') return null;
-              const Icon = item.icon;
-              return (
-                <motion.button
-                  key={item.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center justify-between px-6 py-4.5 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all group relative overflow-hidden ${
-                    activeTab === item.id 
-                      ? 'bg-brand-teal text-black shadow-[0_15px_30px_rgba(45,212,191,0.3)] scale-[1.05]' 
-                      : 'text-white/30 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <div className="flex items-center gap-5 relative z-10">
-                    <Icon size={18} className={`${activeTab === item.id ? 'text-black' : 'text-brand-teal/50 group-hover:text-brand-teal'} group-hover:scale-110 transition-transform`} />
-                    {item.label}
-                  </div>
-                  {activeTab === item.id && <motion.div layoutId="chevron" className="relative z-10"><ChevronRight size={14} /></motion.div>}
-                </motion.button>
-              );
-            })}
-          </nav>
-
-          <Link
-            to="/profile"
-            className="w-full flex items-center justify-center gap-4 px-8 py-6 rounded-[2rem] bg-brand-teal/5 text-[10px] uppercase tracking-[0.3em] font-black text-brand-teal hover:bg-brand-teal hover:text-black transition-all group border border-brand-teal/20"
-          >
-            <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /> User Experience
+    <div className="min-h-screen bg-brand-black text-white flex">
+      {/* 1. FIXED LEFT SIDEBAR */}
+      <aside className="w-80 fixed inset-y-0 left-0 z-[100] border-r border-white/5 bg-brand-black/95 backdrop-blur-xl flex flex-col pt-8">
+        <div className="px-8 mb-12">
+          <Link to="/" className="flex flex-col leading-none mb-12">
+            <span className="text-xl font-black tracking-tighter text-brand-teal uppercase">FPH Command</span>
+            <span className="text-[10px] tracking-[0.4em] uppercase text-white/20 font-bold">Super Admin Base</span>
           </Link>
 
+          <div className="p-6 bg-brand-teal/5 rounded-3xl border border-brand-teal/20 flex items-center gap-4 group hover:border-brand-teal/40 transition-all">
+            <div className="w-12 h-12 rounded-2xl bg-brand-teal/10 flex items-center justify-center text-brand-teal font-black text-xl shadow-[0_0_20px_rgba(45,212,191,0.2)]">
+              {user.full_name?.[0] || 'A'}
+            </div>
+            <div>
+              <p className="text-xs font-black uppercase tracking-tight truncate w-32">{user.full_name}</p>
+              <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black">{user.role?.replace('_', ' ')}</p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-grow px-4 space-y-1 overflow-y-auto no-scrollbar pb-12">
+          <p className="px-6 text-[9px] uppercase tracking-[0.3em] text-white/20 font-black mb-4">Core Systems</p>
+          {sidebarItems.map((item) => {
+            if (item.adminOnly && user.role !== 'super_admin') return null;
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${
+                  isActive 
+                    ? 'bg-brand-teal text-black shadow-glow-teal' 
+                    : 'text-white/40 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Icon size={18} />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-white/5 space-y-2">
+           <Link
+            to="/profile"
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-brand-teal/5 text-[9px] uppercase tracking-[0.3em] font-black text-brand-teal hover:bg-brand-teal hover:text-black transition-all border border-brand-teal/10"
+          >
+            <ArrowUpRight size={14} /> Exit to Profile
+          </Link>
           <button 
             onClick={logout}
-            className="w-full flex items-center justify-center gap-4 px-8 py-6 rounded-[2rem] bg-white/5 text-[10px] uppercase tracking-[0.3em] font-black text-white/20 hover:bg-brand-coral hover:text-black transition-all group border border-transparent hover:border-brand-coral/30"
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-[9px] uppercase tracking-[0.3em] font-black text-white/20 hover:bg-brand-coral/10 hover:text-brand-coral transition-all"
           >
-            <LogOut size={16} className="group-hover:rotate-12 transition-transform" /> Sign Out Portal
+            <LogOut size={14} /> Close Terminal
           </button>
-        </aside>
+        </div>
+      </aside>
 
-        {/* Main Command Center Layout */}
-        <main className="flex-1 min-w-0">
+      {/* 2. MAIN CONTENT AREA */}
+      <div className="flex-1 ml-80 min-h-screen flex flex-col">
+        {/* TOP BAR */}
+        <header className="h-24 sticky top-0 z-[90] bg-brand-black/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-12">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-glow-teal" />
+              <span className="text-[10px] uppercase tracking-[0.3em] font-black text-white/40">Nexus Sync: Active</span>
+            </div>
+            <div className="h-4 w-px bg-white/10" />
+            <div className="flex items-center gap-4 text-white/20">
+               <ShieldCheck size={16} />
+               <span className="text-[10px] uppercase tracking-[0.3em] font-black">Secure Shell Enabled</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="flex -space-x-2">
+              {[1,2,3].map(i => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-brand-black bg-white/10 overflow-hidden">
+                  <img src={`https://i.pravatar.cc/100?u=${i}`} alt="Active Admin" className="w-full h-full object-cover grayscale" />
+                </div>
+              ))}
+              <div className="w-8 h-8 rounded-full border-2 border-brand-black bg-brand-teal/20 flex items-center justify-center text-[9px] font-black text-brand-teal">+4</div>
+            </div>
+            <button className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all relative">
+              <Mail size={18} className="text-white/40" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-brand-coral rounded-full" />
+            </button>
+            <div className="h-8 w-px bg-white/10" />
+            <span className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-teal">Phase 1.8.4</span>
+          </div>
+        </header>
+
+        {/* CONTENT */}
+        <main className="flex-1 p-12 overflow-y-auto">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-16 flex flex-col md:flex-row justify-between items-end gap-10"
+            className="mb-12"
           >
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-1.5 h-1.5 bg-brand-teal rounded-full shadow-[0_0_10px_rgba(45,212,191,0.8)]" />
-                <span className="text-brand-teal text-[11px] uppercase tracking-[0.6em] font-black">Centralized Command</span>
-              </div>
-              <h1 className="text-6xl lg:text-9xl font-black uppercase tracking-tighter leading-none">
-                {sidebarItems.find(i => i.id === activeTab)?.label.split(' ')[0]} <br/>
-                <span className="text-brand-teal">{sidebarItems.find(i => i.id === activeTab)?.label.split(' ').slice(1).join(' ') || ''}</span>
-              </h1>
-            </div>
-            
-            <div className="hidden lg:flex flex-col items-end gap-3 text-[10px] uppercase tracking-[0.2em] font-black text-white/10 group cursor-default">
-              <div className="flex items-center gap-3 group-hover:text-white/40 transition-colors underline decoration-brand-teal/20 underline-offset-8">
-                <Clock size={14} /> Last Synchronization: Instant
-              </div>
-              <div className="flex items-center gap-3 group-hover:text-emerald-500 transition-colors uppercase italic italic-glow-brand-teal">
-                <ShieldCheck size={14} /> Encryption Layer: Active
-              </div>
-            </div>
+             <h1 className="text-4xl lg:text-7xl font-black uppercase tracking-tighter">
+                {sidebarItems.find(i => i.id === activeTab)?.label.split(' ')[0]} <span className="text-brand-teal">{sidebarItems.find(i => i.id === activeTab)?.label.split(' ').slice(1).join(' ') || ''}</span>
+             </h1>
+             <p className="text-[10px] uppercase tracking-[0.5em] text-white/20 font-black mt-4">Module Access: {user.role?.toUpperCase()}</p>
           </motion.div>
 
-          {/* Module Transition Portal */}
-          <div className="relative min-h-[70vh]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="pb-20"
-              >
-                {renderContent()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

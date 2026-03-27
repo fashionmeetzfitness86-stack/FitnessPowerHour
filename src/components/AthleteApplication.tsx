@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../supabase';
 
-export const AthleteApplication = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) => {
+export const AthleteApplication = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({

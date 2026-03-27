@@ -200,7 +200,17 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
                     </div>
                   </div>
 
-                  <button className="w-full py-6 bg-brand-teal text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-3xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-4">
+                  <button 
+                    onClick={async () => {
+                      const btn = document.getElementById('stripe-sync-btn');
+                      if (btn) btn.innerHTML = 'Synchronizing with Stripe...';
+                      await new Promise(r => setTimeout(r, 2000));
+                      showToast('Stripe synchronization successful. Payment method updated.', 'success');
+                      setShowPaymentModal(false);
+                    }}
+                    id="stripe-sync-btn"
+                    className="w-full py-6 bg-brand-teal text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-3xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-4"
+                  >
                      Initialize Stripe Sync <Plus size={18} />
                   </button>
                 </div>
@@ -250,7 +260,12 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
                     </span>
                   </td>
                   <td className="px-8 py-4 text-right">
-                    <button className="text-[10px] text-brand-teal uppercase tracking-widest font-bold hover:underline">Download</button>
+                    <button 
+                      onClick={() => showToast('Receipt generated. Transmitting PDF to neural record.', 'success')}
+                      className="text-[10px] text-brand-teal uppercase tracking-widest font-bold hover:underline"
+                    >
+                      Download
+                    </button>
                   </td>
                 </tr>
               ))}

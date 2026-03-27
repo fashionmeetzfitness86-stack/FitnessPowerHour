@@ -12,6 +12,7 @@ import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, us
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ProfileDashboard } from './components/profile/ProfileDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AthleteDashboard } from './components/athlete/AthleteDashboard';
 import { CommunityPage } from './components/community/CommunityPage';
 import { CommunityDetail } from './components/community/CommunityDetail';
 import { AthleteApplication } from './components/AthleteApplication';
@@ -6162,6 +6163,13 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
                   <Navigate to="/" replace />
                 )
               } />
+              <Route path="/athlete/dashboard" element={
+                user && user.role === 'athlete' ? (
+                  <AthleteDashboard athleteUser={user} showToast={showToast} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              } />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AnimatePresence>
@@ -6176,9 +6184,17 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               initial={{ opacity: 0, y: 50, x: '-50%' }}
               animate={{ opacity: 1, y: 0, x: '-50%' }}
               exit={{ opacity: 0, y: 20, x: '-50%' }}
-              className="fixed bottom-12 left-1/2 z-[200] px-8 py-4 card-gradient flex items-center gap-4 border-brand-teal/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+              className={`fixed bottom-12 left-1/2 z-[200] px-8 py-4 card-gradient flex items-center gap-4 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border ${
+                toast.type === 'success' ? 'border-brand-teal/30' : 
+                toast.type === 'error' ? 'border-brand-coral/30' : 
+                toast.type === 'warning' ? 'border-amber-500/30' : 'border-blue-500/30'
+              }`}
             >
-              <div className={`w-2 h-2 rounded-full ${toast.type === 'success' ? 'bg-brand-teal' : 'bg-brand-coral'} animate-pulse`} />
+              <div className={`w-2 h-2 rounded-full animate-pulse ${
+                toast.type === 'success' ? 'bg-brand-teal shadow-glow-teal' : 
+                toast.type === 'error' ? 'bg-brand-coral shadow-glow-coral' : 
+                toast.type === 'warning' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]'
+              }`} />
               <span className="text-[10px] uppercase tracking-[0.2em] font-bold">{toast.message}</span>
               <button onClick={() => setToast(null)} className="ml-4 text-white/20 hover:text-white transition-colors">
                 <X size={14} />
@@ -6192,9 +6208,9 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
 };
 
 export default function App() {
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
