@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, LayoutDashboard, LineChart, Calendar, 
@@ -83,6 +84,14 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
           </div>
 
           <nav className="card-gradient p-4 flex-col gap-1 hidden lg:flex">
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
+              <Link
+                to="/admin/dashboard"
+                className="flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold text-brand-teal bg-brand-teal/5 hover:bg-brand-teal/10 hover:text-white transition-all mb-4 border border-brand-teal/20"
+              >
+                <Shield size={16} /> Admin Command Center
+              </Link>
+            )}
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -109,6 +118,15 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
           {/* Mobile Tab Scroller */}
           <div className="lg:hidden flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
+              <Link
+                to="/admin/dashboard"
+                className="flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl bg-brand-teal/10 text-brand-teal border border-brand-teal/20 transition-all flex-shrink-0"
+              >
+                <Shield size={20} />
+                <span className="text-[8px] uppercase tracking-widest font-bold text-center w-full truncate">Admin</span>
+              </Link>
+            )}
             {navItems.map((item) => {
               const Icon = item.icon;
               return (

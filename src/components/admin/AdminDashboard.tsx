@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Trophy, PlayCircle, 
@@ -7,7 +8,7 @@ import {
   ShieldCheck, ArrowUpRight, Plus, Download, Search,
   Edit2, Eye, Ban, Trash2, Check, X, Printer,
   Filter, Activity, TrendingUp, DollarSign, Clock,
-  CheckCircle, Video as VideoIcon, UserPlus, Star, Link,
+  CheckCircle, Video as VideoIcon, UserPlus, Star, 
   Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck
 } from 'lucide-react';
 import { supabase } from '../../supabase';
@@ -598,6 +599,13 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
               );
             })}
           </nav>
+
+          <Link
+            to="/profile"
+            className="w-full flex items-center justify-center gap-4 px-8 py-6 rounded-[2rem] bg-brand-teal/5 text-[10px] uppercase tracking-[0.3em] font-black text-brand-teal hover:bg-brand-teal hover:text-black transition-all group border border-brand-teal/20"
+          >
+            <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /> User Experience
+          </Link>
 
           <button 
             onClick={logout}

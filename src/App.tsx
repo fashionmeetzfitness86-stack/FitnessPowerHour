@@ -862,10 +862,10 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-6">
-          {user?.role === 'admin' && (
-            <Link to="/admin" className="hidden lg:flex items-center space-x-2 text-xs uppercase tracking-widest text-brand-teal hover:text-white transition-colors">
-              <Zap size={16} />
-              <span>Admin</span>
+          {(user?.role === 'admin' || user?.role === 'super_admin') && (
+            <Link to="/admin/dashboard" className="hidden lg:flex items-center space-x-2 text-xs uppercase tracking-widest text-brand-teal hover:text-white transition-colors">
+              <ShieldCheck size={16} />
+              <span>{user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span>
             </Link>
           )}
           {user ? (
@@ -2053,7 +2053,8 @@ const VideoLibrary = () => {
       const visibility = v.visibility || 'everyone';
       
       let hasAccess = false;
-      if (visibility === 'everyone') hasAccess = true;
+      if (user?.role === 'admin' || user?.role === 'super_admin') hasAccess = true;
+      else if (visibility === 'everyone') hasAccess = true;
       else if (visibility === 'Basic' && userTier !== 'everyone') hasAccess = true;
       else if ((visibility === 'Premium' || visibility === 'Elite') && (userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
 
@@ -5517,7 +5518,8 @@ const VideoDetail = () => {
     );
   }
 
-  const isLocked = video.isPremium && (!user || user.tier === 'Basic');
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isLocked = video.isPremium && (!user || user.tier === 'Basic') && !isAdmin;
 
   return (
     <motion.div 
@@ -6152,7 +6154,8 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/recovery" element={<Recovery />} />
               <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
               <Route path="/about" element={<About />} />
-              <Route path="/admin" element={
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="/admin/dashboard" element={
                 user && (user.role === 'admin' || user.role === 'super_admin') ? (
                   <AdminDashboard user={user} logout={logout} showToast={showToast} />
                 ) : (
