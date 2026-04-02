@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, LayoutDashboard, LineChart, Calendar, 
   PlaySquare, Video, Shield, CreditCard, 
-  Map, ShoppingBag, Settings, Bell, LogOut, Heart
+  Map, ShoppingBag, Settings, Bell, LogOut, Heart, MessageSquare
 } from 'lucide-react';
 import { supabase } from '../../supabase';
 
@@ -20,6 +20,7 @@ import { OrderHistoryTab } from './OrderHistoryTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
 import { AthleteDashboard } from '../athlete/AthleteDashboard';
+import { InternalFeed } from '../InternalFeed';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -27,6 +28,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     ...(user?.role === 'athlete' ? [{ id: 'athlete', label: 'Athlete Intel', icon: Shield }] : []),
+    ...(user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'athlete' ? [{ id: 'internal-feed', label: 'Internal Feed', icon: MessageSquare }] : []),
     { id: 'progress', label: 'Progress Tracking', icon: LineChart },
     { id: 'calendar', label: 'Workout Calendar', icon: Calendar },
     { id: 'programs', label: 'My Programs', icon: PlaySquare },
@@ -53,6 +55,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
       case 'athlete': return <AthleteDashboard athleteUser={user} showToast={showToast} />;
+      case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
       default: return <Overview user={user} />;
     }
   };

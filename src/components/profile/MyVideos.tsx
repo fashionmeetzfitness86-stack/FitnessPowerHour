@@ -12,6 +12,8 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: (m
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const cameraInputRef = React.useRef<HTMLInputElement>(null);
   const [uploads, setUploads] = useState<UserVideoUpload[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [activeTab, setActiveTab] = useState('all');
@@ -220,12 +222,22 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: (m
                   {isBasic ? 'Image sync authorized. Upgrade to Elite for video support.' : 'Authorizing media sync up to 500MB.'}
                 </p>
                 
-                <label className="cursor-pointer block">
-                  <span className="w-full py-4 bg-brand-teal text-black text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all inline-block">
-                    Search Local Media
-                  </span>
-                  <input type="file" accept={isBasic ? "image/*" : "image/*,video/*"} className="hidden" onChange={handleFileChange} />
-                </label>
+                <div className="flex gap-4 w-full">
+                  <button 
+                    onClick={(e) => { e.preventDefault(); cameraInputRef.current?.click() }}
+                    className="flex-1 py-4 bg-white/5 text-brand-teal text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-brand-teal/10 hover:border-brand-teal border border-transparent transition-all"
+                  >
+                    Take Photo / Video
+                  </button>
+                  <button 
+                    onClick={(e) => { e.preventDefault(); fileInputRef.current?.click() }}
+                    className="flex-1 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all"
+                  >
+                    Upload Asset
+                  </button>
+                  <input ref={cameraInputRef} type="file" accept={isBasic ? "image/*" : "image/*,video/*"} capture="environment" className="hidden" onChange={handleFileChange} />
+                  <input ref={fileInputRef} type="file" accept={isBasic ? "image/*" : "image/*,video/*"} className="hidden" onChange={handleFileChange} />
+                </div>
               </div>
             ) : (
               <div className="space-y-8">

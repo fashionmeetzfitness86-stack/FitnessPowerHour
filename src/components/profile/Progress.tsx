@@ -1,16 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Activity, Target, Zap, ChevronRight, Play, Camera, Upload, CheckCircle, Clock, X } from 'lucide-react';
+import { Trophy, Activity, Target, Zap, ChevronRight, Play, Camera, Upload, CheckCircle, Clock, X, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { UserProfile, WorkoutLog } from '../../types';
+import { MediaCapture } from '../MediaCapture';
+
 
 export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (msg: string, type?: any) => void }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'metrics'>('overview');
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [useCamera, setUseCamera] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [file]);
 
   const streak = user.streak || 0;
   const hoursTrained = Math.floor((logs.reduce((acc, log) => acc + log.duration, 0) || 0) / 60);
@@ -100,6 +114,11 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleCapture = (capturedFile: File) => {
+    setFile(capturedFile);
+    setUseCamera(false);
   };
 
   return (
@@ -349,38 +368,43 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
                 <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-black">Physiological Alignment Protocol</p>
               </div>
 
-              {!file ? (
-                <div className="space-y-8 relative z-10">
-                  <label className="border-4 border-dashed border-white/5 rounded-[3rem] p-24 block text-center cursor-pointer hover:border-brand-coral/40 hover:bg-white/[0.02] transition-all group">
-                    <Upload size={48} className="mx-auto text-white/10 group-hover:text-brand-coral mb-6 transition-all" />
-                    <p className="text-[10px] uppercase tracking-[0.4em] text-white/20 font-black group-hover:text-white transition-colors">Select Identity Asset</p>
-                    <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                  </label>
-                  <p className="text-[9px] uppercase tracking-widest text-center text-white/20 font-black">Authorized files: .JPG, .PNG up to 20MB</p>
-                </div>
-              ) : (
-                <div className="space-y-10 relative z-10">
-                   <div className="aspect-video rounded-[2.5rem] overflow-hidden border-2 border-brand-coral shadow-glow-coral">
-                      <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
-                   </div>
-                   <div className="flex gap-6">
-                      <button 
-                        onClick={submitDailyCheckIn}
-                        disabled={isUploading}
-                        className="flex-1 py-6 bg-brand-coral text-black text-[11px] uppercase tracking-[0.5em] font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-glow-coral disabled:opacity-50"
-                      >
-                        {isUploading ? 'Transmitting...' : 'Authorize Sync'}
-                      </button>
-                      <button 
-                        onClick={() => setFile(null)}
-                        disabled={isUploading}
-                        className="px-10 py-6 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.5em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
-                      >
-                        Reset
-                      </button>
-                   </div>
-                </div>
-              )}
+              <div className="relative z-10 w-full mt-8">
+                <MediaCapture 
+                  bucket="media"
+                  folder="check-ins"
+                  accept="image/*"
+                  onUploadSuccess={async (url) => {
+                    const newLog: Partial<WorkoutLog> = {
+                      user_id: user.id || '',
+                      duration: 45, // Default for check-in
+                      completed_at: new Date().toISOString(),
+                      status: 'pending', // Awaiting admin audit
+                      check_in_image: url
+                    };
+
+                    try {
+                      const { error: dbError } = await supabase
+                        .from('workout_logs')
+                        .insert(newLog);
+
+                      if (dbError) throw dbError;
+
+                      // Update user streak
+                      await supabase.from('profiles').update({ 
+                        streak: streak + 1,
+                        last_workout_date: new Date().toISOString()
+                      }).eq('id', user.id);
+
+                      showToast('EOD Physiological Audit Received. Syncing status...', 'success');
+                      setIsCheckingIn(false);
+                      fetchLogs();
+                    } catch (error: any) {
+                      showToast(error.message || 'Audit failed to sync.', 'error');
+                    }
+                  }}
+                  onUploadError={(err) => showToast(err.message, 'error')}
+                />
+              </div>
             </motion.div>
           </div>
         )}

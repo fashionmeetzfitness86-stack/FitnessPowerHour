@@ -340,6 +340,35 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     } catch (err) { showToast('Decommissioning failed', 'error'); }
   };
 
+  const handleSaveProduct = async (data: Partial<Product>) => {
+    try {
+      if (data.id) {
+        const { error } = await supabase.from('products').update(data).eq('id', data.id);
+        if (error) throw error;
+        setProducts(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Product : p));
+        logActivity('UPDATE_PRODUCT', 'product', data.id, data);
+        showToast('Product metadata synchronized', 'success');
+      } else {
+        const { data: newP, error } = await supabase.from('products').insert(data).select().single();
+        if (error) throw error;
+        if (newP) {
+          setProducts(prev => [newP, ...prev]);
+          logActivity('CREATE_PRODUCT', 'product', newP.id, newP);
+        }
+        showToast('New product initialized', 'success');
+      }
+    } catch (err) { showToast('Product sync failed', 'error'); }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      await supabase.from('products').delete().eq('id', id);
+      setProducts(prev => prev.filter(p => p.id !== id));
+      logActivity('DELETE_PRODUCT', 'product', id);
+      showToast('Product decommissioned', 'success');
+    } catch (err) { showToast('Decommissioning failed', 'error'); }
+  };
+
   const handleUpdateUser = async (userId: string, updates: Partial<UserProfile>) => {
     try {
       const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
@@ -464,9 +493,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           categories={productCategories} 
           searchQuery={searchQuery} 
           setSearchQuery={setSearchQuery} 
-          onAdd={() => {}} 
-          onEdit={() => {}} 
-          onDelete={() => {}} 
+          onAdd={() => handleSaveProduct({ name: 'New Product', status: 'inactive', price: 0, inventory_count: 0 })} 
+          onEdit={handleSaveProduct} 
+          onDelete={handleDeleteProduct} 
         />
       );
       case 'orders': return (
