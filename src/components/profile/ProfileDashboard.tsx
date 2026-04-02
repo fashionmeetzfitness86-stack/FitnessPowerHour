@@ -23,33 +23,7 @@ import { AthleteDashboard } from '../athlete/AthleteDashboard';
 import { InternalFeed } from '../InternalFeed';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
-  const [activeTab, setActiveTab] = useState(() => {
-    const hash = window.location.hash;
-    if (hash && hash.startsWith('#')) {
-      const parts = hash.split('#');
-      if (parts.length > 2) {
-         return parts[2];
-      }
-      // Or if it's just e.g. #/profile#settings or something
-    }
-    return 'overview';
-  });
-
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash;
-      if (hash && hash.includes('#')) {
-         const parts = hash.split('#');
-         if (parts.length > 2) {
-            setActiveTab(parts[2]);
-         }
-      }
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    // trigger once to ensure current
-    handleHashChange();
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  const [activeTab, setActiveTab] = useState('overview');
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
