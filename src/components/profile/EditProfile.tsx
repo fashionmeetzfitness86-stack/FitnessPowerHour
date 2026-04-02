@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Save, UserCircle, Camera, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X } from 'lucide-react';
+import { Save, UserCircle, Camera, Upload, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { UserProfile } from '../../types';
-
+import { MediaCapture } from '../MediaCapture';
 export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     full_name: user?.full_name || '',
@@ -216,17 +216,22 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   </div>
                 ))}
                 {(formData.profile_images?.length || 0) < 10 && (
-                  <label className="aspect-square rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-brand-teal transition-all bg-white/[0.02] group">
-                    {isUploading ? (
-                      <div className="w-6 h-6 border-2 border-brand-teal border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <Camera size={24} className="text-white/20 group-hover:text-brand-teal transition-colors" />
-                        <span className="text-[8px] uppercase tracking-widest text-white/20 mt-2 font-bold group-hover:text-white transition-colors">Add Photo</span>
-                      </>
-                    )}
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-                  </label>
+                  <div className="col-span-2 md:col-span-5 mt-4">
+                    <MediaCapture 
+                      bucket="avatars"
+                      folder={`profiles/${user.id}`}
+                      isAvatar={false}
+                      onUploadSuccess={(url) => {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          profile_images: [...(prev.profile_images || []), url],
+                          profile_image: prev.profile_image || url
+                        }));
+                        showToast('Image uploaded successfully!', 'success');
+                      }}
+                      onUploadError={(err) => showToast(err.message, 'error')}
+                    />
+                  </div>
                 )}
               </div>
             </div>

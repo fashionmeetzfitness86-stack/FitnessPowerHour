@@ -3,9 +3,10 @@ import { motion } from 'motion/react';
 import { 
   PlayCircle, Upload, Search, Filter, 
   Trash2, Edit2, Clock, Eye, 
-  CheckCircle, Video as VideoIcon
+  CheckCircle, Video as VideoIcon, X, Save
 } from 'lucide-react';
 import { Video, VideoCategory, Athlete } from '../../types';
+import { MediaCapture } from '../MediaCapture';
 
 interface VideoManagerProps {
   videos: Video[];
@@ -22,6 +23,7 @@ export const VideoManager = ({
 }: VideoManagerProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [editingVideo, setEditingVideo] = useState<Partial<Video> | null>(null);
 
   const filteredVideos = useMemo(() => {
     return videos.filter(v => {
@@ -61,7 +63,7 @@ export const VideoManager = ({
             ))}
           </select>
           <button 
-            onClick={onUpload}
+            onClick={() => setEditingVideo({ title: 'New Transmission', visibility_status: 'draft', level: 'Beginner' })}
             className="flex-grow lg:flex-none px-8 py-3 bg-brand-teal text-black font-black rounded-xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all"
           >
             <Upload size={18} /> Publish New
@@ -124,7 +126,7 @@ export const VideoManager = ({
 
             <div className="px-8 pb-8 flex gap-3 opacity-0 group-hover:opacity-100 group-hover:-translate-y-2 transition-all duration-300">
               <button 
-                onClick={() => onEdit(video)}
+                onClick={() => setEditingVideo(video)}
                 className="flex-grow py-3 bg-white/5 hover:bg-brand-teal hover:text-black rounded-xl text-[9px] uppercase tracking-widest font-black transition-all flex items-center justify-center gap-2"
               >
                 <Edit2 size={12} /> Edit Metadata
@@ -147,6 +149,62 @@ export const VideoManager = ({
           </div>
         )}
       </div>
+      
+      {editingVideo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-2xl overflow-y-auto">
+          <div className="card-gradient w-full max-w-2xl p-10 space-y-8 rounded-[3rem] border border-brand-teal/30 relative my-10">
+            <button onClick={() => setEditingVideo(null)} className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-black uppercase tracking-tighter">Edit <span className="text-brand-teal">Video Metadata</span></h3>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-2">Title</label>
+                <input 
+                  type="text" 
+                  value={editingVideo.title || ''} 
+                  onChange={e => setEditingVideo({ ...editingVideo, title: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-2">Thumbnail Upload</label>
+                  <MediaCapture 
+                    bucket="fmf-media" 
+                    folder="thumbnails" 
+                    accept="image/*"
+                    onUploadSuccess={(url) => setEditingVideo({ ...editingVideo, thumbnail_url: url })}
+                  />
+                  {editingVideo.thumbnail_url && <p className="text-[8px] text-brand-teal uppercase font-bold tracking-widest">Thumbnail Set</p>}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-2">Video Upload</label>
+                  <MediaCapture 
+                    bucket="fmf-media" 
+                    folder="videos" 
+                    accept="video/*"
+                    onUploadSuccess={(url) => setEditingVideo({ ...editingVideo, video_url: url })}
+                  />
+                  {editingVideo.video_url && <p className="text-[8px] text-brand-teal uppercase font-bold tracking-widest">Video Set</p>}
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  onEdit(editingVideo as Video);
+                  setEditingVideo(null);
+                }}
+                className="w-full py-4 mt-6 bg-brand-teal text-black text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all flex items-center justify-center gap-2"
+              >
+                <Save size={16} /> Save Record
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

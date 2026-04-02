@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { 
   ShoppingBag, Plus, Search, Edit2, 
   Trash2, Package, Tag, Layers,
-  ChevronRight, AlertCircle, TrendingUp
+  ChevronRight, AlertCircle, TrendingUp, X, Save
 } from 'lucide-react';
 import { Product, Brand, ProductCategory } from '../../types';
+import { MediaCapture } from '../MediaCapture';
 
 interface ShopManagerProps {
   products: Product[];
@@ -23,6 +24,7 @@ export const ShopManager = ({
   onAdd, onEdit, onDelete 
 }: ShopManagerProps) => {
   const [filterCategory, setFilterCategory] = useState('All');
+  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -175,7 +177,7 @@ export const ShopManager = ({
                   <td className="px-8 py-6 text-right">
                     <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 group-hover:translate-x-0">
                       <button 
-                        onClick={() => onEdit(p)}
+                        onClick={() => setEditingProduct(p)}
                         className="p-3 rounded-xl bg-white/5 hover:bg-brand-teal hover:text-black transition-all shadow-xl"
                       >
                         <Edit2 size={14} />
@@ -203,6 +205,71 @@ export const ShopManager = ({
           </div>
         )}
       </div>
+      
+      {editingProduct && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-2xl overflow-y-auto">
+          <div className="card-gradient w-full max-w-2xl p-10 space-y-8 rounded-[3rem] border border-brand-teal/30 relative my-10">
+            <button onClick={() => setEditingProduct(null)} className="absolute top-8 right-8 text-white/20 hover:text-white transition-colors">
+              <X size={24} />
+            </button>
+            <h3 className="text-2xl font-black uppercase tracking-tighter">Edit <span className="text-brand-teal">Product Data</span></h3>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-2">Name</label>
+                <input 
+                  type="text" 
+                  value={editingProduct.name || ''} 
+                  onChange={e => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-2">Price ($)</label>
+                  <input 
+                    type="number" 
+                    value={editingProduct.price || 0} 
+                    onChange={e => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-2">Inventory Count</label>
+                  <input 
+                    type="number" 
+                    value={editingProduct.inventory_count || 0} 
+                    onChange={e => setEditingProduct({ ...editingProduct, inventory_count: parseInt(e.target.value) })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-2">Product Image</label>
+                <MediaCapture 
+                  bucket="fmf-media" 
+                  folder="products" 
+                  accept="image/*"
+                  onUploadSuccess={(url) => setEditingProduct({ ...editingProduct, featured_image: url })}
+                />
+                {editingProduct.featured_image && <p className="text-[8px] text-brand-teal uppercase font-bold tracking-widest mt-2 px-2">Image Sync Initialized</p>}
+              </div>
+
+              <button 
+                onClick={() => {
+                  onEdit(editingProduct as Product);
+                  setEditingProduct(null);
+                }}
+                className="w-full py-4 mt-6 bg-brand-teal text-black text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all flex items-center justify-center gap-2"
+              >
+                <Save size={16} /> Update Protocol
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

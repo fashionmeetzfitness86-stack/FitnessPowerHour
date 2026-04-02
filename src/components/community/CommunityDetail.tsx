@@ -25,6 +25,8 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestMessage, setRequestMessage] = useState('');
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+  const [commentContent, setCommentContent] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -100,6 +102,32 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes } : p));
     } catch (error) {
       showToast('Reaction synchronization failed', 'error');
+    }
+  };
+
+  const handleCommentSubmit = async (postId: string) => {
+    if (!commentContent.trim() || !user) return;
+
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    const newComment: CommunityComment = {
+      id: Math.random().toString(36).substr(2, 9),
+      user_id: user.id,
+      user_name_snapshot: user.full_name,
+      content: commentContent,
+      created_at: new Date().toISOString()
+    };
+
+    const newComments = [...(post.comments || []), newComment];
+
+    try {
+      await supabase.from('community_posts').update({ comments: newComments }).eq('id', postId);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: newComments } : p));
+      setCommentContent('');
+      showToast('Response logged in collective matrix', 'success');
+    } catch (error) {
+      showToast('Failed to append response', 'error');
     }
   };
 
@@ -291,7 +319,10 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
                       <Heart size={20} className={post.likes.includes(user?.id || '') ? 'fill-brand-coral' : ''} />
                       <span className="text-[10px] font-black uppercase tracking-widest">{post.likes.length} Reactions</span>
                     </button>
-                    <button className="flex items-center gap-3 text-white/30 hover:text-brand-teal transition-all group/btn">
+                    <button 
+                      onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)}
+                      className="flex items-center gap-3 text-white/30 hover:text-brand-teal transition-all group/btn"
+                    >
                       <Quote size={20} />
                       <span className="text-[10px] font-black uppercase tracking-widest">{post.comments?.length || 0} Responses</span>
                     </button>
@@ -299,6 +330,52 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
                       <Share2 size={18} />
                     </button>
                   </div>
+
+                  <AnimatePresence>
+                    {expandedPostId === post.id && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden border-t border-white/5"
+                      >
+                        <div className="pt-6 space-y-6">
+                          {post.comments?.map(comment => (
+                            <div key={comment.id} className="flex gap-4">
+                              <div className="w-8 h-8 rounded-lg bg-white/5 flex-shrink-0 flex items-center justify-center font-black text-xs">
+                                {comment.user_name_snapshot[0]}
+                              </div>
+                              <div className="bg-white/5 rounded-2xl p-4 flex-grow">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-brand-teal">{comment.user_name_snapshot}</p>
+                                  <span className="text-[8px] text-white/20 uppercase font-mono">{new Date(comment.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <p className="text-xs text-white/60">{comment.content}</p>
+                              </div>
+                            </div>
+                          ))}
+
+                          <div className="flex gap-4 mt-4">
+                            <div className="w-8 h-8 rounded-lg bg-brand-teal/10 flex-shrink-0 flex items-center justify-center font-black text-xs text-brand-teal">
+                              {user?.full_name?.[0] || 'U'}
+                            </div>
+                            <div className="flex-grow flex gap-2">
+                              <input 
+                                type="text"
+                                placeholder="Add a response..."
+                                value={commentContent}
+                                onChange={e => setCommentContent(e.target.value)}
+                                className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 text-xs outline-none focus:border-brand-teal transition-all"
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleCommentSubmit(post.id);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               ))}
 

@@ -16,6 +16,10 @@ import { AthleteDashboard } from './components/athlete/AthleteDashboard';
 import { CommunityPage } from './components/community/CommunityPage';
 import { CommunityDetail } from './components/community/CommunityDetail';
 import { AthleteApplication } from './components/AthleteApplication';
+import { AuthCallback } from './components/auth/AuthCallback';
+import { LocalPassFlow } from './components/LocalPassFlow';
+import { PassSuccess } from './components/PassSuccess';
+import { FreeAccessGate } from './components/FreeAccessGate';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
@@ -200,7 +204,7 @@ const PRODUCTS: Product[] = [
     id: 'p3', 
     brand_id: 'cle-paris',
     category_id: 'fragrance',
-    name: "CLÃ‰ PARIS L'EAU",
+    name: "CLÉ PARIS L'EAU",
     slug: 'cle-paris-leau',
     description: 'A fresh, sophisticated fragrance for the modern athlete.',
     price: 120,
@@ -208,8 +212,8 @@ const PRODUCTS: Product[] = [
     sku: 'FRG-001',
     inventory_count: 30,
     status: 'active',
-    featured_image: placeholder('ClÃ© Paris', 'c4a265'),
-    images: [placeholder('ClÃ© Paris', 'c4a265')],
+    featured_image: placeholder('Clé Paris', 'c4a265'),
+    images: [placeholder('Clé Paris', 'c4a265')],
     ingredients: ['Bergamot', 'Sandalwood', 'Marine Accord'],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -242,7 +246,7 @@ const COLLABORATIONS: CollaborationBrand[] = [
     category: "Women's Fitness Lifestyle",
     description: 'Exclusive women-focused brand dedicated to empowerment through fitness, confidence, and community. Strength, femininity, and performance.',
     image: placeholder('Sorority', 'e87461'),
-    link: '/store',
+    link: '/shop',
     buttonText: 'View Collection'
   },
   { 
@@ -251,8 +255,8 @@ const COLLABORATIONS: CollaborationBrand[] = [
     category: 'Recovery & Mobility', 
     description: 'Specializing in professional assisted stretching and muscle recovery designed to support athletes and optimize performance.',
     image: placeholder('Flex Mob 305'),
-    link: '/recovery',
-    buttonText: 'Learn More'
+    link: '/services',
+    buttonText: 'Book Now'
   },
   { 
     id: 'c3', 
@@ -260,16 +264,16 @@ const COLLABORATIONS: CollaborationBrand[] = [
     category: 'Luxury Resort Fitness', 
     description: 'Luxury resort-inspired fitness and swimwear brand blending beach aesthetics with fitness culture and premium performance.',
     image: placeholder('Pier St Barth', '60a5fa'),
-    link: '/store',
+    link: '/shop',
     buttonText: 'View Collection'
   },
   { 
     id: 'c4', 
-    name: 'CLÃ‰ PARIS', 
+    name: 'CLÉ PARIS', 
     category: 'Luxury Fragrance & Lifestyle', 
     description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
-    image: placeholder('ClÃ© Paris', 'c4a265'),
-    link: '/store',
+    image: placeholder('Clé Paris', 'c4a265'),
+    link: 'https://cle-paris.com',
     buttonText: 'Explore Brand'
   },
   { 
@@ -278,7 +282,7 @@ const COLLABORATIONS: CollaborationBrand[] = [
     category: 'Functional Nutrition', 
     description: 'Cold-pressed functional juices designed for performance, recovery, and daily balance. Clean fuel for the body without additives or artificial sugars.',
     image: placeholder('Mike Water', '4ade80'),
-    link: '/store',
+    link: '/shop',
     buttonText: 'Shop Juices'
   }
 ];
@@ -424,7 +428,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...data,
         full_name: data.full_name || data.name || data.email || 'Member',
         signup_date: data.signup_date || data.joinedAt || data.created_at || new Date().toISOString(),
-        role: data.role || (data.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user'),
+        role: data.role || (data.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user'),
         status: data.status || 'active',
         created_at: data.created_at || data.signup_date || data.joinedAt || new Date().toISOString(),
         updated_at: data.updated_at || new Date().toISOString()
@@ -445,7 +449,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: session.user.id,
         full_name: displayName,
         email: session.user.email || '',
-        role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
+        role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user',
         tier: 'Free Access',
         status: 'active',
         signup_date: now,
@@ -459,7 +463,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         id: session.user.id,
         full_name: displayName,
         email: session.user.email || '',
-        role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
+        role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user',
         tier: 'Free Access',
         status: 'active',
         signup_date: now
@@ -501,8 +505,20 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        // Supabase returns 'Email not confirmed' when the user hasn't verified
+        if (error.message.toLowerCase().includes('email not confirmed')) {
+          throw new Error('EMAIL_NOT_CONFIRMED');
+        }
+        throw error;
+      }
+
+      // Double-check: if we somehow got a session for an unconfirmed user
+      if (data.user && !data.user.email_confirmed_at) {
+        await supabase.auth.signOut();
+        throw new Error('EMAIL_NOT_CONFIRMED');
+      }
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -511,28 +527,42 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signup = async (name: string, email: string, password: string, tier: string) => {
     try {
+      // Build the redirect URL for email confirmation
+      // In production this will be https://fitnesspowerhour.com/auth/callback
+      // In dev it will be http://localhost:5173/auth/callback (handled by HashRouter as /#/auth/callback)
+      const redirectUrl = `${window.location.origin}${window.location.pathname}#/auth/callback`;
+
       const { data, error } = await supabase.auth.signUp({
         email, password,
         options: {
           data: { display_name: name },
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: redirectUrl
         }
       });
       if (error) throw error;
 
+      // Check if Supabase returned a user with an unconfirmed email
+      // (identities array is empty when the user already exists)
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        throw new Error('This email is already registered. Try logging in instead.');
+      }
+
       if (data.user) {
-        // Use profiles table
+        // Create a profile row immediately so it's ready when the user confirms
         const dbRow = {
           id: data.user.id,
           full_name: name,
           email,
-          role: email.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'super_admin' : 'user',
+          role: email.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user',
           tier: tier || 'Free Access',
           status: 'active',
           signup_date: new Date().toISOString()
         };
         await supabase.from('profiles').insert(dbRow);
       }
+
+      // Sign out immediately — user must confirm email before accessing the app
+      await supabase.auth.signOut();
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -542,6 +572,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       await supabase.auth.signOut();
+      window.location.href = '/';
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -849,17 +880,21 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden lg:flex space-x-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`text-xs uppercase tracking-widest transition-colors ${
-                location.pathname === link.path ? 'text-brand-coral' : 'text-white/60 hover:text-white'
-              }`}
-            >
-              {link.name}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const isMembership = link.name === 'Membership';
+            const finalPath = isMembership && user && user.tier !== 'Free Access' ? '/profile#membership' : link.path;
+            return (
+              <Link
+                key={link.name}
+                to={finalPath}
+                className={`text-xs uppercase tracking-widest transition-colors ${
+                  location.pathname === link.path ? 'text-brand-coral' : 'text-white/60 hover:text-white'
+                }`}
+              >
+                {link.name}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="flex items-center space-x-6">
@@ -908,16 +943,20 @@ const Navbar = () => {
             className="lg:hidden bg-brand-black border-b border-white/10 overflow-hidden"
           >
             <div className="flex flex-col p-8 space-y-6">
-              {navLinks.map((link) => (
+              {navLinks.map((link) => {
+                const isMembership = link.name === 'Membership';
+                const finalPath = isMembership && user && user.tier !== 'Free Access' ? '/profile#membership' : link.path;
+                return (
                 <Link
-                  key={link.path}
-                  to={link.path}
+                  key={link.name}
+                  to={finalPath}
                   onClick={() => setIsOpen(false)}
                   className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors"
                 >
                   {link.name}
                 </Link>
-              ))}
+                );
+              })}
               <div className="pt-6 border-t border-white/5">
                 {user ? (
                   <div className="flex flex-col space-y-4">
@@ -1039,14 +1078,110 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
   </footer>
 );
 
+const MembershipGate = ({ isOpen, onClose, navigate }: { isOpen: boolean, onClose: () => void, navigate: any }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-brand-black/95 backdrop-blur-2xl"
+        />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 30 }}
+          className="card-gradient p-12 lg:p-16 max-w-2xl w-full relative z-10 space-y-12 rounded-[4rem] border border-brand-teal/20 text-center overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+             <Lock size={200} />
+          </div>
+          
+          <div className="space-y-4 relative z-10">
+            <div className="w-20 h-20 bg-brand-teal/10 rounded-3xl flex items-center justify-center text-brand-teal mx-auto border border-brand-teal/20">
+              <ShieldCheck size={40} />
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-black uppercase tracking-tighter">Unlock <span className="text-brand-teal">Access</span></h2>
+            <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-black">Authorized Personnel Only</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 relative z-10">
+            <button 
+              onClick={() => { onClose(); navigate('/membership'); }}
+              className="group p-8 bg-white/5 border border-white/10 rounded-3xl hover:border-brand-teal transition-all text-left flex justify-between items-center"
+            >
+              <div className="space-y-2">
+                <span className="text-[10px] uppercase tracking-widest text-brand-teal font-black">Full Experience</span>
+                <h4 className="text-xl font-bold uppercase tracking-tight">Select a Membership</h4>
+              </div>
+              <ChevronRight className="text-white/20 group-hover:text-brand-teal transition-colors" />
+            </button>
+
+            <div className="grid grid-cols-2 gap-4">
+              <button 
+                onClick={() => { onClose(); navigate('/membership'); }}
+                className="group p-8 bg-white/5 border border-white/10 rounded-3xl hover:border-brand-coral transition-all text-left flex flex-col justify-between"
+              >
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase tracking-widest text-brand-coral font-black">Short Term</span>
+                  <h4 className="text-lg font-bold uppercase tracking-tight">3-Day Pass</h4>
+                </div>
+                <div className="mt-4 flex justify-between items-center">
+                   <span className="text-xl font-black">$59</span>
+                   <Plus size={16} className="text-white/20 group-hover:text-brand-coral" />
+                </div>
+              </button>
+
+              <button 
+                onClick={() => { onClose(); navigate('/membership'); }}
+                className="group p-8 bg-white/5 border border-white/10 rounded-3xl hover:border-brand-coral transition-all text-left flex flex-col justify-between"
+              >
+                <div className="space-y-1">
+                  <span className="text-[9px] uppercase tracking-widest text-brand-coral font-black">Weekly Access</span>
+                  <h4 className="text-lg font-bold uppercase tracking-tight">7-Day Pass</h4>
+                </div>
+                <div className="mt-4 flex justify-between items-center">
+                   <span className="text-xl font-black">$89</span>
+                   <Plus size={16} className="text-white/20 group-hover:text-brand-coral" />
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <button 
+            onClick={onClose}
+            className="text-[10px] uppercase tracking-[0.5em] text-white/20 hover:text-white transition-colors pt-4 font-black"
+          >
+            Return to Surface
+          </button>
+        </motion.div>
+      </div>
+    )}
+  </AnimatePresence>
+);
+
 // --- Pages ---
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const heroRef = useRef(null);
   const philosophyRef = useRef(null);
   const retreatRef = useRef(null);
   const [featuredVideos, setFeaturedVideos] = useState<Video[]>([]);
+  const [isGateOpen, setIsGateOpen] = useState(false);
+
+  const isMember = user && (user.tier !== 'Free Access' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete');
+
+  const handleLibraryClick = () => {
+    if (!isMember) {
+      setIsGateOpen(true);
+    } else {
+      navigate('/videos');
+    }
+  };
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -1125,12 +1260,22 @@ const Home = () => {
               Train Your Body. Train Your Mind. A premium calisthenics training program designed to build strength, discipline, and energy.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button onClick={() => navigate('/membership')} className="btn-primary">Get Started</button>
-              <button onClick={() => navigate('/videos')} className="btn-outline">Explore Program</button>
-              <button onClick={() => navigate('/shop')} className="btn-secondary">Shop Collection</button>
+              <button 
+                onClick={() => {
+                  if (!isMember) setIsGateOpen(true);
+                  else navigate('/profile');
+                }} 
+                className="btn-primary"
+              >
+                {isMember ? 'Back to Command' : 'Get Started'}
+              </button>
+              <button onClick={handleLibraryClick} className="btn-outline">Explore Program</button>
+              <button onClick={() => navigate('/shop')} className="btn-secondary">Shop Choices</button>
             </div>
           </motion.div>
         </div>
+
+        <MembershipGate isOpen={isGateOpen} onClose={() => setIsGateOpen(false)} navigate={navigate} />
 
         <div className="absolute bottom-10 right-10 hidden lg:flex flex-col items-end gap-2">
           <span className="text-[10px] uppercase tracking-[0.5em] text-white/20 rotate-90 origin-right translate-y-20">Scroll to explore</span>
@@ -1298,9 +1443,12 @@ const Home = () => {
               <h2 className="text-4xl font-bold uppercase tracking-tighter mb-4">Training Library</h2>
               <p className="text-white/40 uppercase tracking-widest text-xs">Guided Sessions for every level</p>
             </div>
-            <Link to="/videos" className="text-brand-teal flex items-center gap-2 text-xs uppercase tracking-widest hover:gap-4 transition-all">
+            <button 
+              onClick={handleLibraryClick}
+              className="text-brand-teal flex items-center gap-2 text-xs uppercase tracking-widest hover:gap-4 transition-all"
+            >
               View All <ChevronRight size={16} />
-            </Link>
+            </button>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -1309,7 +1457,10 @@ const Home = () => {
                 key={video.id}
                 whileHover={{ y: -10 }}
                 className="card-gradient overflow-hidden group cursor-pointer"
-                onClick={() => navigate(`/video/${video.id}`)}
+                onClick={() => {
+                  if (!isMember) setIsGateOpen(true);
+                  else navigate(`/video/${video.id}`);
+                }}
               >
                 <div className="relative aspect-video">
                   <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
@@ -1354,7 +1505,13 @@ const Home = () => {
                 key={collab.id}
                 whileHover={{ y: -10 }}
                 className="card-gradient p-8 space-y-6 group cursor-pointer"
-                onClick={() => navigate(collab.link)}
+                onClick={() => {
+                  if (collab.link.startsWith('http')) {
+                    window.open(collab.link, '_blank');
+                  } else {
+                    navigate(collab.link);
+                  }
+                }}
               >
                 <div className="aspect-video overflow-hidden rounded-xl">
                   <img src={collab.image} alt={collab.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
@@ -1425,7 +1582,13 @@ const Home = () => {
                   <h3 className="text-2xl font-bold uppercase tracking-tighter group-hover:text-brand-teal transition-colors">{brand.name}</h3>
                   <p className="text-white/40 text-[11px] leading-relaxed flex-grow">{brand.description}</p>
                   <button 
-                    onClick={() => navigate(brand.link)}
+                    onClick={() => {
+                      if (brand.link.startsWith('http')) {
+                        window.open(brand.link, '_blank');
+                      } else {
+                        navigate(brand.link);
+                      }
+                    }}
                     className="w-full py-4 border border-white/10 text-[10px] uppercase tracking-widest hover:bg-white hover:text-brand-black transition-all"
                   >
                     {brand.buttonText}
@@ -2275,6 +2438,8 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
   const nextMonth = () => setSelectedDate(new Date(currentYear, currentMonth + 1, 1));
   const goToToday = () => setSelectedDate(new Date());
 
+  const { user } = useAuth();
+
   const handleBooking = (session: TrainingSession) => {
     if (bookedSessionIds.includes(session.id)) return;
     setBookingSession(session);
@@ -2288,14 +2453,32 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
       return;
     }
 
-    setIsSending(true);
-    
-    // Simulate API call and email sending
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (!user) {
+      showToast('You must be logged in to book a session.', 'error');
+      return;
+    }
 
-    if (bookingSession) {
-      setBookedSessionIds(prev => [...prev, bookingSession.id]);
-      showToast(`Booking confirmed! Email sent to ${userEmail}`);
+    setIsSending(true);
+
+    try {
+      if (bookingSession) {
+        const { error } = await supabase.from('bookings').insert({
+          user_id: user.id,
+          user_name: user.full_name,
+          service_type: bookingSession.type.toLowerCase().includes('flex') ? 'flex_mob' : 'personal_training',
+          service_name: bookingSession.title,
+          date: selectedDate.toISOString().split('T')[0],
+          time: bookingSession.time,
+          status: 'pending'
+        });
+
+        if (error) throw error;
+
+        setBookedSessionIds(prev => [...prev, bookingSession.id]);
+        showToast(`Booking submitted! Pending admin clearance.`);
+      }
+    } catch (error) {
+      showToast('Failed to process booking request. Please try again.', 'error');
     }
     
     setIsSending(false);
@@ -2861,7 +3044,7 @@ const Store = () => {
   const discount = 0.3; // 30% discount for members
 
   const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle', 'Nutrition'];
-  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÃ‰ Paris Collection', 'Mike Water Fitness'];
+  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection', 'Mike Water Fitness'];
 
   const filteredProducts = useMemo(() => {
     let filtered = PRODUCTS;
@@ -3266,17 +3449,17 @@ const Store = () => {
               <div className="relative z-10 max-w-xl space-y-8">
                 <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
                 <h2 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
-                  CLÃ‰ <span className="text-brand-teal italic">Paris</span>
+                  CLÉ <span className="text-brand-teal italic">Paris</span>
                 </h2>
                 <p className="text-white/60 text-lg font-light leading-relaxed italic">
                   "Train with discipline. Move with strength. Carry yourself with elegance."
                 </p>
                 <div className="space-y-4 text-sm text-white/40 leading-relaxed">
                   <p>
-                    CLÃ‰ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
+                    CLÉ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
                   </p>
                 </div>
-                <button className="btn-primary">Explore CLÃ‰ Paris</button>
+                <button className="btn-primary">Explore CLÉ Paris</button>
               </div>
             </div>
           </div>
@@ -3862,6 +4045,9 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedService, setSelectedService] = useState('Stretching');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bookingStep, setBookingStep] = useState(1);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -3885,19 +4071,24 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
         service_type: 'flex_mob',
         service_name: selectedService,
         date: selectedDate,
-        time: '10:00 AM',
+        time: selectedSlot || '10:00 AM', // Use selected slot
         status: 'pending',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       });
       if (error) throw error;
-      showToast('Booking request sent successfully');
+      showToast('Booking protocol initiated. Representative will contact you within 24h.', 'success');
+      setIsModalOpen(false);
+      setBookingStep(1);
+      setSelectedSlot(null);
     } catch (error) {
       console.error('Error creating booking:', error);
+      showToast('Protocol failed to sync.', 'error');
     }
   };
 
   const services = ['Massages', 'Stretching', 'Physical Therapy'];
+  const timeSlots = ['09:00 AM', '10:30 AM', '01:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'];
 
   return (
     <div className="pt-40 pb-32 px-6">
@@ -3923,22 +4114,124 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
               </div>
             </div>
 
-            <div className="card-gradient p-10 space-y-8">
-              <h3 className="text-2xl font-bold uppercase tracking-tighter">Request Appointment</h3>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40">Select Date</label>
-                  <input 
-                    type="date" 
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-coral outline-none transition-all"
-                  />
-                </div>
-                <button onClick={handleBookingRequest} className="btn-primary w-full bg-brand-coral hover:bg-brand-coral/80">Request Booking</button>
+            <div className="card-gradient p-10 space-y-8 rounded-[3rem] border-white/10">
+              <div className="flex items-center gap-4 border-b border-white/5 pb-6">
+                 <Calendar className="text-brand-coral" size={20} />
+                 <h3 className="text-2xl font-black uppercase tracking-tighter">Initiate Request</h3>
               </div>
+              <p className="text-sm text-white/40 uppercase tracking-widest font-black">Select your recovery protocol and access frequency to begin the scheduling sync.</p>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="btn-primary w-full bg-brand-coral hover:bg-brand-coral/80 py-6 text-[10px] uppercase tracking-[0.5em] font-black shadow-glow-coral"
+              >
+                Open Booking Matrix
+              </button>
             </div>
           </div>
+
+          <AnimatePresence>
+            {isModalOpen && (
+              <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                  className="card-gradient w-full max-w-2xl p-16 space-y-12 rounded-[4rem] border border-brand-coral/30 shadow-2xl relative"
+                >
+                  <button onClick={() => { setIsModalOpen(false); setBookingStep(1); }} className="absolute top-10 right-10 text-white/20 hover:text-white"><X size={28} /></button>
+                  
+                  {bookingStep === 1 && (
+                    <div className="space-y-10">
+                      <div className="text-center space-y-4">
+                        <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Step 1 / 3: Availability</span>
+                        <h3 className="text-3xl font-black uppercase tracking-tighter">Sync <span className="text-brand-coral">Calendar</span></h3>
+                      </div>
+                      
+                      <div className="space-y-6">
+                        <div className="p-8 bg-white/5 border border-white/10 rounded-3xl">
+                           <input 
+                             type="date" 
+                             value={selectedDate}
+                             onChange={(e) => setSelectedDate(e.target.value)}
+                             className="w-full bg-transparent border-none text-2xl font-black text-center text-white focus:ring-0 outline-none"
+                           />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center">
+                              <span className="text-[10px] uppercase tracking-widest text-white/20 font-black mb-2">Availability</span>
+                              <span className="text-xl font-black text-brand-teal uppercase tracking-tighter text-center">Protocol Open</span>
+                           </div>
+                           <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center">
+                              <span className="text-[10px] uppercase tracking-widest text-white/20 font-black mb-2">Location</span>
+                              <span className="text-xl font-black text-white uppercase tracking-tighter text-center">Miami HQ</span>
+                           </div>
+                        </div>
+                      </div>
+
+                      <button onClick={() => setBookingStep(2)} className="btn-primary w-full bg-brand-coral py-6 text-[10px] uppercase tracking-[0.5em] font-black">Lock Date & Proceed</button>
+                    </div>
+                  )}
+
+                  {bookingStep === 2 && (
+                    <div className="space-y-10">
+                      <div className="text-center space-y-4">
+                        <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Step 2 / 3: Window</span>
+                        <h3 className="text-3xl font-black uppercase tracking-tighter">Select <span className="text-brand-coral">Time Slot</span></h3>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {timeSlots.map(slot => (
+                          <button 
+                            key={slot}
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`p-6 rounded-2xl border transition-all text-center ${
+                              selectedSlot === slot ? 'bg-brand-coral/20 border-brand-coral text-brand-coral shadow-glow-coral' : 'bg-white/5 border-white/10 text-white/40 hover:border-white/20'
+                            }`}
+                          >
+                            <span className="text-xs font-black uppercase tracking-widest">{slot}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-4">
+                        <button onClick={() => setBookingStep(3)} disabled={!selectedSlot} className="flex-1 btn-primary bg-brand-coral py-6 text-[10px] uppercase tracking-[0.5em] font-black">Sync window</button>
+                        <button onClick={() => setBookingStep(1)} className="px-10 py-6 border border-white/10 text-white/40 text-[10px] uppercase tracking-[0.5em] font-black rounded-2xl">Back</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {bookingStep === 3 && (
+                    <div className="space-y-10">
+                      <div className="text-center space-y-4">
+                        <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Step 3 / 3: Authorization</span>
+                        <h3 className="text-3xl font-black uppercase tracking-tighter">Finalize <span className="text-brand-coral">Protocol</span></h3>
+                      </div>
+                      
+                      <div className="p-8 bg-white/5 border border-white/10 rounded-3xl space-y-6">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                           <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Service</span>
+                           <span className="text-sm font-black uppercase text-brand-coral">{selectedService}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-b border-white/5 pb-4">
+                           <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Appointment</span>
+                           <span className="text-sm font-black uppercase">{selectedDate}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                           <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Time Slot</span>
+                           <span className="text-sm font-black uppercase">{selectedSlot}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-4">
+                        <button onClick={handleBookingRequest} className="flex-1 btn-primary bg-brand-coral py-6 text-[10px] uppercase tracking-[0.5em] font-black">Initiate Sync</button>
+                        <button onClick={() => setBookingStep(2)} className="px-10 py-6 border border-white/10 text-white/40 text-[10px] uppercase tracking-[0.5em] font-black rounded-2xl">Back</button>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           <div className="space-y-12">
             <div className="card-gradient p-10 space-y-8">
@@ -4320,6 +4613,11 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [isSuccess, setIsSuccess] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(wasConfirmed);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showUnverified, setShowUnverified] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [localPassModal, setLocalPassModal] = useState<any>(null);
 
   // Close modal and go to profile when user logs in
   useEffect(() => {
@@ -4445,20 +4743,51 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
     setIsRegistering(true);
     setIsLogin(false);
     setIsSuccess(false);
+    setShowUnverified(false);
+  };
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => setResendCooldown(prev => prev - 1), 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResendConfirmation = async () => {
+    const emailToResend = unverifiedEmail || formData.email;
+    if (!emailToResend) {
+      showToast('Please enter your email address.', 'error');
+      return;
+    }
+    try {
+      const redirectUrl = `${window.location.origin}${window.location.pathname}#/auth/callback`;
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: emailToResend,
+        options: { emailRedirectTo: redirectUrl }
+      });
+      if (error) throw error;
+      showToast('Confirmation email sent! Check your inbox.');
+      setResendCooldown(30);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to resend. Try again later.', 'error');
+    }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+    setIsSubmitting(true);
+    setErrorMsg('');
+
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
         showToast('Logged in successfully');
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        // Don't navigate here â€” useEffect on user will close modal and redirect
       } else {
         if (formData.password !== formData.confirmPassword) {
           showToast('Passwords do not match', 'error');
+          setIsSubmitting(false);
           return;
         }
         await signup(formData.name, formData.email, formData.password, selectedTier?.name || 'Basic');
@@ -4466,6 +4795,16 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       }
     } catch (error: any) {
       const errMsg = error?.message || '';
+
+      // Handle unconfirmed email specifically
+      if (errMsg === 'EMAIL_NOT_CONFIRMED') {
+        setShowUnverified(true);
+        setUnverifiedEmail(formData.email);
+        setErrorMsg('');
+        setIsSubmitting(false);
+        return;
+      }
+
       let msg = 'Action failed';
       if (errMsg.includes('already registered') || errMsg.includes('already been registered')) msg = 'This email is already registered. Try logging in instead.';
       else if (errMsg.includes('Invalid login credentials')) msg = 'Incorrect email or password. Please try again.';
@@ -4473,6 +4812,8 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       else if (errMsg.includes('Password should be')) msg = 'Password must be at least 6 characters.';
       else if (errMsg) msg = errMsg;
       setErrorMsg(msg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -4580,7 +4921,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                   ))}
                 </ul>
                 <button 
-                  onClick={() => handleJoin(pass)}
+                  onClick={() => pass.period === 'one-time' ? setLocalPassModal(pass) : handleJoin(pass)}
                   className="w-full py-4 bg-brand-teal text-black uppercase tracking-widest text-[10px] font-bold hover:bg-white transition-all"
                 >
                   {pass.button}
@@ -4589,6 +4930,12 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
             ))}
           </div>
         </section>
+
+        <AnimatePresence>
+          {localPassModal && (
+            <LocalPassFlow pass={localPassModal} onClose={() => setLocalPassModal(null)} showToast={showToast} />
+          )}
+        </AnimatePresence>
 
         {/* Tier Comparison Table */}
         <section className="mt-40 py-24 border-t border-white/5">
@@ -4731,13 +5078,52 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                     {isLogin ? 'Your power is now unlocked.' : `We sent a confirmation link to ${formData.email}. Click it to activate your account.`}
                   </p>
                   {!isLogin && (
-                    <button
-                      onClick={() => { setIsRegistering(false); setIsSuccess(false); setFormData({ name: '', email: '', password: '', confirmPassword: '' }); }}
-                      className="btn-primary mt-4"
-                    >
-                      Got It
-                    </button>
+                    <>
+                      <button
+                        onClick={() => { setIsRegistering(false); setIsSuccess(false); setFormData({ name: '', email: '', password: '', confirmPassword: '' }); }}
+                        className="btn-primary mt-4"
+                      >
+                        Got It
+                      </button>
+                      <div className="pt-4">
+                        <button
+                          onClick={handleResendConfirmation}
+                          disabled={resendCooldown > 0}
+                          className="text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-teal transition-colors disabled:opacity-30"
+                        >
+                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Didn't receive it? Resend Email"}
+                        </button>
+                      </div>
+                    </>
                   )}
+                </div>
+              ) : showUnverified ? (
+                /* ── Email Not Verified Panel ── */
+                <div className="text-center space-y-6 py-8">
+                  <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto border border-amber-500/30">
+                    <Send size={36} className="text-amber-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold uppercase tracking-tighter">
+                    Email Not <span className="text-amber-500">Verified</span>
+                  </h3>
+                  <p className="text-white/50 text-sm leading-relaxed">
+                    Please verify your email before logging in. We sent a confirmation link to <span className="text-white font-bold">{unverifiedEmail}</span>.
+                  </p>
+                  <div className="space-y-4 pt-4">
+                    <button
+                      onClick={handleResendConfirmation}
+                      disabled={resendCooldown > 0}
+                      className="btn-primary w-full py-5 disabled:opacity-30"
+                    >
+                      {resendCooldown > 0 ? `Resend Available in ${resendCooldown}s` : 'Resend Confirmation Email'}
+                    </button>
+                    <button
+                      onClick={() => { setShowUnverified(false); setErrorMsg(''); }}
+                      className="text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors"
+                    >
+                      Back to Login
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -4777,7 +5163,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                         required
                         type="email"
                         value={formData.email}
-                        onChange={(e) => { setErrorMsg(''); setFormData({ ...formData, email: e.target.value }); }}
+                        onChange={(e) => { setErrorMsg(''); setShowUnverified(false); setFormData({ ...formData, email: e.target.value }); }}
                         className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
                         placeholder="ALEX@POWERHOUR.COM"
                       />
@@ -4790,7 +5176,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                        placeholder="••••••••"
                       />
                     </div>
                     {!isLogin && (
@@ -4802,7 +5188,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                           value={formData.confirmPassword}
                           onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                          placeholder="••••••••"
                         />
                       </div>
                     )}
@@ -4813,15 +5199,22 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                       </div>
                     )}
 
-                    <button type="submit" className="btn-primary w-full py-5">
-                      {isLogin ? 'Login' : 'Complete Registration'}
+                    <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-5 flex items-center justify-center gap-3 disabled:opacity-50">
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          {isLogin ? 'Logging in...' : 'Creating account...'}
+                        </>
+                      ) : (
+                        isLogin ? 'Login' : 'Complete Registration'
+                      )}
                     </button>
                   </form>
 
                   <div className="text-center">
                     <button 
                       type="button"
-                      onClick={() => setIsLogin(!isLogin)}
+                      onClick={() => { setIsLogin(!isLogin); setErrorMsg(''); setShowUnverified(false); }}
                       className="text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-teal transition-colors"
                     >
                       {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
@@ -5765,8 +6158,10 @@ const LegacyCommunityPage = () => {
   );
 };
 
-const Recovery = () => (
-  <div className="pt-40 pb-32 px-6">
+const Recovery = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="pt-40 pb-32 px-6">
     <div className="max-w-7xl mx-auto">
       <header className="mb-20 text-center space-y-6">
         <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">The System Completes Here</span>
@@ -5803,7 +6198,7 @@ const Recovery = () => (
             ))}
           </div>
 
-          <button className="btn-primary">Book Recovery Session</button>
+          <button onClick={() => navigate('/services')} className="btn-primary">Book Recovery Session</button>
         </div>
 
         <div className="relative">
@@ -5838,7 +6233,8 @@ const Recovery = () => (
       </section>
     </div>
   </div>
-);
+  );
+};
 
 const FAQItem = ({ question, answer }: { question: string; answer: string }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -6526,11 +6922,13 @@ const About = () => (
 
 // --- Main App ---
 
-const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string, t?: 'success' | 'error') => void; toast: any; setToast: any }) => {
+const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string, t?: 'success' | 'error' | 'info' | 'warning') => void; toast: any; setToast: any }) => {
   const { user, logout } = useAuth();
 
   return (
     <Router>
+      <ScrollToTop />
+      <FreeAccessGate user={user} />
       <div className="min-h-screen bg-brand-black text-brand-white font-sans selection:bg-brand-teal selection:text-white">
         <Navbar />
         
@@ -6550,6 +6948,8 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/athlete-application" element={<AthleteApplication showToast={showToast} />} />
               <Route path="/athletes" element={<Athletes />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
+              <Route path="/pass-success" element={<PassSuccess />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
               <Route path="/community/:id" element={<CommunityDetail user={user} showToast={showToast} />} />
               <Route path="/schedule" element={<Schedule showToast={showToast} />} />
