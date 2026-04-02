@@ -74,9 +74,13 @@ export const Overview = ({ user }: { user: UserProfile }) => {
           <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
             Dashboard <span className="text-brand-teal">Overview</span>
           </h2>
-          <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2 font-bold">
+          <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2 font-bold mb-4">
             Welcome back, {user.full_name?.split(' ')[0] || 'Athlete'}
           </p>
+          <div className="flex gap-4">
+             <button onClick={() => window.location.hash = '#/profile#programs'} className="btn-primary text-[10px] py-3 px-6 shadow-[0_0_10px_rgba(45,212,191,0.5)]">See Programs</button>
+             <button onClick={() => window.location.hash = '#/profile#calendar'} className="btn-outline text-[10px] py-3 px-6">Schedule Sessions</button>
+          </div>
         </div>
         <div className="flex gap-4">
           <div className="flex flex-col items-center justify-center px-6 py-4 card-gradient border-brand-coral/30 min-w-[100px]">
