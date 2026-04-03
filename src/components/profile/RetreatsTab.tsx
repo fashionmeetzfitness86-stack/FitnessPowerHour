@@ -4,9 +4,9 @@ import { Link } from 'react-router-dom';
 import { UserProfile, Retreat, RetreatApplication } from '../../types';
 import { supabase } from '../../supabase';
 
-export const RetreatsTab = ({ user }: { user: UserProfile }) => {
+export const RetreatsTab = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'requests'>('upcoming');
-  const [retreats, setRetreats] = useState<(Retreat & { status?: string })[]>([]);
+  const [retreats, setRetreats] = useState<(Retreat & { status?: string, amount_paid?: number, request_id?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -22,7 +22,7 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
 
       // Fetch user requests 
       const { data: requests, error: qError } = await supabase
-        .from('user_retreat_requests')
+        .from('retreat_requests')
         .select('*')
         .eq('user_id', user.id);
 
@@ -31,7 +31,7 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
       // Map requests to retreats
       const mapped = (allRetreats || []).map(r => {
         const req = (requests || []).find(q => q.retreat_id === r.id);
-        return { ...r, status: req?.status || 'none', requested_at: req?.requested_at };
+        return { ...r, status: req?.status || 'none', request_id: req?.id, amount_paid: req?.amount_paid };
       });
 
       setRetreats(mapped);
@@ -46,9 +46,34 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
     fetchData();
   }, [user.id]);
 
-  const upcoming = retreats.filter(r => r.status === 'approved' && new Date(r.start_date) > new Date());
-  const past = retreats.filter(r => r.status === 'approved' && new Date(r.start_date) <= new Date());
-  const pending = retreats.filter(r => r.status === 'pending');
+  const handleDepositPayment = async (retreat: any) => {
+    try {
+      showToast('Initiating secure gateway...', 'info');
+      // Assume retreat payload has a property price, say 2500 -> 50% = 1250
+      const amount = retreat.price ? parseFloat(retreat.price) * 0.5 : 1000;
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'retreat_deposit',
+          userId: user.id,
+          userEmail: user.email,
+          retreatId: retreat.id,
+          requestId: retreat.request_id,
+          retreatName: retreat.title,
+          depositAmount: amount
+        })
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch (error) {
+      showToast('Payment system failed to initialize.', 'error');
+    }
+  };
+
+  const upcoming = retreats.filter(r => r.status === 'confirmed' && new Date(r.start_date) > new Date());
+  const past = retreats.filter(r => r.status === 'confirmed' && new Date(r.start_date) <= new Date());
+  const pending = retreats.filter(r => ['requested', 'approved_pending_deposit', 'deposit_paid'].includes(r.status));
 
   const filtered = activeTab === 'upcoming' ? upcoming : activeTab === 'past' ? past : pending;
 
@@ -91,11 +116,12 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
                 <img src={retreat.cover_image} className="w-full h-full object-cover grayscale opacity-70 group-hover:grayscale-0 transition-all duration-700" alt={retreat.title} />
                 <div className="absolute top-4 right-4 z-20">
                   <span className={`px-4 py-2 text-[8px] uppercase tracking-widest font-bold rounded-full ${
-                    retreat.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' :
-                    retreat.status === 'pending' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50' :
-                    'bg-white/10 text-white border border-white/20'
+                    retreat.status === 'confirmed' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' :
+                    retreat.status === 'approved_pending_deposit' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50' :
+                    retreat.status === 'requested' ? 'bg-white/10 text-white/80 border border-white/20' :
+                    'bg-brand-teal/20 text-brand-teal border border-brand-teal/50'
                   }`}>
-                    {retreat.status === 'approved' ? 'Confirmed' : retreat.status}
+                    {retreat.status.replace(/_/g, ' ')}
                   </span>
                 </div>
               </div>
@@ -118,9 +144,19 @@ export const RetreatsTab = ({ user }: { user: UserProfile }) => {
                 </div>
                 
                 <div className="mt-8 pt-6 border-t border-white/5 flex gap-4">
-                  <button className="flex-1 py-3 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all flex items-center justify-center gap-2">
-                    <CheckCircle size={14} /> View Itinerary
-                  </button>
+                  {retreat.status === 'approved_pending_deposit' ? (
+                     <button onClick={() => handleDepositPayment(retreat)} className="flex-1 py-3 bg-brand-coral/10 text-brand-coral hover:bg-brand-coral hover:text-black border border-brand-coral/20 text-[10px] uppercase tracking-widest font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+                       Pay 50% Deposit
+                     </button>
+                  ) : retreat.status === 'requested' ? (
+                     <button disabled className="flex-1 py-3 bg-white/5 text-white/40 text-[10px] uppercase tracking-widest font-bold rounded-xl flex items-center justify-center gap-2">
+                       <Loader2 size={14} className="animate-spin" /> Under Admin Review
+                     </button>
+                  ) : (
+                     <button className="flex-1 py-3 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all flex items-center justify-center gap-2">
+                       <CheckCircle size={14} /> View Itinerary
+                     </button>
+                  )}
                   <button className="w-12 h-12 bg-white/5 hover:bg-white/10 flex items-center justify-center text-white rounded-xl transition-all border border-white/10">
                     <ExternalLink size={16} />
                   </button>
