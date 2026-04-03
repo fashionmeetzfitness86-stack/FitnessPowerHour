@@ -328,14 +328,30 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
              <Target size={64} className="mx-auto text-brand-coral opacity-20" />
           </div>
           <h3 className="text-3xl font-black uppercase tracking-tighter mb-4">Physiological <span className="text-brand-coral">Metrics</span></h3>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-white/30 max-w-sm mx-auto font-black leading-relaxed">
-            Metric visualization requires a 30-day baseline of EOD check-in data. Continue your daily audits to unlock this matrix.
-          </p>
-          <div className="mt-12 flex justify-center gap-4">
-             <div className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] uppercase font-black text-white/40 tracking-widest">
-                Baseline: 2/30 Days
-             </div>
-          </div>
+          
+          {['Elite', 'Local Collective'].includes(user.tier || '') ? (
+             <>
+               <p className="text-[10px] uppercase tracking-[0.4em] text-white/30 max-w-sm mx-auto font-black leading-relaxed">
+                 Metric visualization active. Maintain your 30-day baseline of EOD check-in data to calibrate the matrix.
+               </p>
+               <div className="mt-12 flex justify-center gap-4">
+                  <div className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] uppercase font-black text-brand-coral tracking-widest shadow-glow-coral relative overflow-hidden group hover:scale-105 transition-transform cursor-pointer">
+                     <span className="relative z-10">Baseline: {Math.min(completedSessions, 30)}/30 Days</span>
+                  </div>
+               </div>
+             </>
+          ) : (
+             <>
+               <p className="text-[10px] uppercase tracking-[0.4em] text-white/30 max-w-sm mx-auto font-black leading-relaxed">
+                 Advanced physiological metric tracking requires an upgraded protocol access tier. 
+               </p>
+               <div className="mt-12 flex justify-center gap-4">
+                  <button onClick={() => window.location.hash = '#/profile#membership'} className="px-8 py-4 bg-brand-coral text-black rounded-2xl text-[10px] uppercase tracking-widest font-black shadow-glow-coral hover:scale-105 transition-transform">
+                     Unlock Advanced Tracking
+                  </button>
+               </div>
+             </>
+          )}
         </div>
       )}
 

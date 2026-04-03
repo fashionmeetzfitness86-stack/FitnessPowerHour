@@ -47,20 +47,137 @@ export default async (req: Request) => {
 
           // Update user tier in DB
           const { error } = await supabase
-            .from('users')
+            .from('profiles')
             .update({ tier })
             .eq('id', userId);
 
+
+          // Fetch the purchaser's name
+          const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+          const userName = userData?.full_name || 'an unknown user';
+          
           if (error) {
             console.error('[stripe-webhook] Failed to update user tier:', error);
           } else {
             console.log(`[stripe-webhook] User ${userId} upgraded to ${tier}`);
+            
+            // Notify Super Admins
+            const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
+            if (superAdmins) {
+              const notifications = superAdmins.map(admin => ({
+                user_id: admin.id,
+                type: 'purchase',
+                title: 'New Membership Purchased',
+                message: `The ${tier} membership was just purchased by ${userName}.`,
+                status: 'sent', // using 'sent' to ensure it's marked as unread in your UI logic typically
+                send_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
+              }));
+              await supabase.from('notifications').insert(notifications);
+            }
           }
         }
 
         if (metadata.type === 'shop' && userId) {
           console.log(`[stripe-webhook] Shop purchase for user ${userId}`);
+          // Fetch the purchaser's name
+          const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+          const userName = userData?.full_name || 'an unknown user';
+          
           // Orders are tracked in Stripe — could also store in Supabase if needed
+          const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
+          if (superAdmins) {
+             const notifications = superAdmins.map(admin => ({
+               user_id: admin.id,
+               type: 'purchase',
+               title: 'New Pass / Shop Purchase',
+               message: `A new pass or shop item was purchased by ${userName}.`,
+               status: 'sent',
+               send_at: new Date().toISOString(),
+               created_at: new Date().toISOString()
+             }));
+             await supabase.from('notifications').insert(notifications);
+          }
+        }
+
+        if (metadata.type === 'local_pass') {
+          const passType = metadata.passName || 'Local Pass';
+          const passName = `${metadata.firstName || 'Guest'} ${metadata.lastName || ''}`;
+          console.log(`[stripe-webhook] Local Pass purchase: ${passType} for ${passName}`);
+          
+          let userId = metadata.userId;
+
+          // Note: userId might not be present if it's a guest purchase. Use a placeholder or matching logic
+          // Determine expiration based on passType
+          let expiresAt: Date | undefined;
+          if (passType.includes('3-Day')) expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+          else if (passType.includes('7-Day')) expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          else expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // generic 30 days
+
+          // Generate Token
+          const token = `PASS-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+          // If session id exists, try to extract passId if we embedded it, but we didn't, so use session id
+          const sessionId = session.id;
+
+          await supabase.from('passes').insert({
+            user_id: userId || null,
+            pass_type: passType,
+            token: sessionId, // we can use Stripe sessionId to match against the success redirect passId!!
+            status: 'valid',
+            expires_at: expiresAt.toISOString()
+          });
+
+          // Notificaton
+          const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
+          if (superAdmins) {
+             const notifications = superAdmins.map(admin => ({
+               user_id: admin.id,
+               type: 'purchase',
+               title: 'New Pass Purchased',
+               message: `New ${passType} purchased by ${passName}.`,
+               status: 'sent',
+               send_at: new Date().toISOString(),
+               created_at: new Date().toISOString()
+             }));
+             await supabase.from('notifications').insert(notifications);
+          }
+        }
+
+        if (metadata.type === 'retreat_deposit') {
+          const requestId = metadata.requestId;
+          const retreatId = metadata.retreatId;
+          const uId = metadata.userId;
+          console.log(`[stripe-webhook] Retreat deposit paid for request ${requestId}`);
+          
+          if (requestId) {
+            await supabase.from('retreat_requests').update({
+              status: 'deposit_paid',
+              stripe_session_id: session.id,
+              amount_paid: session.amount_total ? session.amount_total / 100 : 0
+            }).eq('id', requestId);
+          }
+          
+          // Get user name
+          let userName = 'User';
+          if (uId) {
+             const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', uId).single();
+             if (userData) userName = userData.full_name;
+          }
+
+          const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
+          if (superAdmins) {
+             const notifications = superAdmins.map(admin => ({
+               user_id: admin.id,
+               type: 'purchase',
+               title: 'Retreat Deposit Paid',
+               message: `Retreat deposit paid by ${userName}.`,
+               status: 'sent',
+               send_at: new Date().toISOString(),
+               created_at: new Date().toISOString()
+             }));
+             await supabase.from('notifications').insert(notifications);
+          }
         }
         break;
       }
@@ -74,7 +191,7 @@ export default async (req: Request) => {
         const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
         if (customer.email) {
           const { error } = await supabase
-            .from('users')
+            .from('profiles')
             .update({ tier: 'Free Access' })
             .eq('email', customer.email);
 

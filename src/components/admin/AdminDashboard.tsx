@@ -36,7 +36,9 @@ import { ServiceManager } from './ServiceManager';
 import { NotificationManager } from './NotificationManager';
 import { RoleManager } from './RoleManager';
 import { SettingsManager } from './SettingsManager';
+import { ScannerManager } from './ScannerManager';
 import { Settings as SettingsIcon } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -403,6 +405,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'packages', label: 'Access Tiering', icon: PackageIcon },
     { id: 'community', label: 'Collective Hub', icon: MessageSquare },
     { id: 'retreats', label: 'Venture Board', icon: MapPin },
+    { id: 'scanner', label: 'Nexus Scanner', icon: QrCode },
     { id: 'services', label: 'Service Streams', icon: Activity },
     { id: 'notifications', label: 'Comm Signal', icon: Mail },
     { id: 'roles', label: 'Encryption Keys', icon: ShieldAlert, adminOnly: true },
@@ -486,6 +489,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onDeletePost={handleDeletePost} 
         />
       );
+      case 'scanner': return <ScannerManager showToast={showToast} />;
       case 'shop': return (
         <ShopManager 
           products={products} 

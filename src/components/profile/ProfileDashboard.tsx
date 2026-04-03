@@ -50,7 +50,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'videos': return <MyVideos user={user} showToast={showToast} />;
       case 'membership': return <MembershipManager user={user} updateTier={updateTier} showToast={showToast} />;
       case 'billing': return <Billing user={user} showToast={showToast} />;
-      case 'retreats': return <RetreatsTab user={user} />;
+      case 'retreats': return <RetreatsTab user={user} showToast={showToast} />;
       case 'orders': return <OrderHistoryTab user={user} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
