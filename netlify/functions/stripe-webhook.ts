@@ -167,16 +167,69 @@ export default async (req: Request) => {
 
           const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
           if (superAdmins) {
-             const notifications = superAdmins.map(admin => ({
-               user_id: admin.id,
-               type: 'purchase',
-               title: 'Retreat Deposit Paid',
-               message: `Retreat deposit paid by ${userName}.`,
-               status: 'sent',
-               send_at: new Date().toISOString(),
-               created_at: new Date().toISOString()
-             }));
-             await supabase.from('notifications').insert(notifications);
+             const { data: existingNotifs } = await supabase.from('notifications')
+               .select('id')
+               .like('message', `%[Event:${event.id}]%`);
+             
+             if (!existingNotifs || existingNotifs.length === 0) {
+               const notifications = superAdmins.map(admin => ({
+                 user_id: admin.id,
+                 type: 'purchase',
+                 title: 'Retreat Deposit Paid',
+                 message: `Retreat deposit paid by ${userName}. [Event:${event.id}]`,
+                 status: 'sent',
+                 send_at: new Date().toISOString(),
+                 created_at: new Date().toISOString()
+               }));
+               await supabase.from('notifications').insert(notifications);
+             }
+          }
+        }
+
+        if (metadata.type === 'service') {
+          const serviceName = metadata.serviceName || 'Service Appointment';
+          const date = metadata.date || new Date().toISOString().split('T')[0];
+          const time = metadata.time || '12:00';
+          const uId = metadata.userId;
+          
+          console.log(`[stripe-webhook] Service booking paid: ${serviceName} on ${date} at ${time}`);
+          
+          if (uId) {
+            // Create a calendar session
+            await supabase.from('calendar_sessions').insert({
+              user_id: uId,
+              title: `${serviceName} (${time})`,
+              date: date,
+              duration: 60,
+              type: 'service',
+              status: 'scheduled',
+              created_at: new Date().toISOString()
+            });
+            
+            // Get user name
+            let userName = 'User';
+            const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', uId).single();
+            if (userData) userName = userData.full_name;
+
+            const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
+            if (superAdmins) {
+               const { data: existingNotifs } = await supabase.from('notifications')
+                 .select('id')
+                 .like('message', `%[Event:${event.id}]%`);
+
+               if (!existingNotifs || existingNotifs.length === 0) {
+                 const notifications = superAdmins.map(admin => ({
+                   user_id: admin.id,
+                   type: 'purchase',
+                   title: 'Service Booked',
+                   message: `New service booked: ${serviceName} by ${userName} for ${date} at ${time}. [Event:${event.id}]`,
+                   status: 'sent',
+                   send_at: new Date().toISOString(),
+                   created_at: new Date().toISOString()
+                 }));
+                 await supabase.from('notifications').insert(notifications);
+               }
+            }
           }
         }
         break;

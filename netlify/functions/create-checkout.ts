@@ -162,6 +162,37 @@ export default async (req: Request) => {
       return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
+    } else if (type === 'service') {
+      const { serviceName, priceAmount, selectedDate, selectedTime } = body;
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        payment_method_types: ['card'],
+        customer_email: userEmail || undefined,
+        metadata: {
+          type: 'service',
+          serviceName,
+          date: selectedDate,
+          time: selectedTime,
+          userId: userId || ''
+        },
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Service Booking: ${serviceName}`,
+              description: `Appointment reserved for ${selectedDate} at ${selectedTime}`
+            },
+            unit_amount: Math.round(parseFloat(priceAmount || 0) * 100)
+          },
+          quantity: 1
+        }],
+        success_url: successUrl || `${new URL(req.url).origin}/#/profile?payment=success&type=service`,
+        cancel_url: cancelUrl || `${new URL(req.url).origin}/`
+      });
+
+      return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
     } else {
       return new Response(JSON.stringify({ error: 'Invalid checkout type. Use "membership", "shop", "local_pass" or "retreat_deposit".' }), { status: 400 });
     }

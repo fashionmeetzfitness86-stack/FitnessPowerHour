@@ -4,7 +4,9 @@ import { Save, UserCircle, Camera, Upload, Activity, AlertCircle, Shield, Key, M
 import { supabase } from '../../supabase';
 import { UserProfile } from '../../types';
 import { MediaCapture } from '../MediaCapture';
+import { useAuth } from '../../App';
 export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
+  const { updateProfile, updateSecurity } = useAuth();
   const [formData, setFormData] = useState<Partial<UserProfile>>({
     full_name: user?.full_name || '',
     email: user?.email || '',
@@ -80,15 +82,18 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
-        
+
         newUrls.push(publicUrl);
       }
+
+      await updateProfile({ avatar_url: newUrls[newUrls.length - 1] });
 
       setFormData(prev => ({ 
         ...prev, 
         profile_images: [...(prev.profile_images || []), ...newUrls],
-        profile_image: prev.profile_image || newUrls[0] // Set first as main if none
+        profile_image: prev.profile_image || newUrls[0]
       }));
+
       showToast(`${filesToUpload.length} image(s) uploaded!`, 'success');
     } catch (error: any) {
       showToast(error.message || 'Error uploading image', 'error');
@@ -112,15 +117,8 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
     try {
       setIsSaving(true);
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          ...formData,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      await updateProfile(formData);
 
-      if (error) throw error;
       showToast('Profile updated successfully!', 'success');
     } catch (error: any) {
       showToast(error.message || 'Error updating profile', 'error');
@@ -143,11 +141,10 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
         updates.password = securityData.newPassword;
       }
 
-      const { error } = await supabase.auth.updateUser(updates);
-      if (error) throw error;
-
       if (type === 'email') {
-        await supabase.from('profiles').update({ email: securityData.newEmail }).eq('id', user.id);
+        await updateSecurity(securityData.newEmail, undefined);
+      } else {
+        await updateSecurity(undefined, securityData.newPassword);
       }
 
       showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} update initiated! Check your inbox.`, 'success');

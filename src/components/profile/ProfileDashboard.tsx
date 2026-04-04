@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  User, LayoutDashboard, LineChart, Calendar, 
-  PlaySquare, Video, Shield, CreditCard, 
+import {
+  User, LayoutDashboard, LineChart, Calendar,
+  PlaySquare, Video, Shield, CreditCard,
   Map, ShoppingBag, Settings, Bell, LogOut, Heart, MessageSquare
 } from 'lucide-react';
 import { supabase } from '../../supabase';
@@ -23,7 +23,45 @@ import { AthleteDashboard } from '../athlete/AthleteDashboard';
 import { InternalFeed } from '../InternalFeed';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#')) {
+      const parts = hash.split('#');
+      if (parts.length > 2) {
+         return parts[2];
+      }
+    }
+    return 'overview';
+  });
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('#')) {
+         const parts = hash.split('#');
+         if (parts.length > 2) {
+            setActiveTab(parts[2]);
+         }
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange();
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('payment') === 'success') {
+      setIsProcessingPayment(true);
+      const isService = searchParams.get('type') === 'service';
+      if (isService) {
+        setActiveTab('calendar');
+      }
+      setTimeout(() => {
+        setIsProcessingPayment(false);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 4000);
+    }
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -80,7 +118,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1">{user.tier || 'Basic'} Member</p>
             </div>
             <div className="pt-4 border-t border-white/10">
-              <button 
+              <button
                 onClick={logout}
                 className="flex items-center justify-center gap-2 w-full text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-coral transition-colors"
               >
@@ -105,14 +143,14 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
                   key={item.id}
                   onClick={() => {
                     if (item.id === 'membership' && (!user.tier || user.tier === 'Free Access')) {
-                      window.location.href = '/shop'; // Redirect to public membership page (shop)
+                      window.location.href = '/shop';
                       return;
                     }
                     setActiveTab(item.id);
                   }}
                   className={`flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${
-                    activeTab === item.id 
-                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20' 
+                    activeTab === item.id
+                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
                       : 'text-white/40 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -146,8 +184,8 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
                     setActiveTab(item.id);
                   }}
                   className={`flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl transition-all flex-shrink-0 ${
-                    activeTab === item.id 
-                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20' 
+                    activeTab === item.id
+                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
                       : 'bg-white/5 text-white/40 hover:text-white'
                   }`}
                 >
@@ -160,17 +198,31 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-grow min-w-0">
+        <div className="flex-grow min-w-0 relative">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderContent()}
-            </motion.div>
+            {isProcessingPayment ? (
+              <motion.div
+                key="processing"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 flex flex-col items-center justify-center p-12 card-gradient border border-brand-teal/20 rounded-3xl"
+              >
+                 <div className="w-20 h-20 rounded-full border-4 border-brand-teal/20 border-t-brand-teal animate-spin mb-8" />
+                 <h2 className="text-2xl font-bold uppercase tracking-widest">Validating Payment Matrix</h2>
+                 <p className="text-white/40 mt-4 max-w-sm text-center">Synchronizing with central protocol. Your session is being provisioned...</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {renderContent()}
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </div>
