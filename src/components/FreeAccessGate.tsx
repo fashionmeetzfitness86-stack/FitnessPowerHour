@@ -8,8 +8,8 @@ export const FreeAccessGate = ({ user }: { user: any }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Only show for 'Free Access' tier users who aren't admins/athletes
-    if (!user || user.tier !== 'Free Access' || ['admin', 'super_admin', 'athlete'].includes(user.role)) return;
+    // Only show for 'Free Access' tier users
+    if (!user || user.tier !== 'Free Access') return;
 
     // Show modal every 15 seconds
     const interval = setInterval(() => {
@@ -19,7 +19,7 @@ export const FreeAccessGate = ({ user }: { user: any }) => {
     return () => clearInterval(interval);
   }, [user]);
 
-  if (!user || user.tier !== 'Free Access' || ['admin', 'super_admin', 'athlete'].includes(user.role)) return null;
+  if (!user || user.tier !== 'Free Access') return null;
 
   return (
     <AnimatePresence>

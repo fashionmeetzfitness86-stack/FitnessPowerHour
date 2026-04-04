@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  User, LayoutDashboard, LineChart, Calendar, 
-  PlaySquare, Video, Shield, CreditCard, 
+import {
+  User, LayoutDashboard, LineChart, Calendar,
+  PlaySquare, Video, Shield, CreditCard,
   Map, ShoppingBag, Settings, Bell, LogOut, Heart, MessageSquare
 } from 'lucide-react';
 import { supabase } from '../../supabase';
@@ -31,7 +31,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       if (parts.length > 2) {
          return parts[2];
       }
-      // Or if it's just e.g. #/profile#settings or something
     }
     return 'overview';
   });
@@ -47,7 +46,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       }
     };
     window.addEventListener('hashchange', handleHashChange);
-    // trigger once to ensure current
     handleHashChange();
 
     const searchParams = new URLSearchParams(window.location.search);
@@ -59,7 +57,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       }
       setTimeout(() => {
         setIsProcessingPayment(false);
-        // Clear search params cleanly without reload
         window.history.replaceState({}, document.title, window.location.pathname);
       }, 4000);
     }
@@ -121,7 +118,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1">{user.tier || 'Basic'} Member</p>
             </div>
             <div className="pt-4 border-t border-white/10">
-              <button 
+              <button
                 onClick={logout}
                 className="flex items-center justify-center gap-2 w-full text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-coral transition-colors"
               >
@@ -146,14 +143,14 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
                   key={item.id}
                   onClick={() => {
                     if (item.id === 'membership' && (!user.tier || user.tier === 'Free Access')) {
-                      window.location.href = '/shop'; // Redirect to public membership page (shop)
+                      window.location.href = '/shop';
                       return;
                     }
                     setActiveTab(item.id);
                   }}
                   className={`flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${
-                    activeTab === item.id 
-                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20' 
+                    activeTab === item.id
+                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
                       : 'text-white/40 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -187,8 +184,8 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
                     setActiveTab(item.id);
                   }}
                   className={`flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl transition-all flex-shrink-0 ${
-                    activeTab === item.id 
-                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20' 
+                    activeTab === item.id
+                      ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
                       : 'bg-white/5 text-white/40 hover:text-white'
                   }`}
                 >

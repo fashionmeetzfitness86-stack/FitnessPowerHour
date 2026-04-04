@@ -24,7 +24,7 @@ import {
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
   Dumbbell, Zap, Heart, MapPin, Clock, Star, AlertCircle,
-  Filter, Search, User, Quote, Plus, Minus, Upload, Link2, Send, Bell, Trash2, Mail,
+  Filter, Search, User, Quote, Plus, Minus, Upload, Link2, Send, Bell, Trash2,
   Youtube, ExternalLink, Share2, Trophy, Check, Users, Power, Ban, Layout, Globe,
   Edit2, Truck, Eye, Printer, UserPlus, UserMinus, MoreHorizontal,
   LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award
@@ -572,8 +572,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       await supabase.auth.signOut();
-      setUser(null);
-      window.location.hash = '#/';
+      window.location.href = '/';
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -872,10 +871,6 @@ const Navbar = () => {
     { name: 'Membership', path: '/membership' },
   ];
 
-  const { totalItems } = useCart();
-  const { notifications } = useAuth();
-  const unreadCount = notifications ? notifications.filter((n: any) => !n.is_read).length : 0;
-
   return (
     <nav className="fixed top-0 left-0 w-full z-50 glass-nav">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -912,20 +907,12 @@ const Navbar = () => {
           {user ? (
             <div className="hidden lg:flex items-center space-x-4">
               <NotificationBell />
-              <Link to="/shop" className="relative p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Cart">
-                <ShoppingBag size={18} />
-                {totalItems > 0 && (
-                  <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-brand-coral text-black text-[8px] font-bold flex items-center justify-center">
-                    {totalItems}
-                  </span>
-                )}
-              </Link>
-              <Link to="/order-history" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Order History">
-                <History size={18} />
-              </Link>
-              <Link to="/profile" className="flex flex-col items-end group ml-2">
+              <Link to="/profile" className="flex flex-col items-end group">
                 <span className="text-[10px] uppercase tracking-widest font-bold text-brand-teal group-hover:text-white transition-colors">{user.full_name}</span>
                 <span className="text-[8px] uppercase tracking-widest text-white/40">{user.tier}</span>
+              </Link>
+              <Link to="/order-history" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Order History">
+                <ShoppingBag size={18} />
               </Link>
               <button 
                 onClick={logout}
@@ -6197,17 +6184,9 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                   </div>
                   <h3 className="text-3xl font-bold uppercase">{retreat.title}</h3>
                   <p className="text-white/40 leading-relaxed">{retreat.description}</p>
-                  <div className="flex items-center justify-between pt-8 border-t border-white/5 flex-wrap gap-4">
+                  <div className="flex items-center justify-between pt-8 border-t border-white/5">
                     <div className="text-2xl font-bold">{retreat.price} <span className="text-xs text-white/20 font-normal uppercase tracking-widest">/ person</span></div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={(e) => { e.preventDefault(); navigator.clipboard.writeText(window.location.href); showToast('Link copied to clipboard!'); }} className="p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-white/40 hover:text-white" title="Share Link">
-                        <Share2 size={16} />
-                      </button>
-                      <a href="mailto:support@fashionmeetzfitness.com?subject=Retreat Inquiry" className="p-3 bg-white/5 rounded-xl hover:bg-brand-coral/20 transition-colors text-white/40 hover:text-brand-coral" title="Contact Us">
-                        <Mail size={16} />
-                      </a>
-                      <button onClick={handleApply} className="btn-outline">Apply Now</button>
-                    </div>
+                    <button onClick={handleApply} className="btn-outline">Apply Now</button>
                   </div>
                 </div>
               </div>
