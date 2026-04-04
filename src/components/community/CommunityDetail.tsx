@@ -36,7 +36,10 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
       try {
         const [commRes, postsRes, reqRes, membersRes] = await Promise.all([
           supabase.from('communities').select('*').eq('id', id).single(),
-          supabase.from('community_posts').select('*').eq('community_id', id).order('created_at', { ascending: false }),
+          supabase.from('community_posts')
+            .select(`*, community_comments(*), community_post_likes(*)`)
+            .eq('community_id', id)
+            .order('created_at', { ascending: false }),
           user ? supabase.from('community_requests').select('*').eq('community_id', id).eq('user_id', user.id).eq('status', 'pending').maybeSingle() : Promise.resolve({ data: null, error: null }),
           supabase.from('community_members').select('*').eq('community_id', id)
         ]);
@@ -47,7 +50,14 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
             members: membersRes.data?.map(m => m.user_id) || []
           });
         }
-        if (postsRes.data) setPosts(postsRes.data);
+        if (postsRes.data) {
+          const mappedPosts = postsRes.data.map((p: any) => ({
+            ...p,
+            likes: p.community_post_likes?.map((l: any) => l.user_id) || [],
+            comments: p.community_comments?.sort((a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) || []
+          }));
+          setPosts(mappedPosts);
+        }
         if (reqRes.data) setHasPendingRequest(true);
       } catch (error) {
         console.error('Error fetching details:', error);
@@ -70,15 +80,13 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
         user_name_snapshot: user.full_name,
         title: 'Community Update',
         content: newPostContent,
-        likes: [],
-        comments: [],
         tags: ['General'],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
       const { data, error } = await supabase.from('community_posts').insert(newPost).select().single();
-      if (data) setPosts([data, ...posts]);
+      if (data) setPosts([{ ...data, likes: [], comments: [] }, ...posts]);
       setNewPostContent('');
       setIsPosting(false);
       showToast('Transmission shared with the collective', 'success');
@@ -93,15 +101,23 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
     if (!post) return;
 
     const hasLiked = post.likes.includes(user.id);
+    
+    // Optimistic UI update
     const newLikes = hasLiked 
       ? post.likes.filter(uid => uid !== user.id)
       : [...post.likes, user.id];
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes } : p));
 
     try {
-      await supabase.from('community_posts').update({ likes: newLikes }).eq('id', postId);
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: newLikes } : p));
+      if (hasLiked) {
+        await supabase.from('community_post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
+      } else {
+        await supabase.from('community_post_likes').insert({ post_id: postId, user_id: user.id });
+      }
     } catch (error) {
       showToast('Reaction synchronization failed', 'error');
+      // Revert optimistic update
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, likes: post.likes } : p));
     }
   };
 
@@ -111,19 +127,19 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
     const post = posts.find(p => p.id === postId);
     if (!post) return;
 
-    const newComment: CommunityComment = {
-      id: Math.random().toString(36).substr(2, 9),
+    const newComment = {
+      post_id: postId,
       user_id: user.id,
       user_name_snapshot: user.full_name,
-      content: commentContent,
-      created_at: new Date().toISOString()
+      content: commentContent
     };
 
-    const newComments = [...(post.comments || []), newComment];
-
     try {
-      await supabase.from('community_posts').update({ comments: newComments }).eq('id', postId);
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: newComments } : p));
+      const { data, error } = await supabase.from('community_comments').insert(newComment).select().single();
+      if (error) throw error;
+      
+      const updatedComments = [...(post.comments || []), data];
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments: updatedComments } : p));
       setCommentContent('');
       showToast('Response logged in collective matrix', 'success');
     } catch (error) {

@@ -15,6 +15,21 @@ export const MyPrograms = ({ user }: { user: UserProfile }) => {
     video_ids: [] as string[]
   });
   const [availableVideos, setAvailableVideos] = useState<any[]>([]);
+  const [playingAssignmentId, setPlayingAssignmentId] = useState<string | null>(null);
+
+  const completeAssignment = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_program_assignments')
+        .update({ completion_percent: 100, status: 'completed' })
+        .eq('id', id);
+      if (error) throw error;
+      setPlayingAssignmentId(null);
+      fetchAssignments();
+    } catch (err) {
+      console.error('Error completing assignment:', err);
+    }
+  };
 
   const fetchAssignments = async () => {
     try {
@@ -167,7 +182,10 @@ export const MyPrograms = ({ user }: { user: UserProfile }) => {
               <div className="space-y-4">
                 <h5 className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Neural Command</h5>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="flex-1 flex items-center justify-center gap-2 py-4 bg-brand-teal text-black hover:bg-white text-[10px] uppercase tracking-widest font-bold rounded-xl transition-colors shadow-lg shadow-brand-teal/20">
+                  <button 
+                    onClick={() => setPlayingAssignmentId(assignment.id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-4 bg-brand-teal text-black hover:bg-white text-[10px] uppercase tracking-widest font-bold rounded-xl transition-colors shadow-lg shadow-brand-teal/20"
+                  >
                     <Play size={14} className="translate-x-0.5" /> Synchronize Session
                   </button>
                   <button className="flex-1 flex items-center justify-center gap-2 py-4 bg-white/5 hover:bg-white/10 text-white text-[10px] uppercase tracking-widest font-bold rounded-xl transition-colors border border-white/10">
@@ -323,6 +341,68 @@ export const MyPrograms = ({ user }: { user: UserProfile }) => {
                    </button>
                 </div>
              </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Playback Simulation Modal */}
+      <AnimatePresence>
+        {playingAssignmentId && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-4xl card-gradient p-12 rounded-[3rem] border border-brand-teal/20 space-y-8 flex flex-col items-center justify-center text-center relative"
+            >
+              <button onClick={() => setPlayingAssignmentId(null)} className="absolute top-8 right-8 text-white/20 hover:text-brand-coral"><X size={24} /></button>
+              <div className="w-24 h-24 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal mb-4 animate-pulse">
+                <Play size={40} className="translate-x-1" />
+              </div>
+              <div>
+                <h3 className="text-3xl font-black uppercase tracking-tighter">Neural Link <span className="text-brand-teal">Active</span></h3>
+                {(() => {
+                  const assignment = assignments.find((a: any) => a.id === playingAssignmentId);
+                  const firstVid = assignment?.program?.video_ids?.[0];
+                  return firstVid ? (
+                    <div className="w-full aspect-video mt-8 rounded-xl overflow-hidden border border-brand-teal/20">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${firstVid.split('v=')[1] || firstVid}?autoplay=1&enablejsapi=1`}
+                        className="w-full h-full border-none"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        onLoad={(e) => {
+                          const iframe = e.target as HTMLIFrameElement;
+                          if (!iframe.contentWindow) return;
+                          const handleMessage = (event: MessageEvent) => {
+                            if (event.origin !== 'https://www.youtube.com') return;
+                            try {
+                              const data = JSON.parse(event.data);
+                              if (data.event === 'onStateChange' && data.info === 0) {
+                                completeAssignment(playingAssignmentId);
+                              }
+                            } catch (err) {}
+                          };
+                          window.addEventListener('message', handleMessage);
+                          return () => window.removeEventListener('message', handleMessage);
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-[10px] uppercase tracking-[0.3em] font-black text-brand-coral mt-2">Video matrix missing</p>
+                  );
+                })()}
+              </div>
+              <p className="text-sm text-white/60 max-w-lg leading-relaxed font-light">
+                In a production environment, the embedded video element fires an `onEnded` event when playback completes. This triggers an automated state update, syncing the user's progress directly to the database.
+              </p>
+              <button 
+                onClick={() => completeAssignment(playingAssignmentId)}
+                className="px-12 py-5 bg-brand-teal text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-3xl hover:shadow-glow-teal hover:scale-105 active:scale-95 transition-all mt-8"
+              >
+                Trigger onEnded Event (100% Completion)
+              </button>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

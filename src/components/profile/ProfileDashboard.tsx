@@ -23,6 +23,7 @@ import { AthleteDashboard } from '../athlete/AthleteDashboard';
 import { InternalFeed } from '../InternalFeed';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#')) {
@@ -48,6 +49,20 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     window.addEventListener('hashchange', handleHashChange);
     // trigger once to ensure current
     handleHashChange();
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('payment') === 'success') {
+      setIsProcessingPayment(true);
+      const isService = searchParams.get('type') === 'service';
+      if (isService) {
+        setActiveTab('calendar');
+      }
+      setTimeout(() => {
+        setIsProcessingPayment(false);
+        // Clear search params cleanly without reload
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }, 4000);
+    }
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
@@ -186,17 +201,31 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-grow min-w-0">
+        <div className="flex-grow min-w-0 relative">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderContent()}
-            </motion.div>
+            {isProcessingPayment ? (
+              <motion.div
+                key="processing"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 flex flex-col items-center justify-center p-12 card-gradient border border-brand-teal/20 rounded-3xl"
+              >
+                 <div className="w-20 h-20 rounded-full border-4 border-brand-teal/20 border-t-brand-teal animate-spin mb-8" />
+                 <h2 className="text-2xl font-bold uppercase tracking-widest">Validating Payment Matrix</h2>
+                 <p className="text-white/40 mt-4 max-w-sm text-center">Synchronizing with central protocol. Your session is being provisioned...</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {renderContent()}
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       </div>
