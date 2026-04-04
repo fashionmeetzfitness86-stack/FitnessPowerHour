@@ -5732,6 +5732,7 @@ const ConfirmationModal = ({
       )}
     </AnimatePresence>
   );
+};
 
 
 const Recovery = () => {
