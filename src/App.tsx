@@ -17,8 +17,7 @@ import { CommunityPage } from './components/community/CommunityPage';
 import { CommunityDetail } from './components/community/CommunityDetail';
 import { AthleteApplication } from './components/AthleteApplication';
 import { AuthCallback } from './components/auth/AuthCallback';
-import { LocalPassFlow } from './components/LocalPassFlow';
-import { PassSuccess } from './components/PassSuccess';
+
 import { FreeAccessGate } from './components/FreeAccessGate';
 import { useSiteContent } from './hooks/useSiteContent';
 import { 
@@ -6330,7 +6329,6 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/athlete-application" element={<AthleteApplication showToast={showToast} />} />
               <Route path="/athletes" element={<Athletes />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
-              <Route path="/pass-success" element={<PassSuccess />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
               <Route path="/community/:id" element={<CommunityDetail user={user} showToast={showToast} />} />
