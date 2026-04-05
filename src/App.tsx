@@ -1119,35 +1119,7 @@ const MembershipGate = ({ isOpen, onClose, navigate }: { isOpen: boolean, onClos
               <ChevronRight className="text-white/20 group-hover:text-brand-teal transition-colors" />
             </button>
 
-            <div className="grid grid-cols-2 gap-4">
-              <button 
-                onClick={() => { onClose(); navigate('/membership'); }}
-                className="group p-8 bg-white/5 border border-white/10 rounded-3xl hover:border-brand-coral transition-all text-left flex flex-col justify-between"
-              >
-                <div className="space-y-1">
-                  <span className="text-[9px] uppercase tracking-widest text-brand-coral font-black">Short Term</span>
-                  <h4 className="text-lg font-bold uppercase tracking-tight">3-Day Pass</h4>
-                </div>
-                <div className="mt-4 flex justify-between items-center">
-                   <span className="text-xl font-black">$59</span>
-                   <Plus size={16} className="text-white/20 group-hover:text-brand-coral" />
-                </div>
-              </button>
 
-              <button 
-                onClick={() => { onClose(); navigate('/membership'); }}
-                className="group p-8 bg-white/5 border border-white/10 rounded-3xl hover:border-brand-coral transition-all text-left flex flex-col justify-between"
-              >
-                <div className="space-y-1">
-                  <span className="text-[9px] uppercase tracking-widest text-brand-coral font-black">Weekly Access</span>
-                  <h4 className="text-lg font-bold uppercase tracking-tight">7-Day Pass</h4>
-                </div>
-                <div className="mt-4 flex justify-between items-center">
-                   <span className="text-xl font-black">$89</span>
-                   <Plus size={16} className="text-white/20 group-hover:text-brand-coral" />
-                </div>
-              </button>
-            </div>
           </div>
 
           <button 
@@ -4496,78 +4468,10 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       ],
       button: 'Get Started',
       highlight: false
-    },
-    {
-      name: 'Elite',
-      price: '$59',
-      period: 'per month',
-      features: [
-        'Full training system',
-        'Retreat priority access',
-        'Community features & Live Q&A',
-        'Special product drops',
-        '1-on-1 mindset coaching',
-        'Personalized nutrition plan',
-        'Direct trainer messaging'
-      ],
-      button: 'Go Elite',
-      highlight: true,
-      badge: 'Priority Access'
-    },
-    {
-      name: 'Local Collective',
-      price: '$299',
-      period: 'per month',
-      features: [
-        'Full training system',
-        'Retreat priority access',
-        'Exclusive content',
-        'Special product drops',
-        '1-on-1 mindset coaching',
-        'Personalized nutrition plan',
-        'Direct trainer messaging',
-        '1x Free Cold-Pressed Juice / mo',
-        '1x Free Ginger Shot / mo',
-        '1x Free Beverage of choice / mo'
-      ],
-      button: 'Join Locally',
-      highlight: false,
-      badge: 'Local Only'
     }
   ];
 
-  const localPasses = [
-    {
-      name: '3-Day Local Pass',
-      price: '$59',
-      period: 'one-time',
-      features: [
-        '3 Days Full Access',
-        'Physical Local Pass',
-        '1x Free Cold-Pressed Juice',
-        '1x Free Ginger Shot',
-        '1x Free Beverage of choice'
-      ],
-      button: 'Purchase Pass',
-      highlight: false,
-      badge: 'Limited Time'
-    },
-    {
-      name: '7-Day Local Pass',
-      price: '$89',
-      period: 'one-time',
-      features: [
-        '7 Days Full Access',
-        'Physical Local Pass',
-        '1x Free Cold-Pressed Juice',
-        '1x Free Ginger Shot',
-        '1x Free Beverage of choice'
-      ],
-      button: 'Purchase Pass',
-      highlight: false,
-      badge: 'Best Value'
-    }
-  ];
+
 
   const handleJoin = (tier: any) => {
     if (user) {
@@ -4672,22 +4576,17 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           </p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 max-w-sm mx-auto">
           {tiers.map((tier, i) => (
             <div 
               key={i} 
               className={`card-gradient p-12 flex flex-col space-y-8 relative overflow-hidden ${
                 tier.highlight ? 'border-brand-teal shadow-[0_0_50px_rgba(45,212,191,0.1)]' : ''
-              } ${tier.badge ? 'border-brand-coral/30' : ''} ${user?.tier === tier.name ? 'ring-2 ring-brand-teal ring-offset-4 ring-offset-brand-black' : ''}`}
+              } ${user?.tier === tier.name ? 'ring-2 ring-brand-teal ring-offset-4 ring-offset-brand-black' : ''}`}
             >
               {tier.highlight && (
                 <div className="absolute top-6 right-6 bg-brand-teal text-black text-[8px] font-bold px-2 py-1 uppercase tracking-widest rounded">
                   Most Popular
-                </div>
-              )}
-              {tier.badge && (
-                <div className="absolute top-6 right-6 bg-brand-coral text-white text-[8px] font-bold px-2 py-1 uppercase tracking-widest rounded">
-                  {tier.badge}
                 </div>
               )}
               <div>
@@ -4721,57 +4620,6 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
             </div>
           ))}
         </div>
-
-        {/* Local Passes Section */}
-        <section className="mt-40">
-          <div className="text-center mb-16 space-y-4">
-            <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Physical Passes</span>
-            <h2 className="text-4xl font-bold uppercase tracking-tighter">Miami <span className="text-brand-teal italic">Local Passes</span></h2>
-            <p className="text-white/40 text-xs uppercase tracking-widest max-w-xl mx-auto">Short-term access for visitors and locals. Includes our signature recovery beverages.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {localPasses.map((pass, i) => (
-              <div 
-                key={i} 
-                className="card-gradient p-12 flex flex-col space-y-8 relative overflow-hidden border-brand-teal/20"
-              >
-                {pass.badge && (
-                  <div className="absolute top-6 right-6 bg-brand-teal text-black text-[8px] font-bold px-2 py-1 uppercase tracking-widest rounded">
-                    {pass.badge}
-                  </div>
-                )}
-                <div>
-                  <h3 className="text-2xl font-bold uppercase tracking-tighter mb-2">{pass.name}</h3>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold">{pass.price}</span>
-                    <span className="text-xs text-white/40 uppercase tracking-widest">{pass.period}</span>
-                  </div>
-                </div>
-                <ul className="space-y-4 flex-grow">
-                  {pass.features.map((feature, j) => (
-                    <li key={j} className="flex items-center gap-3 text-sm text-white/60">
-                      <Check size={16} className="text-brand-teal" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <button 
-                  onClick={() => pass.period === 'one-time' ? setLocalPassModal(pass) : handleJoin(pass)}
-                  className="w-full py-4 bg-brand-teal text-black uppercase tracking-widest text-[10px] font-bold hover:bg-white transition-all"
-                >
-                  {pass.button}
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <AnimatePresence>
-          {localPassModal && (
-            <LocalPassFlow pass={localPassModal} onClose={() => setLocalPassModal(null)} showToast={showToast} />
-          )}
-        </AnimatePresence>
 
         {/* Tier Comparison Table */}
         <section className="mt-40 py-24 border-t border-white/5">
