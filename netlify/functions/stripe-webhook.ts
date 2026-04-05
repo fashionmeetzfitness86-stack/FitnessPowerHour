@@ -61,6 +61,16 @@ export default async (req: Request) => {
           } else {
             console.log(`[stripe-webhook] User ${userId} upgraded to ${tier}`);
             
+            // Notify User
+            await supabase.from('notifications').insert({
+                 user_id: userId,
+                 type: 'purchase',
+                 title: 'Membership Upgraded',
+                 message: `Welcome to the ${tier} tier. Your kinetic potential is now unlocked.`,
+                 status: 'sent',
+                 send_at: new Date().toISOString()
+            });
+
             // Notify Super Admins
             const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
             if (superAdmins) {
@@ -80,23 +90,77 @@ export default async (req: Request) => {
 
         if (metadata.type === 'shop' && userId) {
           console.log(`[stripe-webhook] Shop purchase for user ${userId}`);
-          // Fetch the purchaser's name
-          const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
-          const userName = userData?.full_name || 'an unknown user';
           
-          // Orders are tracked in Stripe — could also store in Supabase if needed
-          const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
-          if (superAdmins) {
-             const notifications = superAdmins.map(admin => ({
-               user_id: admin.id,
-               type: 'purchase',
-               title: 'New Pass / Shop Purchase',
-               message: `A new pass or shop item was purchased by ${userName}.`,
-               status: 'sent',
-               send_at: new Date().toISOString(),
-               created_at: new Date().toISOString()
-             }));
-             await supabase.from('notifications').insert(notifications);
+          let cartItems: Array<{id: string, q: number}> = [];
+          try {
+             if (metadata.cart_context) {
+                cartItems = JSON.parse(metadata.cart_context);
+             }
+          } catch(e) { console.error('Failed to parse cart context', e); }
+
+          if (cartItems.length > 0) {
+              const amountPaid = session.amount_total ? session.amount_total / 100 : 0;
+              
+              // 1. Create the base Order row
+              const { data: insertedOrder, error: orderErr } = await supabase.from('orders').insert({
+                 user_id: userId,
+                 stripe_session_id: session.id,
+                 total_amount: amountPaid,
+                 status: 'paid',
+                 shipping_address: session.customer_details?.address || null,
+              }).select('id').single();
+
+              if (!orderErr && insertedOrder) {
+                  // 2. Fetch the corresponding products securely
+                  const productIds = cartItems.map(i => i.id);
+                  const { data: dbProducts } = await supabase.from('products').select('*').in('id', productIds);
+                  
+                  if (dbProducts) {
+                      // Note: We use the exact price paid logic via dividing the total evenly to construct identical item structs, 
+                      // or we rely on the product's base price to populate the item lines for simplicity if exact matching fails.
+                      const orderItemsPayload = cartItems.map(cartItem => {
+                         const match = dbProducts.find(p => p.id === cartItem.id);
+                         return {
+                            order_id: insertedOrder.id,
+                            product_id: cartItem.id,
+                            quantity: cartItem.q,
+                            price: match ? match.price : 0
+                         };
+                      });
+                      
+                      
+                      const { error: itemsErr } = await supabase.from('order_items').insert(orderItemsPayload);
+                      if (itemsErr) {
+                         console.error('[stripe-webhook] Failed to insert order items:', itemsErr);
+                      } else {
+                         console.log(`[stripe-webhook] Order ${insertedOrder.id} successfully recorded with ${orderItemsPayload.length} items`);
+                         // Fetch the purchaser's name for notification
+                         const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', userId).single();
+                         const userName = userData?.full_name || 'an unknown user';
+                         
+                         const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
+                         if (superAdmins) {
+                            const notifications = superAdmins.map(admin => ({
+                              user_id: admin.id,
+                              type: 'purchase',
+                              title: 'New Pass / Shop Purchase',
+                              message: `New storefront transaction approved for ${userName}.`,
+                              status: 'sent',
+                              send_at: new Date().toISOString(),
+                              created_at: new Date().toISOString()
+                            }));
+                            await supabase.from('notifications').insert(notifications);
+                         }
+                      }
+                  }
+              } else {
+                  if (orderErr?.code === '23505') {
+                     console.log(`[stripe-webhook] Duplicate webhook event detected for session: ${session.id}, skipping.`);
+                     return new Response('Duplicate event skipped', { status: 200 });
+                  } else {
+                     console.error('[stripe-webhook] Failed to insert foundational order node:', orderErr);
+                  }
+              }
           }
         }
 
@@ -128,7 +192,19 @@ export default async (req: Request) => {
             expires_at: expiresAt.toISOString()
           });
 
-          // Notificaton
+          // Notificaton for User
+          if (userId) {
+             await supabase.from('notifications').insert({
+                 user_id: userId,
+                 type: 'purchase',
+                 title: 'Pass Activated',
+                 message: `Your ${passType} is now active. Token: ${token}`,
+                 status: 'sent',
+                 send_at: new Date().toISOString()
+             });
+          }
+
+          // Notificaton for Admins
           const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
           if (superAdmins) {
              const notifications = superAdmins.map(admin => ({

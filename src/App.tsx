@@ -20,6 +20,7 @@ import { AuthCallback } from './components/auth/AuthCallback';
 import { LocalPassFlow } from './components/LocalPassFlow';
 import { PassSuccess } from './components/PassSuccess';
 import { FreeAccessGate } from './components/FreeAccessGate';
+import { useSiteContent } from './hooks/useSiteContent';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
@@ -450,7 +451,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         full_name: displayName,
         email: session.user.email || '',
         role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user',
-        tier: 'Free Access',
+        tier: 'Free',
         status: 'active',
         signup_date: now,
         created_at: now,
@@ -464,7 +465,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         full_name: displayName,
         email: session.user.email || '',
         role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user',
-        tier: 'Free Access',
+        tier: 'Free',
         status: 'active',
         signup_date: now
       };
@@ -554,7 +555,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
           full_name: name,
           email,
           role: email.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user',
-          tier: tier || 'Free Access',
+          tier: 'Free',
           status: 'active',
           signup_date: new Date().toISOString()
         };
@@ -882,7 +883,7 @@ const Navbar = () => {
         <div className="hidden lg:flex space-x-8">
           {navLinks.map((link) => {
             const isMembership = link.name === 'Membership';
-            const finalPath = isMembership && user && user.tier !== 'Free Access' ? '/profile#membership' : link.path;
+            const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
             return (
               <Link
                 key={link.name}
@@ -945,7 +946,7 @@ const Navbar = () => {
             <div className="flex flex-col p-8 space-y-6">
               {navLinks.map((link) => {
                 const isMembership = link.name === 'Membership';
-                const finalPath = isMembership && user && user.tier !== 'Free Access' ? '/profile#membership' : link.path;
+                const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
                 return (
                 <Link
                   key={link.name}
@@ -1096,7 +1097,7 @@ const MembershipGate = ({ isOpen, onClose, navigate }: { isOpen: boolean, onClos
           className="card-gradient p-12 lg:p-16 max-w-2xl w-full relative z-10 space-y-12 rounded-[4rem] border border-brand-teal/20 text-center overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-             <Lock size={200} />
+             <ShieldCheck size={200} />
           </div>
           
           <div className="space-y-4 relative z-10">
@@ -1167,436 +1168,240 @@ const MembershipGate = ({ isOpen, onClose, navigate }: { isOpen: boolean, onClos
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const heroRef = useRef(null);
-  const philosophyRef = useRef(null);
-  const retreatRef = useRef(null);
-  const [featuredVideos, setFeaturedVideos] = useState<Video[]>([]);
+  const { get, loading } = useSiteContent();
   const [isGateOpen, setIsGateOpen] = useState(false);
+  const isMember = user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete');
 
-  const isMember = user && (user.tier !== 'Free Access' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete');
-
-  const handleLibraryClick = () => {
-    if (!isMember) {
-      setIsGateOpen(true);
-    } else {
-      navigate('/videos');
-    }
+  const handleProgramClick = () => {
+    if (!isMember) navigate('/membership');
+    else navigate('/profile#programs');
   };
 
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('videos')
-          .select('*')
-          .eq('visibility_status', 'published')
-          .limit(3);
-        if (error) throw error;
-        if (data && data.length > 0) {
-          setFeaturedVideos(data as Video[]);
-        } else {
-          setFeaturedVideos(VIDEOS.slice(0, 3));
-        }
-      } catch (error) {
-        console.error('Error fetching videos:', error);
-        setFeaturedVideos(VIDEOS.slice(0, 3));
-      }
-    };
-    fetchVideos();
-  }, []);
-
-  const { scrollYProgress: heroScroll } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"]
-  });
-
-  const { scrollYProgress: philosophyScroll } = useScroll({
-    target: philosophyRef,
-    offset: ["start end", "end start"]
-  });
-
-  const { scrollYProgress: retreatScroll } = useScroll({
-    target: retreatRef,
-    offset: ["start end", "end start"]
-  });
-
-  const heroBgY = useTransform(heroScroll, [0, 1], ["0%", "30%"]);
-  const heroTextY = useTransform(heroScroll, [0, 1], ["0%", "50%"]);
-  const philosophyImgY = useTransform(philosophyScroll, [0, 1], ["-10%", "10%"]);
-  const retreatImgY = useTransform(retreatScroll, [0, 1], ["-20%", "20%"]);
-
   return (
-    <div className="pt-20">
-      {/* Hero */}
-      <section ref={heroRef} className="relative h-[90vh] flex items-center overflow-hidden">
-        <motion.div 
-          style={{ y: heroBgY }}
-          className="absolute inset-0 z-0"
-        >
+    <div className="pt-20 bg-brand-black min-h-screen pb-32">
+      {/* 1. HERO */}
+      <section className="relative h-[90vh] flex items-center justify-center text-center overflow-hidden border-b border-brand-teal/20">
+        <div className="absolute inset-0 z-0">
           <img
-            src="https://picsum.photos/seed/fmf-hero/1920/1080"
+            src={get('home_hero_bg_image', 'https://picsum.photos/seed/fmf-hero/1920/1080')}
             alt="Hero"
-            className="w-full h-full object-cover opacity-50 scale-110"
+            className="w-full h-full object-cover opacity-50"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-black via-brand-black/40 to-transparent" />
-        </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/50 to-transparent" />
+        </div>
         
-        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
-          <motion.div
-            style={{ y: heroTextY }}
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-2xl"
-          >
-            <span className="inline-block px-3 py-1 bg-brand-teal/20 text-brand-teal text-[10px] uppercase tracking-[0.3em] rounded-full mb-6">
-              Miami Calisthenics
-            </span>
-            <h1 className="text-6xl md:text-8xl font-bold text-white mb-6 tracking-tighter leading-none uppercase">
-              Fitness <br /> <span className="text-brand-coral">Power Hour</span>
-            </h1>
-            <p className="text-xl text-white/60 mb-10 font-light leading-relaxed">
-              Train Your Body. Train Your Mind. A premium calisthenics training program designed to build strength, discipline, and energy.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button 
-                onClick={() => {
-                  if (!isMember) setIsGateOpen(true);
-                  else navigate('/profile');
-                }} 
-                className="btn-primary"
-              >
-                {isMember ? 'Back to Command' : 'Get Started'}
-              </button>
-              <button onClick={handleLibraryClick} className="btn-outline">Explore Program</button>
-              <button onClick={() => navigate('/shop')} className="btn-secondary">Shop Choices</button>
-            </div>
-          </motion.div>
-        </div>
-
-        <MembershipGate isOpen={isGateOpen} onClose={() => setIsGateOpen(false)} navigate={navigate} />
-
-        <div className="absolute bottom-10 right-10 hidden lg:flex flex-col items-end gap-2">
-          <span className="text-[10px] uppercase tracking-[0.5em] text-white/20 rotate-90 origin-right translate-y-20">Scroll to explore</span>
-          <div className="w-px h-24 bg-gradient-to-b from-brand-teal to-transparent" />
-        </div>
-      </section>
-
-      {/* Philosophy Preview */}
-      <section ref={philosophyRef} className="py-32 px-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="space-y-8"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter">
-              The FMF <span className="text-brand-teal italic">Philosophy</span>
-            </h2>
-            <p className="text-white/50 text-lg font-light leading-relaxed">
-              Fitness Power Hour is not just a workout program â€” it is a lifestyle built around discipline, movement, and personal strength. We focus on four core pillars that define the FMF way of life.
-            </p>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-2">
-                <Dumbbell className="text-brand-coral" size={32} />
-                <h4 className="font-bold uppercase text-sm">Discipline</h4>
-                <p className="text-xs text-white/40">Consistency builds strength. Training is a daily ritual.</p>
-              </div>
-              <div className="space-y-2">
-                <Zap className="text-brand-teal" size={32} />
-                <h4 className="font-bold uppercase text-sm">Movement</h4>
-                <p className="text-xs text-white/40">The body was designed to move freely and powerfully.</p>
-              </div>
-              <div className="space-y-2">
-                <Heart className="text-brand-coral" size={32} />
-                <h4 className="font-bold uppercase text-sm">Energy</h4>
-                <p className="text-xs text-white/40">Training fuels the mind and body for peak performance.</p>
-              </div>
-              <div className="space-y-2">
-                <Star className="text-brand-teal" size={32} />
-                <h4 className="font-bold uppercase text-sm">Lifestyle</h4>
-                <p className="text-xs text-white/40">Fitness becomes an essential part of how you live.</p>
-              </div>
-            </div>
-          </motion.div>
-          <div className="relative group">
-            <div className="absolute -inset-4 bg-brand-teal/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <motion.div
-              style={{ y: philosophyImgY }}
-              className="relative overflow-hidden rounded-2xl"
-            >
-              <img
-                src="https://picsum.photos/seed/fmf-training/800/1000"
-                alt="Training"
-                className="w-full aspect-[4/5] object-cover grayscale hover:grayscale-0 transition-all duration-700 scale-110"
-                referrerPolicy="no-referrer"
-              />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Retreat Showcase */}
-      <section ref={retreatRef} className="py-32 px-6 bg-brand-black relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-            <div className="order-2 lg:order-1 relative">
-              <motion.div
-                style={{ y: retreatImgY }}
-                className="relative z-10 rounded-3xl overflow-hidden aspect-[4/5]"
-              >
-                <img 
-                  src="https://picsum.photos/seed/fmf-retreat-home/800/1000" 
-                  alt="Retreat Experience" 
-                  className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000 scale-110"
-                  referrerPolicy="no-referrer"
-                />
-              </motion.div>
-              <div className="absolute -bottom-10 -right-10 w-64 h-64 bg-brand-coral/10 blur-3xl rounded-full" />
-            </div>
-            <motion.div 
-              initial={{ opacity: 0, x: 50 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="order-1 lg:order-2 space-y-8"
-            >
-              <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Exclusive Experiences</span>
-              <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-none">
-                The <span className="text-brand-teal italic">Retreat</span> <br /> Immersion
-              </h2>
-              <p className="text-white/50 text-lg font-light leading-relaxed">
-                Step away from the noise and immerse yourself in a high-performance environment. Miami Beach is currently our exclusive retreat location, designed to reset your physical and mental state through intensive training and luxury wellness.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 text-white/80">
-                  <div className="w-8 h-8 rounded-full bg-brand-teal/20 flex items-center justify-center text-brand-teal">
-                    <MapPin size={16} />
-                  </div>
-                  <span className="text-sm uppercase tracking-widest">Miami Beach</span>
-                </div>
-                <div className="flex items-center gap-4 text-white/80">
-                  <div className="w-8 h-8 rounded-full bg-brand-coral/20 flex items-center justify-center text-brand-coral">
-                    <Star size={16} />
-                  </div>
-                  <span className="text-sm uppercase tracking-widest">Luxury Wellness & Training</span>
-                </div>
-              </div>
-              <button onClick={() => navigate('/retreats')} className="btn-primary">Explore Retreats</button>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Local Pass Promotion */}
-      <section className="py-32 px-6 bg-brand-teal/5 border-y border-brand-teal/10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            <div className="space-y-8">
-              <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Miami Local</span>
-              <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-none">
-                Physical <br /> <span className="text-brand-coral italic">Local Passes</span>
-              </h2>
-              <p className="text-white/50 text-lg font-light leading-relaxed">
-                Visiting Miami or just want to experience the Power Hour locally? Our physical passes give you full access to the FMF ecosystem for a limited time, including our signature recovery beverages.
-              </p>
-              <div className="flex flex-wrap gap-8">
-                <div className="space-y-2">
-                  <p className="text-3xl font-bold text-white">$59</p>
-                  <p className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">3-Day Pass</p>
-                </div>
-                <div className="w-px h-12 bg-white/10 hidden md:block" />
-                <div className="space-y-2">
-                  <p className="text-3xl font-bold text-white">$89</p>
-                  <p className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">7-Day Pass</p>
-                </div>
-              </div>
-              <button onClick={() => navigate('/membership')} className="btn-primary">Get Your Pass</button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { title: 'Cold-Pressed Juice', icon: <Zap size={20} /> },
-                { title: 'Ginger Shot', icon: <Zap size={20} /> },
-                { title: 'Beverage of Choice', icon: <Zap size={20} /> }
-              ].map((item, i) => (
-                <div key={i} className="card-gradient p-6 text-center space-y-4">
-                  <div className="w-12 h-12 bg-brand-teal/20 rounded-full flex items-center justify-center text-brand-teal mx-auto">
-                    {item.icon}
-                  </div>
-                  <p className="text-[10px] uppercase tracking-widest font-bold leading-tight">{item.title}</p>
-                  <p className="text-[8px] text-white/40 uppercase tracking-widest">Included Free</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Video Preview */}
-      <section className="py-32 bg-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-end mb-16">
-            <div>
-              <h2 className="text-4xl font-bold uppercase tracking-tighter mb-4">Training Library</h2>
-              <p className="text-white/40 uppercase tracking-widest text-xs">Guided Sessions for every level</p>
-            </div>
-            <button 
-              onClick={handleLibraryClick}
-              className="text-brand-teal flex items-center gap-2 text-xs uppercase tracking-widest hover:gap-4 transition-all"
-            >
-              View All <ChevronRight size={16} />
+        <div className="relative z-10 max-w-4xl mx-auto px-6 space-y-8 fade-in">
+          <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-tighter text-white">
+            {get('home_hero_title', 'Own Your Power').split(' ').map((word, i) => i === 0 ? <span key={i} className="text-brand-coral">{word} </span> : <span key={i}>{word} </span>)}
+          </h1>
+          <p className="text-white/60 text-lg md:text-2xl font-light uppercase tracking-widest">
+            {get('home_hero_subtitle', 'The ultimate membership-based accountability platform.')}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
+            <button onClick={handleProgramClick} className="btn-primary px-12 py-5 text-sm uppercase tracking-widest font-bold">
+              Start Your Program
+            </button>
+            <button onClick={() => navigate('/membership')} className="btn-outline px-12 py-5 text-sm uppercase tracking-widest font-bold border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-black transition-all">
+              Join for ${get('home_membership_price', '19.99')}
             </button>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredVideos.map((video) => (
-              <motion.div
-                key={video.id}
-                whileHover={{ y: -10 }}
-                className="card-gradient overflow-hidden group cursor-pointer"
-                onClick={() => {
-                  if (!isMember) setIsGateOpen(true);
-                  else navigate(`/video/${video.id}`);
-                }}
+        </div>
+      </section>
+
+      {/* 2. WHAT FMF IS */}
+      <section className="py-32 px-6 border-b border-white/5">
+        <div className="max-w-7xl mx-auto text-center space-y-16">
+          <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter text-white">What is FMF?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {['Train', 'Recover', 'Elevate'].map((block, i) => (
+              <div key={i} className="card-gradient p-12 aspect-square flex flex-col items-center justify-center text-center group transition-all hover:border-brand-teal/50">
+                <div className="w-16 h-16 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal mb-6 group-hover:scale-110 transition-transform">
+                  {i === 0 ? <Dumbbell size={32} /> : i === 1 ? <Heart size={32} /> : <Zap size={32} />}
+                </div>
+                <h3 className="text-2xl font-bold uppercase tracking-widest">{block}</h3>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. HOW IT WORKS */}
+      <section className="py-32 px-6 bg-white/5 border-b border-white/5">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter text-brand-teal">How It Works</h2>
+            <p className="text-white/50 text-sm uppercase tracking-widest">3 Simple Steps to Mastery</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { num: '01', title: 'Join', desc: 'Secure your membership & clear your mind.' },
+              { num: '02', title: 'Train', desc: 'Follow structured, high-accountability phases.' },
+              { num: '03', title: 'Track', desc: 'Engage the daily loop and compound growth.' }
+            ].map((step, i) => (
+              <div key={i} className="relative p-12 border border-white/10 rounded-[3rem] bg-brand-black shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+                <div className="text-8xl font-black text-white/5 absolute -top-4 -left-2">{step.num}</div>
+                <div className="relative z-10 pt-4 space-y-4">
+                  <h4 className="text-2xl font-black uppercase tracking-widest">{step.title}</h4>
+                  <p className="text-white/40 text-sm leading-relaxed max-w-[200px]">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3.5 SOCIAL PROOF */}
+      <section className="py-32 px-6 border-b border-white/5">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center space-y-4">
+             <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Real Results</span>
+            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter text-white">The FMF <span className="text-brand-coral">Legion</span></h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+               { name: 'Alex M.', role: 'Elite Member', quote: 'This system rebuilt my foundation. The discipline naturally translated to the rest of my life.' },
+               { name: 'Sarah T.', role: 'FMF Protocol', quote: 'I stopped guessing. Checked in daily, followed the schedule, and hit goals I thought were years away.' },
+               { name: 'David R.', role: 'Athlete', quote: 'Best training environment period. The tools, the timeline, the community. Unmatched.' }
+            ].map((testimonial, i) => (
+               <div key={i} className="card-gradient p-10 rounded-[3rem] border border-white/10 space-y-6">
+                 <div className="flex text-brand-coral"><Star size={16}/><Star size={16}/><Star size={16}/><Star size={16}/><Star size={16}/></div>
+                 <p className="text-white/60 text-lg italic leading-relaxed">"{testimonial.quote}"</p>
+                 <div>
+                    <h4 className="text-sm font-bold uppercase">{testimonial.name}</h4>
+                    <p className="text-[10px] uppercase tracking-widest text-brand-teal mt-1">{testimonial.role}</p>
+                 </div>
+               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. PROGRAM PHASES */}
+      <section className="py-32 px-6 border-b border-white/5">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">Program <span className="text-brand-coral">Phases</span></h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map((phase) => (
+              <div 
+                key={phase} 
+                onClick={handleProgramClick}
+                className="group cursor-pointer card-gradient overflow-hidden flex flex-col hover:border-brand-coral/50 transition-all border border-white/10"
               >
-                <div className="relative aspect-video">
-                  <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
-                  {video.isPremium && (
-                    <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
-                      <Zap size={10} fill="white" />
-                      Elite
+                <div className="aspect-video bg-white/5 relative flex items-center justify-center">
+                  <h1 className="text-8xl font-black text-white/20 group-hover:text-brand-coral/40 transition-colors">P{phase}</h1>
+                  {!isMember && (
+                    <div className="absolute inset-0 bg-brand-black/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ShieldCheck size={32} className="text-brand-coral" />
+                      <span className="text-[10px] uppercase tracking-widest font-bold text-white">Join to Unlock</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="w-16 h-16 bg-brand-teal rounded-full flex items-center justify-center shadow-2xl">
-                      <Play fill="white" size={24} className="translate-x-0.5" />
-                    </div>
-                  </div>
-                  <div className="absolute bottom-4 left-4 flex gap-2">
-                    <span className="px-2 py-1 bg-black/60 backdrop-blur-md text-[10px] uppercase tracking-widest rounded">{video.duration}</span>
-                    <span className="px-2 py-1 bg-brand-coral/80 backdrop-blur-md text-[10px] uppercase tracking-widest rounded">{video.level}</span>
-                  </div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-bold uppercase mb-2 group-hover:text-brand-teal transition-colors">{video.title}</h3>
-                  <p className="text-white/40 text-sm line-clamp-2">{video.description}</p>
+                <div className="p-8 text-center bg-brand-black/50">
+                  <h3 className="text-xl font-bold uppercase tracking-widest">Phase {phase}</h3>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FMF Ecosystem */}
-      <section className="py-32 px-6 bg-brand-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20 space-y-4">
-            <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">The Network</span>
-            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">The FMF <span className="text-brand-coral">Ecosystem</span></h2>
-            <p className="text-white/40 max-w-2xl mx-auto text-sm uppercase tracking-widest">A synergy of training, recovery, and luxury lifestyle.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {COLLABORATIONS.map((collab) => (
-              <motion.div
-                key={collab.id}
-                whileHover={{ y: -10 }}
-                className="card-gradient p-8 space-y-6 group cursor-pointer"
-                onClick={() => {
-                  if (collab.link.startsWith('http')) {
-                    window.open(collab.link, '_blank');
-                  } else {
-                    navigate(collab.link);
-                  }
-                }}
-              >
-                <div className="aspect-video overflow-hidden rounded-xl">
-                  <img src={collab.image} alt={collab.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
-                </div>
-                <div className="space-y-4">
-                  <span className="text-[10px] uppercase tracking-widest text-brand-teal">{collab.category}</span>
-                  <h3 className="text-2xl font-bold uppercase tracking-tighter">{collab.name}</h3>
-                  <p className="text-xs text-white/40 leading-relaxed">{collab.description}</p>
-                  <button className="text-brand-coral text-[10px] uppercase tracking-widest flex items-center gap-2 group-hover:gap-4 transition-all">
-                    {collab.buttonText} <ChevronRight size={14} />
-                  </button>
-                </div>
-              </motion.div>
-            ))}
+      {/* 5. MEMBERSHIP SECTION */}
+      <section className="py-32 px-6 bg-brand-teal/5 border-y border-brand-teal/20 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-brand-teal/10 blur-[100px] rounded-full" />
+        <div className="relative z-10 max-w-4xl mx-auto text-center space-y-12">
+          <h2 className="text-4xl md:text-7xl font-bold uppercase tracking-tighter text-white">
+            Basic <span className="text-brand-teal">Membership</span>
+          </h2>
+          <div className="flex justify-center">
+            <div className="w-full max-w-md card-gradient p-12 space-y-8 border border-brand-teal shadow-[0_0_50px_rgba(45,212,191,0.15)] relative bg-brand-black">
+              <div className="absolute -top-4 -right-4 bg-brand-teal text-black px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-sm rotate-3">
+                Full Access
+              </div>
+              <h3 className="text-2xl font-bold uppercase tracking-widest text-center text-white">FMF Basic</h3>
+              <div className="text-center">
+                <span className="text-6xl font-black text-white">${get('home_membership_price', '19.99')}</span>
+                <span className="text-white/40 text-xs uppercase tracking-widest">/mo</span>
+              </div>
+              <ul className="space-y-4 text-left text-sm text-white/70">
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Full Video Library Access</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Program Builder Tracker</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Service Booking Privileges</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> 20% Store Discount</li>
+              </ul>
+              <button onClick={() => navigate('/membership')} className="w-full btn-primary bg-brand-teal text-black border-transparent shadow-glow-teal hover:scale-105 transition-all">
+                Become a Member
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Quote Section */}
-      <section className="py-32 px-6 bg-brand-black border-y border-white/5">
-        <div className="max-w-4xl mx-auto text-center space-y-12">
-          <Quote className="text-brand-teal mx-auto opacity-20" size={64} />
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl md:text-5xl font-light italic leading-tight text-white/80"
-          >
-            "Discipline is the bridge between goals and accomplishment. Fitness Power Hour is where that bridge is built."
-          </motion.h2>
-          <div className="space-y-2">
-            <div className="text-brand-coral font-bold uppercase tracking-[0.3em] text-sm">Anderson Djeemo</div>
-            <div className="text-white/20 text-[10px] uppercase tracking-[0.5em]">Founder, FMF</div>
+      {/* 6. SERVICES SECTION */}
+      <section className="py-32 px-6 border-b border-white/5">
+        <div className="max-w-7xl mx-auto space-y-16">
+          <div className="text-center space-y-4">
+            <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Exclusive</span>
+            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">Premium <span className="text-white">Services</span></h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="card-gradient p-12 space-y-8 group border border-white/10 hover:border-brand-teal/30 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <h3 className="text-3xl font-bold uppercase tracking-tighter">Flex Mob <span className="text-brand-coral">305</span></h3>
+                <p className="text-white/50 text-sm leading-relaxed">Professional assisted stretching and physiological recovery designed for systemic elevation.</p>
+              </div>
+              <button onClick={() => navigate('/profile#calendar')} className="btn-outline w-full uppercase tracking-widest text-[10px] hover:bg-brand-coral/10 hover:text-brand-coral hover:border-brand-coral">Request Session</button>
+            </div>
+            
+            <div className="card-gradient p-12 space-y-8 group border border-white/10 hover:border-brand-teal/30 transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <h3 className="text-3xl font-bold uppercase tracking-tighter">1-on-1 <span className="text-brand-teal">Training</span></h3>
+                <p className="text-white/50 text-sm leading-relaxed">High-density personal instruction focused on strict form, discipline, and kinetic mastery.</p>
+              </div>
+              <button onClick={() => navigate('/profile#calendar')} className="btn-outline w-full uppercase tracking-widest text-[10px] hover:bg-brand-teal/10 hover:text-brand-teal hover:border-brand-teal">Request Training</button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* FMF Ecosystem / Collaborations */}
-      <section className="py-32 px-6 bg-brand-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20 space-y-6">
-            <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">The Brand Ecosystem</span>
-            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">The FMF <span className="text-brand-teal">Ecosystem</span></h2>
-            <p className="text-white/40 uppercase tracking-[0.3em] text-xs max-w-2xl mx-auto leading-relaxed">
-              Fashion meetz Fitness brings together brands that represent strength, recovery, lifestyle, and elegance. Together they form a complete ecosystem designed for people who live with discipline, movement, and intention.
-            </p>
-          </div>
+      {/* 7. SHOP SECTION */}
+      <section className="py-32 px-6 bg-white/5 border-b border-white/10">
+        <div className="max-w-5xl mx-auto text-center space-y-10">
+          <ShoppingBag size={48} className="mx-auto text-brand-teal opacity-50" />
+          <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">Official <span className="text-brand-coral border-b-2 border-brand-coral pb-1">Apparel</span></h2>
+          <p className="text-white/60 text-lg uppercase tracking-widest">Members receive 20% off automatically applied at checkout.</p>
+          <button onClick={() => navigate('/shop')} className="btn-secondary px-12 py-4">Visit Store</button>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {COLLABORATIONS.map((brand) => (
-              <motion.div
-                key={brand.id}
-                whileHover={{ y: -10 }}
-                className="card-gradient overflow-hidden group flex flex-col h-full"
-              >
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <img 
-                    src={brand.image} 
-                    alt={brand.name} 
-                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-brand-black/60 backdrop-blur-md text-[9px] uppercase tracking-widest px-2 py-1 rounded">{brand.category}</span>
-                  </div>
-                </div>
-                <div className="p-8 flex flex-col flex-grow space-y-4">
-                  <h3 className="text-2xl font-bold uppercase tracking-tighter group-hover:text-brand-teal transition-colors">{brand.name}</h3>
-                  <p className="text-white/40 text-[11px] leading-relaxed flex-grow">{brand.description}</p>
-                  <button 
-                    onClick={() => {
-                      if (brand.link.startsWith('http')) {
-                        window.open(brand.link, '_blank');
-                      } else {
-                        navigate(brand.link);
-                      }
-                    }}
-                    className="w-full py-4 border border-white/10 text-[10px] uppercase tracking-widest hover:bg-white hover:text-brand-black transition-all"
-                  >
-                    {brand.buttonText}
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+      {/* 8. RETREATS */}
+      <section className="py-32 px-6 relative overflow-hidden border-b border-white/10 bg-brand-coral/5">
+        <div className="absolute inset-0 z-0 opacity-10 bg-[url('https://picsum.photos/seed/retreat-bg/1920/1080')] bg-cover bg-center" />
+        <div className="max-w-4xl mx-auto text-center relative z-10 space-y-10">
+          <h2 className="text-4xl md:text-7xl font-bold uppercase tracking-tighter italic text-white/90">
+            FMF <span className="text-brand-coral">Retreats</span>
+          </h2>
+          <p className="text-white/50 max-w-2xl mx-auto uppercase tracking-[0.2em] text-xs leading-loose">
+            {get('home_retreats_description', 'Step fully off the grid. Immerse yourself in a guided physical and mental overhaul at our exclusive global destinations.')}
+          </p>
+          <button onClick={() => navigate('/retreats')} className="btn-outline border-brand-coral text-brand-coral hover:bg-brand-coral hover:text-black px-10">
+            Explore Retreats
+          </button>
+        </div>
+      </section>
+
+      {/* 9. FINAL CTA */}
+      <section className="py-40 px-6 bg-brand-teal/5">
+        <div className="max-w-5xl mx-auto text-center space-y-12">
+          <h2 className="text-6xl md:text-8xl font-black uppercase tracking-tighter">It Ends <br/><span className="text-brand-teal">With You</span></h2>
+          <p className="text-white/40 uppercase tracking-widest text-sm max-w-lg mx-auto">
+            Everything you need. Zero distractions. Build discipline today.
+          </p>
+          <button onClick={() => navigate('/membership')} className="btn-primary shadow-[0_0_40px_rgba(45,212,191,0.4)] px-16 py-6 text-xl rounded-2xl hover:scale-105 transition-all w-full md:w-auto mt-8">
+            Start Your Program
+          </button>
         </div>
       </section>
     </div>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  User, LayoutDashboard, LineChart, Calendar,
-  PlaySquare, Video, Shield, CreditCard,
-  Map, ShoppingBag, Settings, Bell, LogOut, Heart, MessageSquare
+import { 
+  User, LayoutDashboard, LineChart, Calendar, 
+  PlaySquare, Video, Shield, CreditCard, 
+  Map, ShoppingBag, Settings, Bell, LogOut, Heart, MessageSquare, Users
 } from 'lucide-react';
 import { supabase } from '../../supabase';
 
@@ -19,8 +19,10 @@ import { RetreatsTab } from './RetreatsTab';
 import { OrderHistoryTab } from './OrderHistoryTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
+import { ReferralTab } from './ReferralTab';
 import { AthleteDashboard } from '../athlete/AthleteDashboard';
 import { InternalFeed } from '../InternalFeed';
+import { OnboardingFlow } from './OnboardingFlow';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -77,6 +79,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     { id: 'orders', label: 'Order History', icon: ShoppingBag },
     { id: 'settings', label: 'Edit Profile', icon: Settings },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'referrals', label: 'Invite & Earn', icon: Users },
   ];
 
   const renderContent = () => {
@@ -92,6 +95,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'orders': return <OrderHistoryTab user={user} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
+      case 'referrals': return <ReferralTab user={user} showToast={showToast} />;
       case 'athlete': return <AthleteDashboard athleteUser={user} showToast={showToast} />;
       case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
       default: return <Overview user={user} />;
@@ -100,6 +104,17 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   return (
     <div className="pt-40 pb-32 px-6 bg-brand-black text-white">
+      {user && !user.onboarding_completed && (
+        <OnboardingFlow 
+          showToast={showToast} 
+          onComplete={() => {
+            // Update local user state immediately to hide onboarding
+            user.onboarding_completed = true;
+            // Force re-render or push to refresh from context
+            showToast('Onboarding finished. Let\'s go!', 'success');
+          }} 
+        />
+      )}
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12">
         {/* Sidebar Navigation */}
         <div className="lg:w-72 flex-shrink-0 space-y-8">

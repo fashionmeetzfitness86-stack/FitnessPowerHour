@@ -9,18 +9,22 @@ import {
   Edit2, Eye, Ban, Trash2, Check, X, Printer,
   Filter, Activity, TrendingUp, DollarSign, Clock,
   CheckCircle, Video as VideoIcon, UserPlus, Star, 
-  Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck
+  Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck, Calendar
 } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
 import { 
   UserProfile, Video, Product, Order, Retreat, 
-  Community, ActivityLog, Program, Athlete, 
-  VideoCategory, ProductCategory, Brand, RetreatApplication,
-  CommunityPost, Package
+  Community, ActivityLog, Athlete, VideoCategory,
+  Brand, RetreatApplication,
+  CommunityPost, Package, SiteContent, AthleteApplication,
+  ProgramTemplate, UserProgramAssignment,
+  CalendarSession, ServiceRequest, ServiceAvailability
 } from '../../types';
 
 import { AdminOverview } from './AdminOverview';
+import { AdminCalendarControl } from './AdminCalendarControl';
+import { CMSManager } from './CMSManager';
 import { UsersManager } from './UsersManager';
 import { AthleteManager } from './AthleteManager';
 import { VideoManager } from './VideoManager';
@@ -55,13 +59,20 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [videos, setVideos] = useState<Video[]>([]);
   const [videoCategories, setVideoCategories] = useState<VideoCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [productCategories, setProductCategories] = useState<ProductCategory[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [retreats, setRetreats] = useState<Retreat[]>([]);
   const [retreatApplications, setRetreatApplications] = useState<RetreatApplication[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const [athleteApplications, setAthleteApplications] = useState<AthleteApplication[]>([]);
+  const [programTemplates, setProgramTemplates] = useState<ProgramTemplate[]>([]);
+  const [userProgramAssignments, setUserProgramAssignments] = useState<UserProgramAssignment[]>([]);
+  
+  // Calendar System
+  const [calendarSessions, setCalendarSessions] = useState<CalendarSession[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
+  const [serviceAvailability, setServiceAvailability] = useState<ServiceAvailability[]>([]);
+
   const [communities, setCommunities] = useState<Community[]>([]);
   const [communityCategories, setCommunityCategories] = useState<any[]>([]);
   const [communityJoiningRequests, setCommunityJoiningRequests] = useState<any[]>([]);
@@ -70,6 +81,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [orders, setOrders] = useState<Order[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [bookingRequests, setBookingRequests] = useState<any[]>([]);
+  const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
   const { logActivity } = useAuth();
   
   const [stats, setStats] = useState<any>({});
@@ -85,21 +97,21 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       try {
         const [
           usersRes, videosRes, videoCatsRes, productsRes, 
-          prodCatsRes, brandsRes, retreatsRes, packagesRes, 
+          brandsRes, retreatsRes, packagesRes, 
           athletesRes, programsRes, communitiesRes, ordersRes, 
           retreatAppsRes, postsRes, logsRes, commCatsRes, commReqsRes, commMembersRes,
-          bookingsRes
+          bookingsRes, siteContentRes, athleteAppsRes, assignmentsRes,
+          calSessionsRes, servReqsRes, servAvailRes
         ] = await Promise.all([
           supabase.from('profiles').select('*'),
           supabase.from('videos').select('*'),
           supabase.from('video_categories').select('*'),
           supabase.from('products').select('*'),
-          supabase.from('product_categories').select('*'),
           supabase.from('brands').select('*'),
           supabase.from('retreats').select('*'),
           supabase.from('packages').select('*'),
           supabase.from('athletes').select('*'),
-          supabase.from('programs').select('*'),
+          supabase.from('program_templates').select('*'),
           supabase.from('communities').select('*'),
           supabase.from('orders').select('*'),
           supabase.from('retreat_applications').select('*'),
@@ -108,25 +120,36 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           supabase.from('community_categories').select('*'),
           supabase.from('community_requests').select('*'),
           supabase.from('community_members').select('*'),
-          supabase.from('bookings').select('*').eq('status', 'pending')
+          supabase.from('bookings').select('*').eq('status', 'pending'),
+          supabase.from('site_content').select('*'),
+          supabase.from('athlete_applications').select('*'),
+          supabase.from('user_program_assignments').select('*'),
+          supabase.from('calendar_sessions').select('*'),
+          supabase.from('service_requests').select('*'),
+          supabase.from('service_availability').select('*')
         ]);
 
         if (usersRes.data) setUsers(usersRes.data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
         if (videosRes.data) setVideos(videosRes.data);
         if (videoCatsRes.data) setVideoCategories(videoCatsRes.data);
         if (productsRes.data) setProducts(productsRes.data);
-        if (prodCatsRes.data) setProductCategories(prodCatsRes.data);
         if (brandsRes.data) setBrands(brandsRes.data);
         if (retreatsRes.data) setRetreats(retreatsRes.data);
         if (packagesRes.data) setPackages(packagesRes.data);
         if (athletesRes.data) setAthletes(athletesRes.data);
-        if (programsRes.data) setPrograms(programsRes.data);
+        if (programsRes.data) setProgramTemplates(programsRes.data);
+        if (assignmentsRes?.data) setUserProgramAssignments(assignmentsRes.data);
         if (communitiesRes.data) setCommunities(communitiesRes.data);
         if (ordersRes.data) setOrders(ordersRes.data);
         if (commCatsRes.data) setCommunityCategories(commCatsRes.data);
         if (commReqsRes.data) setCommunityJoiningRequests(commReqsRes.data);
         if (commMembersRes.data) setCommunityMembers(commMembersRes.data);
         if (bookingsRes.data) setBookingRequests(bookingsRes.data);
+        if (siteContentRes.data) setSiteContent(siteContentRes.data);
+        if (athleteAppsRes.data) setAthleteApplications(athleteAppsRes.data);
+        if (calSessionsRes?.data) setCalendarSessions(calSessionsRes.data);
+        if (servReqsRes?.data) setServiceRequests(servReqsRes.data);
+        if (servAvailRes?.data) setServiceAvailability(servAvailRes.data);
         
         if (communitiesRes.data && commMembersRes.data) {
           setCommunities(communitiesRes.data.map(c => ({
@@ -200,6 +223,31 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       showToast('Nexus configuration failed', 'error');
     }
   };
+
+  const handleSaveSiteContent = async (data: Partial<SiteContent>) => {
+    try {
+      if (data.id) {
+        const { error } = await supabase.from('site_content').update({ ...data, last_updated_by: user.id, updated_at: new Date().toISOString() }).eq('id', data.id);
+        if (error) throw error;
+        setSiteContent(prev => prev.map(c => c.id === data.id ? { ...c, ...data } as SiteContent : c));
+        showToast('Content configured', 'success');
+      } else {
+        const { data: newC, error } = await supabase.from('site_content').insert({ ...data, last_updated_by: user.id }).select().single();
+        if (error) throw error;
+        if (newC) setSiteContent(prev => [newC, ...prev]);
+        showToast('New content block created', 'success');
+      }
+    } catch (err) { showToast('Content update failed', 'error'); }
+  };
+
+  const handleDeleteSiteContent = async (id: string) => {
+    try {
+      await supabase.from('site_content').delete().eq('id', id);
+      setSiteContent(prev => prev.filter(c => c.id !== id));
+      showToast('Content node purged', 'success');
+    } catch (err) { showToast('Purge failed', 'error'); }
+  };
+
   const handleDeleteCommunity = async (id: string) => {
     try {
       await supabase.from('communities').delete().eq('id', id);
@@ -293,24 +341,100 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     } catch (err) { showToast('Athlete sync failed', 'error'); }
   };
 
-  const handleSaveProgram = async (data: Partial<Program>) => {
+  const handleSaveProgramTemplate = async (data: Partial<ProgramTemplate>) => {
     try {
       if (data.id) {
-        const { error } = await supabase.from('programs').update(data).eq('id', data.id);
+        const { error } = await supabase.from('program_templates').update(data).eq('id', data.id);
         if (error) throw error;
-        setPrograms(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Program : p));
-        logActivity('UPDATE_PROGRAM', 'program', data.id, data);
+        setProgramTemplates(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as ProgramTemplate : p));
+        logActivity('UPDATE_PROGRAM', 'program_template', data.id, data);
         showToast('System protocol updated', 'success');
       } else {
-        const { data: newP, error } = await supabase.from('programs').insert({ ...data, created_by: user.id }).select().single();
+        const { data: newP, error } = await supabase.from('program_templates').insert({ ...data, created_by_user_id: user.id }).select().single();
         if (error) throw error;
         if (newP) {
-          setPrograms(prev => [newP, ...prev]);
-          logActivity('CREATE_PROGRAM', 'program', newP.id, newP);
+          setProgramTemplates(prev => [newP, ...prev]);
+          logActivity('CREATE_PROGRAM', 'program_template', newP.id, newP);
         }
-        showToast('New system protocol initialized', 'success');
+        showToast('New system template initialized', 'success');
       }
     } catch (err) { showToast('Protocol sync failed', 'error'); }
+  };
+
+  const handleAssignProgram = async (userId: string, templateId: string, notes: string) => {
+    try {
+      const { data: assignment, error } = await supabase.from('user_program_assignments').insert({
+        user_id: userId,
+        program_template_id: templateId,
+        assigned_by_user_id: user.id,
+        assigned_by_role: user.role,
+        start_date: new Date().toISOString().split('T')[0],
+        custom_notes: notes,
+        status: 'active'
+      }).select().single();
+      
+      if (error) throw error;
+      if (assignment) {
+        setUserProgramAssignments(prev => [assignment, ...prev]);
+      }
+      showToast('Program assigned successfully', 'success');
+    } catch (err) {
+      showToast('Assignment deployment failed', 'error');
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      await supabase.from('program_templates').delete().eq('id', id);
+      setProgramTemplates(prev => prev.filter(p => p.id !== id));
+      showToast('Template purged', 'success');
+    } catch (error) {
+      showToast('Template purge failed', 'error');
+    }
+  };
+
+  const handleReviewAthleteApp = async (app: AthleteApplication, status: 'approved' | 'rejected') => {
+    try {
+      await supabase.from('athlete_applications').update({ status }).eq('id', app.id);
+      if (status === 'approved') {
+        const { error } = await supabase.from('profiles').update({ role: 'athlete' }).eq('id', app.user_id);
+        if (error) throw error;
+        
+        await supabase.from('athletes').insert({
+          user_id: app.user_id,
+          name: app.name,
+          category: app.category,
+          bio: app.bio,
+          images: app.images,
+          videos: app.videos,
+          social_links: app.social_links,
+          status: 'active'
+        });
+        showToast(`${app.name} elevated to Athlete status`, 'success');
+      } else {
+        showToast(`Application from ${app.name} rejected`, 'info');
+      }
+      setAthleteApplications(prev => prev.map(a => a.id === app.id ? { ...a, status } : a));
+    } catch (err) { showToast('Execution failed', 'error'); }
+  };
+
+  const handleRemoveAthleteRole = async (userId: string) => {
+    try {
+      await supabase.from('profiles').update({ role: 'user' }).eq('id', userId);
+      await supabase.from('athletes').update({ status: 'inactive' }).eq('user_id', userId);
+      setAthletes(prev => prev.filter(a => a.user_id !== userId));
+      showToast('Athlete role revoked', 'success');
+    } catch (err) { showToast('Revocation failed', 'error'); }
+  };
+
+  const handleDeactivateAthlete = async (id: string) => {
+    try {
+      const athlete = athletes.find(a => a.id === id);
+      const newStatus = athlete?.status === 'active' ? 'inactive' : 'active';
+      await supabase.from('athletes').update({ status: newStatus }).eq('id', id);
+      setAthletes(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
+      showToast('Athlete status toggled', 'success');
+    } catch (err) { showToast('Status update failed', 'error'); }
   };
 
   const handleSavePackage = async (data: Partial<Package>) => {
@@ -399,6 +523,8 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'users', label: 'Member Directory', icon: Users },
     { id: 'athletes', label: 'Athlete Roster', icon: Trophy },
     { id: 'programs', label: 'System Protocols', icon: ListChecks },
+    { id: 'calendar', label: 'Ops Calendar', icon: Calendar },
+    { id: 'cms', label: 'CMS Engine', icon: Edit2, adminOnly: true },
     { id: 'content', label: 'Media Vault', icon: PlayCircle },
     { id: 'shop', label: 'Global Store', icon: ShoppingBag },
     { id: 'orders', label: 'Fulfillment Logic', icon: ClipboardList },
@@ -444,11 +570,22 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       case 'athletes': return (
         <AthleteManager 
           athletes={athletes} 
-          programs={programs} 
+          applications={athleteApplications}
+          programs={programTemplates} 
           videos={videos} 
-          onAdd={() => {}} 
-          onEdit={() => {}} 
-          onDelete={() => {}} 
+          onReviewApplication={handleReviewAthleteApp}
+          onEditAthlete={(athlete) => { /* To be implemented */ }}
+          onRemoveRole={handleRemoveAthleteRole}
+          onDeactivate={handleDeactivateAthlete}
+        />
+      );
+      case 'cms': return (
+        <CMSManager 
+          contentKeys={siteContent}
+          onAdd={() => {}}
+          onEdit={handleSaveSiteContent}
+          onDelete={handleDeleteSiteContent}
+          showToast={showToast}
         />
       );
       case 'content': return (
@@ -463,11 +600,56 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       );
       case 'programs': return (
         <ProgramManager 
-          programs={programs} 
-          athletes={athletes} 
-          onAdd={() => handleSaveProgram({ title: 'New Protocol', status: 'draft' })} 
-          onEdit={handleSaveProgram} 
-          onDelete={() => {}} 
+          templates={programTemplates} 
+          assignments={userProgramAssignments}
+          users={users} 
+          videos={videos} 
+          onAddTemplate={() => handleSaveProgramTemplate({ title: 'New Protocol', status: 'draft' })} 
+          onEditTemplate={handleSaveProgramTemplate} 
+          onAssignProgram={handleAssignProgram}
+          onDeleteTemplate={handleDeleteTemplate} 
+        />
+      );
+      case 'calendar': return (
+        <AdminCalendarControl 
+          sessions={calendarSessions} 
+          requests={serviceRequests} 
+          availability={serviceAvailability} 
+          users={users} 
+          onApproveRequest={async (id) => {
+             await supabase.from('service_requests').update({ status: 'approved' }).eq('id', id);
+             setServiceRequests(p => p.map(r => r.id === id ? { ...r, status: 'approved' } : r));
+             
+             // Also insert generic calendar session for visibility
+             const req = serviceRequests.find(r => r.id === id);
+             if (req) {
+                 const { data } = await supabase.from('calendar_sessions').insert({
+                     user_id: req.user_id,
+                     source_type: 'service',
+                     title: req.service_subtype.replace('_', ' '),
+                     session_date: req.requested_date,
+                     session_time: req.requested_time,
+                     status: 'approved'
+                 }).select().single();
+                 if (data) setCalendarSessions(p => [...p, data]);
+             }
+             showToast('Service request authorized', 'success');
+          }} 
+          onRejectRequest={async (id) => {
+             await supabase.from('service_requests').update({ status: 'rejected' }).eq('id', id);
+             setServiceRequests(p => p.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
+             showToast('Request isolated/rejected', 'success');
+          }} 
+          onAddAvailability={async (data) => {
+             const { data: nAvail } = await supabase.from('service_availability').insert(data).select().single();
+             if (nAvail) setServiceAvailability(p => [...p, nAvail]);
+             showToast('Operational window defined', 'success');
+          }} 
+          onUpdateSessionStatus={async (id, status) => {
+             await supabase.from('calendar_sessions').update({ status }).eq('id', id);
+             setCalendarSessions(p => p.map(s => s.id === id ? { ...s, status } : s));
+             showToast('Session status overridden', 'success');
+          }} 
         />
       );
       case 'retreats': return (
@@ -493,11 +675,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       case 'shop': return (
         <ShopManager 
           products={products} 
-          brands={brands} 
-          categories={productCategories} 
           searchQuery={searchQuery} 
           setSearchQuery={setSearchQuery} 
-          onAdd={() => handleSaveProduct({ name: 'New Product', status: 'inactive', price: 0, inventory_count: 0 })} 
+          onAdd={() => handleSaveProduct({ name: 'Commercial Node Element', is_active: false, price: 0 })} 
           onEdit={handleSaveProduct} 
           onDelete={handleDeleteProduct} 
         />
@@ -505,7 +685,12 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       case 'orders': return (
         <OrderManager 
           orders={orders} 
-          onUpdateStatus={() => {}} 
+          users={users}
+          onUpdateStatus={async (id, status) => {
+             await supabase.from('orders').update({ status }).eq('id', id);
+             setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as any } : o));
+             showToast('Transaction logic updated', 'success');
+          }} 
           onViewDetails={() => {}} 
         />
       );

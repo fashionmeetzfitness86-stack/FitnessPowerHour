@@ -1,4 +1,10 @@
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL || 'https://ujfpepmszqrptmcauqaa.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
+);
 
 const stripe = new Stripe(process.env.STRIPE_API_KEY!, { apiVersion: '2026-02-25.clover' });
 
@@ -64,22 +70,55 @@ export default async (req: Request) => {
       });
 
     } else if (type === 'shop') {
-      // Shop one-time purchase checkout
+      // Secure Shop checkout
       if (!items || !items.length) {
         return new Response(JSON.stringify({ error: 'No items provided' }), { status: 400 });
       }
 
-      const lineItems = items.map((item: any) => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: item.name,
-            description: item.description || undefined
+      // Fetch user to verify membership discounting natively
+      let isMember = false;
+      if (userId) {
+        const { data: userProfile } = await supabase.from('profiles').select('tier, role').eq('id', userId).single();
+        if (userProfile) {
+           isMember = userProfile.tier === 'Member' || userProfile.role === 'admin' || userProfile.role === 'super_admin';
+        }
+      }
+
+      // Pull product IDs to get real pricing securely from the DB
+      const itemIds = items.map((i: any) => i.id);
+      const { data: dbProducts } = await supabase.from('products').select('*').in('id', itemIds).eq('is_active', true);
+      
+      if (!dbProducts || dbProducts.length === 0) {
+        return new Response(JSON.stringify({ error: 'Products are unavailable or do not exist in the database.' }), { status: 400 });
+      }
+
+      // Construct verified line items tracking correct member discounts
+      const lineItems = items.map((clientItem: any) => {
+        const dbProduct = dbProducts.find(p => p.id === clientItem.id);
+        if (!dbProduct) return null;
+
+        const basePrice = Number(dbProduct.price);
+        const finalPrice = isMember ? basePrice * 0.8 : basePrice;
+
+        return {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: dbProduct.name,
+              description: dbProduct.category || undefined
+            },
+            unit_amount: Math.round(finalPrice * 100)
           },
-          unit_amount: Math.round(item.price * 100) // Convert dollars to cents
-        },
-        quantity: item.quantity || 1
-      }));
+          quantity: clientItem.quantity || 1
+        };
+      }).filter(Boolean); // Clear any null lines
+
+      if (lineItems.length === 0) {
+        return new Response(JSON.stringify({ error: 'Failed to construct checkout payload due to mismatched products.' }), { status: 400 });
+      }
+
+      // Pass precise item quantities securely
+      const cartContextStr = JSON.stringify(items.map((i: any) => ({ id: i.id, q: i.quantity || 1 })));
 
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
@@ -91,7 +130,7 @@ export default async (req: Request) => {
         metadata: {
           type: 'shop',
           userId: userId || '',
-          itemIds: items.map((i: any) => i.id).join(',')
+          cart_context: cartContextStr // Embedded precisely for the webhook to execute fulfillment
         },
         line_items: lineItems,
         success_url: successUrl || `${new URL(req.url).origin}/#/profile?payment=success&type=shop`,
