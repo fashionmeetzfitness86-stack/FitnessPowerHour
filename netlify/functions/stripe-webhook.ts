@@ -164,61 +164,7 @@ export default async (req: Request) => {
           }
         }
 
-        if (metadata.type === 'local_pass') {
-          const passType = metadata.passName || 'Local Pass';
-          const passName = `${metadata.firstName || 'Guest'} ${metadata.lastName || ''}`;
-          console.log(`[stripe-webhook] Local Pass purchase: ${passType} for ${passName}`);
-          
-          let userId = metadata.userId;
 
-          // Note: userId might not be present if it's a guest purchase. Use a placeholder or matching logic
-          // Determine expiration based on passType
-          let expiresAt: Date | undefined;
-          if (passType.includes('3-Day')) expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-          else if (passType.includes('7-Day')) expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-          else expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // generic 30 days
-
-          // Generate Token
-          const token = `PASS-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-
-          // If session id exists, try to extract passId if we embedded it, but we didn't, so use session id
-          const sessionId = session.id;
-
-          await supabase.from('passes').insert({
-            user_id: userId || null,
-            pass_type: passType,
-            token: sessionId, // we can use Stripe sessionId to match against the success redirect passId!!
-            status: 'valid',
-            expires_at: expiresAt.toISOString()
-          });
-
-          // Notificaton for User
-          if (userId) {
-             await supabase.from('notifications').insert({
-                 user_id: userId,
-                 type: 'purchase',
-                 title: 'Pass Activated',
-                 message: `Your ${passType} is now active. Token: ${token}`,
-                 status: 'sent',
-                 send_at: new Date().toISOString()
-             });
-          }
-
-          // Notificaton for Admins
-          const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
-          if (superAdmins) {
-             const notifications = superAdmins.map(admin => ({
-               user_id: admin.id,
-               type: 'purchase',
-               title: 'New Pass Purchased',
-               message: `New ${passType} purchased by ${passName}.`,
-               status: 'sent',
-               send_at: new Date().toISOString(),
-               created_at: new Date().toISOString()
-             }));
-             await supabase.from('notifications').insert(notifications);
-          }
-        }
 
         if (metadata.type === 'retreat_deposit') {
           const requestId = metadata.requestId;
