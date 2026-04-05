@@ -2180,7 +2180,7 @@ const VideoLibrary = () => {
                   <div className="pt-4 border-t border-white/5">
                     <h4 className="text-[10px] uppercase tracking-widest text-white/20 mb-2">Benefits</h4>
                     <div className="flex flex-wrap gap-2">
-                      {video.benefits.map((b, i) => (
+                      {(video.benefits || []).map((b, i) => (
                         <span key={i} className="text-[9px] text-brand-teal uppercase tracking-widest bg-brand-teal/10 px-2 py-1 rounded-full">{b}</span>
                       ))}
                     </div>
@@ -4621,51 +4621,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           ))}
         </div>
 
-        {/* Tier Comparison Table */}
-        <section className="mt-40 py-24 border-t border-white/5">
-          <div className="text-center mb-16 space-y-4">
-            <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">The Breakdown</span>
-            <h2 className="text-4xl font-bold uppercase tracking-tighter">Tier <span className="text-brand-coral">Comparison</span></h2>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="py-6 text-[10px] uppercase tracking-widest text-white/40 font-medium">Feature</th>
-                  <th className="py-6 text-[10px] uppercase tracking-widest text-white font-bold text-center">Basic</th>
-                  <th className="py-6 text-[10px] uppercase tracking-widest text-brand-coral font-bold text-center">Elite</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {[
-                  { name: 'Basic Workouts', basic: true, elite: true },
-                  { name: 'Full Video Library', basic: false, elite: true },
-                  { name: 'Structured Programs', basic: false, elite: true },
-                  { name: 'Training Calendar', basic: false, elite: true },
-                  { name: '30% Store Discount', basic: false, elite: true },
-                  { name: 'Community Forum', basic: true, elite: true },
-                  { name: 'Exclusive Mobility Flows', basic: false, elite: true },
-                  { name: 'Monthly Live Q&A', basic: false, elite: true },
-                  { name: 'Retreat Priority Access', basic: false, elite: true },
-                  { name: '1-on-1 Mindset Coaching', basic: false, elite: true },
-                  { name: 'Personalized Nutrition', basic: false, elite: true },
-                  { name: 'Direct Trainer Messaging', basic: false, elite: true },
-                ].map((row, idx) => (
-                  <tr key={idx} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                    <td className="py-6 text-white/60 font-light">{row.name}</td>
-                    <td className="py-6 text-center">
-                      {row.basic ? <Check size={18} className="mx-auto text-white/40" /> : <X size={18} className="mx-auto text-white/10" />}
-                    </td>
-                    <td className="py-6 text-center">
-                      {row.elite ? <Check size={18} className="mx-auto text-brand-coral" /> : <X size={18} className="mx-auto text-white/10" />}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+
 
         {/* Member Privileges Section */}
         <section className="mt-40 py-24 border-t border-white/5">
@@ -4823,7 +4779,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                       {isConfirmed ? 'Log In Now' : isLogin ? 'Welcome Back' : 'Join the Collective'}
                     </h3>
                     <p className="text-white/40 text-[10px] uppercase tracking-widest">
-                      {isLogin ? 'Enter your credentials to continue' : `Signing up for ${selectedTier?.name}`}
+                      {isLogin ? 'Enter your credentials to continue' : 'Creating your FMF account'}
                     </p>
                   </div>
 
