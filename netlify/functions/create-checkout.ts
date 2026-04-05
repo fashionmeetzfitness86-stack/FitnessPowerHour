@@ -10,8 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_API_KEY!, { apiVersion: '2026-02-25
 
 const MEMBERSHIP_PRICES: Record<string, { amount: number; name: string }> = {
   Basic: { amount: 1999, name: 'Basic Membership' },
-  Elite: { amount: 5900, name: 'Elite Membership' },
-  'Local Collective': { amount: 29900, name: 'Local Collective Membership' }
+
 };
 
 export default async (req: Request) => {
@@ -141,36 +140,7 @@ export default async (req: Request) => {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
 
-    } else if (type === 'local_pass') {
-      const { passName, priceAmount, firstName, lastName } = body;
-      const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        payment_method_types: ['card'],
-        customer_email: userEmail || undefined,
-        metadata: {
-          type: 'local_pass',
-          passName: passName,
-          firstName: firstName,
-          lastName: lastName
-        },
-        line_items: [{
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Local Pass: ${passName}`,
-              description: 'Single access pass to the facility'
-            },
-            unit_amount: Math.round(parseFloat(priceAmount || 0) * 100)
-          },
-          quantity: 1
-        }],
-        success_url: successUrl || `${new URL(req.url).origin}/#/pass-success?passId={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancelUrl || `${new URL(req.url).origin}/`
-      });
 
-      return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
     } else if (type === 'retreat_deposit') {
       const { retreatName, depositAmount, requestId, retreatId } = body;
       const session = await stripe.checkout.sessions.create({
