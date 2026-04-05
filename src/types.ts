@@ -55,52 +55,94 @@ export interface Package {
   updated_at: string;
 }
 
+export interface AthleteApplication {
+  id: string;
+  user_id: string;
+  name: string;
+  email: string;
+  category: string;
+  bio: string;
+  experience: string;
+  social_links: {
+    instagram?: string;
+    tiktok?: string;
+  };
+  images: string[];
+  videos: string[];
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+}
+
 export interface Athlete {
   id: string;
-  profile_id: string;
+  user_id: string;
   name: string;
-  age: number;
-  city: string;
-  specialties: string[];
-  responsibilities: string;
-  training_focus: string;
+  category: string;
   bio: string;
-  image_url: string;
+  images: string[];
+  videos: string[];
   social_links?: {
     instagram?: string;
     tiktok?: string;
     twitter?: string;
     facebook?: string;
   };
-  is_active: boolean;
-  is_banned: boolean;
+  training_style?: string;
+  status: 'active' | 'inactive';
   created_at: string;
-  updated_at: string;
 }
 
-export interface Program {
+
+export interface ProgramTemplate {
   id: string;
-  athlete_id?: string;
+  created_by_user_id: string;
   title: string;
   description: string;
-  type?: string;
-  duration_weeks?: number;
-  difficulty?: 'Beginner' | 'Intermediate' | 'Advanced';
-  video_ids: string[];
-  sessions?: any[];
-  created_by: string;
-  status: 'draft' | 'published' | 'archived';
+  phase: string;
+  difficulty: string;
+  category: string;
+  duration_days: number;
+  sessions_per_week: number;
+  training_focus: string;
+  status: 'draft' | 'active' | 'archived';
   created_at: string;
   updated_at: string;
 }
 
-export interface ProgramAssignment {
+export interface ProgramTemplateVideo {
+  id: string;
+  program_template_id: string;
+  video_id: string;
+  sort_order: number;
+  day_number?: number;
+  week_number?: number;
+  instruction_text?: string;
+  created_at: string;
+}
+
+export interface UserProgramAssignment {
   id: string;
   user_id: string;
-  program_id: string;
-  assigned_by: string;
-  assigned_at: string;
-  status: 'active' | 'completed' | 'dropped';
+  program_template_id: string;
+  assigned_by_user_id: string;
+  assigned_by_role: string;
+  start_date: string;
+  end_date?: string;
+  custom_notes?: string;
+  completion_percent: number;
+  status: 'assigned' | 'active' | 'completed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  program_template?: ProgramTemplate; // Embedded for frontend ease
+}
+
+export interface ProgramAssignmentNote {
+  id: string;
+  user_program_assignment_id: string;
+  author_user_id: string;
+  author_role: string;
+  note_text: string;
+  created_at: string;
 }
 
 export interface Retreat {
@@ -141,6 +183,16 @@ export interface CommunityCategory {
   id: string;
   name: string;
   description: string;
+}
+
+export interface SiteContent {
+  id: string;
+  key: string;
+  value: string;
+  type: 'text' | 'image_url' | 'link';
+  description?: string;
+  last_updated_by?: string;
+  updated_at: string;
 }
 
 export interface CommunityRequest {
@@ -184,32 +236,27 @@ export interface Brand {
 
 export interface Product {
   id: string;
-  brand_id: string;
-  category_id: string;
   name: string;
-  slug: string;
   description: string;
   price: number;
-  compare_at_price: number;
-  sku: string;
-  inventory_count: number;
-  status: 'active' | 'inactive' | 'archived';
-  featured_image: string;
+  category: string;
   images: string[];
-  gallery?: string[];
-  sizes?: string[];
-  ingredients?: string[];
-  benefits?: string[];
+  video_url?: string;
+  external_link?: string;
+  is_recommended: boolean;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
+  brand_id?: string;
+  category_id?: string;
+  featured_image?: string;
+  gallery?: string[];
+  sizes?: string[];
 }
 
-export interface ProductCategory {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-}
+export type Program = ProgramTemplate;
+export type ProductCategory = { id: string; name: string };
+export type ProgramAssignment = UserProgramAssignment;
 
 export interface CartItem {
   product_id: string;
@@ -226,29 +273,24 @@ export interface Cart {
 }
 
 export interface OrderItem {
+  id: string;
+  order_id: string;
   product_id: string;
-  product_name_snapshot: string;
-  price_snapshot: number;
   quantity: number;
-  line_total: number;
+  price: number;
+  created_at?: string;
+  product?: Product;
 }
 
 export interface Order {
   id: string;
   user_id: string;
-  customer_name_snapshot: string;
-  order_number: string;
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
-  fulfillment_status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  subtotal: number;
-  shipping_amount: number;
   total_amount: number;
-  shipping_address: any;
-  billing_address: any;
-  items: OrderItem[];
-  placed_at: string;
+  status: 'pending' | 'paid' | 'shipped' | 'cancelled';
+  shipping_address?: any;
   created_at: string;
-  updated_at: string;
+  items?: OrderItem[];
+  customer_name_snapshot?: string;
 }
 
 export interface NotificationPreference {
@@ -306,13 +348,16 @@ export interface UserProfile {
   };
   created_at: string;
   updated_at: string;
+  onboarding_completed?: boolean;
   profile_images?: string[]; // Up to 10 images
   is_auto_pay?: boolean;
   payment_method_id?: string;
   last_billing_update?: string;
 
   favorites?: string[];
-  streak?: number;
+  streak_count?: number;
+  last_checkin?: string;
+  referral_code?: string;
   workoutLogs?: WorkoutLog[];
   personalBests?: PersonalBest[];
   orderHistory?: Order[];
@@ -331,6 +376,7 @@ export interface UserProfile {
   motivation?: string;
   experience_level?: string;
   notification_preferences?: NotificationPreference;
+  streak?: number;
 }
 
 export interface Booking {
@@ -424,21 +470,50 @@ export interface PersonalBest {
 }
 
 export type Post = CommunityPost;
-export type ProgramType = Program;
+export type ProgramType = ProgramTemplate;
 export type CommunityType = Community;
 
 export interface CalendarSession {
   id: string;
   user_id: string;
+  source_type: 'workout' | 'service' | 'training' | 'manual';
+  related_service_request_id?: string;
+  related_program_assignment_id?: string;
   title: string;
-  date: string;
-  duration: number;
-  type: string;
-  status: 'scheduled' | 'completed' | 'missed';
-  program_id?: string;
-  video_ids?: string[];
-  time?: string;
+  session_date: string;
+  session_time?: string;
+  duration_minutes: number;
+  status: 'pending' | 'approved' | 'completed' | 'missed' | 'cancelled';
+  assigned_provider_user_id?: string;
+  created_by_user_id?: string;
   created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceRequest {
+  id: string;
+  user_id: string;
+  service_type: 'flex_mob' | 'personal_training';
+  service_subtype: 'massage' | 'stretching' | 'recovery' | 'training_session' | 'training_monthly';
+  requested_date: string;
+  requested_time: string;
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed';
+  assigned_provider_user_id?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServiceAvailability {
+  id: string;
+  service_type: 'global' | 'flex_mob' | 'personal_training';
+  provider_user_id?: string;
+  available_date: string;
+  start_time: string;
+  end_time: string;
+  status: 'available' | 'blocked' | 'full';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface BillingHistory {

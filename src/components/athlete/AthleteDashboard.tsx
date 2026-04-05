@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Users, PlayCircle, ClipboardList, TrendingUp, 
-  MessageSquare, Plus, Search, Calendar,
-  ArrowRight, MoreVertical, CheckCircle, Clock,
-  ChevronRight, Star, Activity, User
+  Users, PlayCircle, Activity, Star, User
 } from 'lucide-react';
 import { supabase } from '../../supabase';
-import { Program, UserProfile, Video } from '../../types';
+import { UserProfile, Video, ProgramTemplate, UserProgramAssignment } from '../../types';
+import { ProgramManager } from '../admin/ProgramManager';
 
 interface AthleteDashboardProps {
   athleteUser: UserProfile;
@@ -15,12 +13,13 @@ interface AthleteDashboardProps {
 }
 
 export const AthleteDashboard = ({ athleteUser, showToast }: AthleteDashboardProps) => {
-  const [activeTab, setActiveTab] = useState('users');
-  const [assignedUsers, setAssignedUsers] = useState<UserProfile[]>([]);
-  const [programs, setPrograms] = useState<Program[]>([]);
+  const [activeTab, setActiveTab] = useState('programs');
+  
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [templates, setTemplates] = useState<ProgramTemplate[]>([]);
+  const [assignments, setAssignments] = useState<UserProgramAssignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchAthleteData();
@@ -29,22 +28,20 @@ export const AthleteDashboard = ({ athleteUser, showToast }: AthleteDashboardPro
   const fetchAthleteData = async () => {
     setLoading(true);
     try {
-      // 1. Get programs where I am the author
-      const { data: progData } = await supabase.from('programs').select('*').eq('created_by', athleteUser.id);
-      setPrograms(progData || []);
+      const [
+        usersRes, vDataRes, templatesRes, assignmentsRes
+      ] = await Promise.all([
+        supabase.from('profiles').select('*'),
+        supabase.from('videos').select('*'),
+        supabase.from('program_templates').select('*'),
+        supabase.from('user_program_assignments').select('*').or(`assigned_by_user_id.eq.${athleteUser.id}`)
+      ]);
 
-      // 2. Get users assigned to these programs
-      const { data: assignments } = await supabase.from('program_assignments').select('user_id');
-      const userIds = Array.from(new Set(assignments?.map(a => a.user_id) || []));
-      
-      if (userIds.length > 0) {
-        const { data: uData } = await supabase.from('profiles').select('*').in('id', userIds);
-        setAssignedUsers(uData || []);
-      }
-
-      // 3. Get my videos
-      const { data: vData } = await supabase.from('videos').select('*').eq('created_by', athleteUser.id);
-      setVideos(vData || []);
+      setUsers(usersRes.data || []);
+      setVideos(vDataRes.data || []);
+      // Athletes can only manage templates they created OR we can let them see all, but let's filter to their own
+      setTemplates((templatesRes.data || []).filter((t: any) => t.created_by_user_id === athleteUser.id));
+      setAssignments(assignmentsRes.data || []);
 
     } catch (err) {
       showToast('Synchronization Failed', 'error');
@@ -53,14 +50,55 @@ export const AthleteDashboard = ({ athleteUser, showToast }: AthleteDashboardPro
     }
   };
 
-  const filteredUsers = assignedUsers.filter(u => 
-    u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
-    u.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleSaveProgramTemplate = async (data: Partial<ProgramTemplate>) => {
+    try {
+      if (data.id) {
+        const { error } = await supabase.from('program_templates').update(data).eq('id', data.id);
+        if (error) throw error;
+        setTemplates(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as ProgramTemplate : p));
+        showToast('System protocol updated', 'success');
+      } else {
+        const { data: newP, error } = await supabase.from('program_templates').insert({ ...data, created_by_user_id: athleteUser.id }).select().single();
+        if (error) throw error;
+        if (newP) setTemplates(prev => [newP, ...prev]);
+        showToast('New system template initialized', 'success');
+      }
+    } catch (err) { showToast('Protocol sync failed', 'error'); }
+  };
+
+  const handleAssignProgram = async (userId: string, templateId: string, notes: string) => {
+    try {
+      const { data: assignment, error } = await supabase.from('user_program_assignments').insert({
+        user_id: userId,
+        program_template_id: templateId,
+        assigned_by_user_id: athleteUser.id,
+        assigned_by_role: athleteUser.role,
+        start_date: new Date().toISOString().split('T')[0],
+        custom_notes: notes,
+        status: 'active'
+      }).select().single();
+      
+      if (error) throw error;
+      if (assignment) setAssignments(prev => [assignment, ...prev]);
+      showToast('Program assigned successfully', 'success');
+    } catch (err) {
+      showToast('Assignment deployment failed', 'error');
+    }
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      await supabase.from('program_templates').delete().eq('id', id);
+      setTemplates(prev => prev.filter(p => p.id !== id));
+      showToast('Template purged', 'success');
+    } catch (error) {
+      showToast('Template purge failed', 'error');
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-brand-black text-white p-6 lg:p-12 space-y-12">
-      {/* 1. HEADER SECTION */}
+    <div className="min-h-screen bg-brand-black text-white p-6 lg:p-12 space-y-12 fade-in">
+      {/* HEADER SECTION */}
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
         <div className="space-y-3">
           <div className="flex items-center gap-4">
@@ -69,15 +107,14 @@ export const AthleteDashboard = ({ athleteUser, showToast }: AthleteDashboardPro
              </div>
              <div>
                 <h1 className="text-4xl font-black tracking-tighter uppercase leading-none">Athlete Command</h1>
-                <p className="text-[10px] uppercase tracking-[0.5em] text-white/20 mt-2 font-black">Authorized: Anderson Djeemo</p>
+                <p className="text-[10px] uppercase tracking-[0.5em] text-white/20 mt-2 font-black">Authorized: {athleteUser.full_name || athleteUser.email}</p>
              </div>
           </div>
         </div>
 
         <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 w-fit">
           {[
-            { id: 'users', label: 'Assigned Nodes', icon: Users },
-            { id: 'programs', label: 'Protocols', icon: PlayCircle },
+            { id: 'programs', label: 'Program Control', icon: PlayCircle },
             { id: 'metrics', label: 'Yield Analytics', icon: Activity },
           ].map(t => (
             <button
@@ -93,7 +130,7 @@ export const AthleteDashboard = ({ athleteUser, showToast }: AthleteDashboardPro
         </div>
       </header>
 
-      {/* 2. MAIN CONTENT AREA */}
+      {/* MAIN CONTENT AREA */}
       {loading ? (
         <div className="py-20 text-center animate-pulse">
            <div className="w-16 h-16 border-2 border-brand-coral border-t-transparent rounded-full animate-spin mx-auto mb-6 shadow-glow-coral" />
@@ -101,132 +138,19 @@ export const AthleteDashboard = ({ athleteUser, showToast }: AthleteDashboardPro
         </div>
       ) : (
         <AnimatePresence mode="wait">
-          {activeTab === 'users' ? (
-            <motion.div 
-              key="users" 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-8"
-            >
-               <div className="flex justify-between items-center bg-white/5 p-8 rounded-[2rem] border border-white/5">
-                 <div className="relative flex-grow max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={18} />
-                    <input 
-                      type="text" 
-                      placeholder="Search managed nodes..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 outline-none focus:border-brand-coral/50 transition-all text-xs font-black uppercase tracking-widest"
-                    />
-                 </div>
-                 <div className="flex gap-4">
-                    <div className="bg-brand-coral/10 px-6 py-4 rounded-2xl border border-brand-coral/20 text-center">
-                       <p className="text-2xl font-black tracking-tighter leading-none">{assignedUsers.length}</p>
-                       <p className="text-[7px] uppercase tracking-widest text-brand-coral font-black mt-1">Managed Assets</p>
-                    </div>
-                 </div>
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {filteredUsers.length > 0 ? filteredUsers.map((u, i) => (
-                   <div key={u.id} className="card-gradient p-8 border border-white/5 group hover:border-brand-coral/30 transition-all rounded-[2.5rem] relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-brand-coral/5 blur-3xl -mr-12 -mt-12 group-hover:bg-brand-coral/20 transition-all" />
-                      
-                      <div className="flex items-center gap-5 justify-between mb-8">
-                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/20 font-black text-lg overflow-hidden relative">
-                               {u.profile_image ? <img src={u.profile_image} className="w-full h-full object-cover" /> : <User size={24} />}
-                            </div>
-                            <div>
-                               <h3 className="text-lg font-black uppercase tracking-tighter leading-none">{u.full_name}</h3>
-                               <p className="text-[8px] uppercase tracking-widest text-white/20 font-bold mt-1.5">{u.tier || 'Free Access'}</p>
-                            </div>
-                         </div>
-                         <button className="p-3 bg-white/5 rounded-2xl hover:bg-brand-coral hover:text-black transition-all">
-                            <MoreVertical size={16} />
-                         </button>
-                      </div>
-
-                      <div className="space-y-5">
-                         <div className="p-4 bg-white/3 rounded-2xl border border-white/5 space-y-3">
-                            <div className="flex justify-between items-center text-[7px] uppercase tracking-widest font-black text-white/20">
-                               <span>Matrix Signal</span>
-                               <span className="text-brand-coral">84% Synced</span>
-                            </div>
-                            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-                               <div className="h-full bg-brand-coral w-[84%] shadow-glow-coral" />
-                            </div>
-                         </div>
-
-                         <div className="flex gap-2">
-                            <button className="flex-1 py-3 bg-brand-coral/10 text-brand-coral rounded-xl text-[8px] uppercase tracking-[0.2em] font-black border border-brand-coral/20 hover:bg-brand-coral hover:text-black transition-all">Training Log</button>
-                            <button className="flex-1 py-3 bg-white/5 text-white/40 rounded-xl text-[8px] uppercase tracking-[0.2em] font-black border border-white/10 hover:border-white/20 transition-all">Notes</button>
-                         </div>
-                      </div>
-                   </div>
-                 )) : (
-                   <div className="col-span-full py-20 text-center card-gradient border-dashed border border-white/5 rounded-[3rem]">
-                      <Users size={48} className="mx-auto text-white/5 mb-6 animate-pulse" />
-                      <p className="text-[10px] uppercase tracking-[0.5em] text-white/20 font-black">No managed nodes detected in your scope.</p>
-                   </div>
-                 )}
-               </div>
-            </motion.div>
-          ) : activeTab === 'programs' ? (
-            <motion.div 
-              key="programs" 
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="space-y-8"
-            >
-               <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-black uppercase tracking-tighter">Your Active Protocols</h2>
-                  <button className="flex items-center gap-3 px-8 py-4 bg-brand-coral text-black rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black shadow-glow-coral hover:scale-105 transition-all">
-                     <Plus size={18} /> Initialize New Protocol
-                  </button>
-               </div>
-
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 {programs.map((p, i) => (
-                   <div key={p.id} className="card-gradient p-10 border border-white/5 rounded-[3rem] hover:border-brand-coral/30 transition-all group cursor-pointer relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-2 h-full bg-brand-coral opacity-20 group-hover:opacity-100 transition-all" />
-                      
-                      <div className="flex justify-between items-start mb-10">
-                         <div className="space-y-2">
-                            <div className="flex items-center gap-3">
-                               <span className={`px-3 py-1 bg-white/5 rounded-lg text-[8px] font-black uppercase tracking-widest ${p.status === 'published' ? 'text-brand-coral border border-brand-coral/20' : 'text-white/20'}`}>
-                                  {p.status}
-                               </span>
-                               <span className="text-[8px] uppercase font-bold text-white/20 tracking-[0.3em]">{p.difficulty}</span>
-                            </div>
-                            <h3 className="text-3xl font-black uppercase tracking-tighter leading-none group-hover:text-brand-coral transition-colors">{p.title}</h3>
-                         </div>
-                         <div className="p-3 bg-white/5 rounded-2xl text-white/20 group-hover:text-brand-coral transition-colors">
-                            <PlayCircle size={24} />
-                         </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-8 mb-10 pt-8 border-t border-white/5">
-                         <div>
-                            <p className="text-[8px] uppercase tracking-widest text-white/20 font-black">Total Transmissions</p>
-                            <p className="text-xl font-black tracking-tighter mt-1">{p.video_ids?.length || 0} Modules</p>
-                         </div>
-                         <div>
-                            <p className="text-[8px] uppercase tracking-widest text-white/20 font-black">Temporal Length</p>
-                            <p className="text-xl font-black tracking-tighter mt-1">{p.duration_weeks || 4} Cycles</p>
-                         </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-brand-coral">
-                         <span className="text-[9px] font-black uppercase tracking-[0.3em] flex items-center gap-2">
-                            View Protocol Intel <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                         </span>
-                         <CheckCircle size={18} className="opacity-20 group-hover:animate-pulse group-hover:opacity-100 transition-all" />
-                      </div>
-                   </div>
-                 ))}
+          {activeTab === 'programs' ? (
+            <motion.div key="programs" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-8">
+               <div className="card-gradient p-8 rounded-3xl border border-white/5">
+                 <ProgramManager 
+                    templates={templates} 
+                    assignments={assignments}
+                    users={users} 
+                    videos={videos} 
+                    onAddTemplate={() => handleSaveProgramTemplate({ title: 'New Template Module', status: 'draft' })} 
+                    onEditTemplate={handleSaveProgramTemplate} 
+                    onAssignProgram={handleAssignProgram}
+                    onDeleteTemplate={handleDeleteTemplate} 
+                  />
                </div>
             </motion.div>
           ) : (
@@ -238,15 +162,14 @@ export const AthleteDashboard = ({ athleteUser, showToast }: AthleteDashboardPro
                className="flex flex-col items-center justify-center py-40 card-gradient border-dashed border border-white/5 rounded-[4rem] text-center space-y-8"
              >
                 <div className="w-24 h-24 rounded-full bg-brand-coral/10 border border-brand-coral/20 flex items-center justify-center text-brand-coral border-glow-brand-coral shadow-glow-coral animate-bounce">
-                   <TrendingUp size={48} />
+                   <Activity size={48} />
                 </div>
                 <div className="space-y-4">
-                   <h2 className="text-4xl font-black uppercase tracking-tighter">Yield Protocol Phase 2</h2>
+                   <h2 className="text-4xl font-black uppercase tracking-tighter">Yield Analytics Blocked</h2>
                    <p className="text-[10px] uppercase tracking-[0.4em] text-white/20 font-black max-w-sm mx-auto leading-relaxed italic italic-glow-brand-coral">
-                      Operational metrics are currently undergoing high-level encryption. Authorized analytics will be available in the next deployment cycle.
+                      Operational metrics are currently undergoing high-level encryption. Authorized analytics will be available in Phase 4.
                    </p>
                 </div>
-                <button className="px-12 py-5 bg-white/5 border border-white/10 rounded-2xl text-[10px] uppercase tracking-[0.6em] font-black text-white/20 hover:text-white hover:bg-white/10 transition-all">Scan Network</button>
              </motion.div>
           )}
         </AnimatePresence>
