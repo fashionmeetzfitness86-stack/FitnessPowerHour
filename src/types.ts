@@ -247,7 +247,16 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  brand_id?: string;
+  category_id?: string;
+  featured_image?: string;
+  gallery?: string[];
+  sizes?: string[];
 }
+
+export type Program = ProgramTemplate;
+export type ProductCategory = { id: string; name: string };
+export type ProgramAssignment = UserProgramAssignment;
 
 export interface CartItem {
   product_id: string;
@@ -281,6 +290,7 @@ export interface Order {
   shipping_address?: any;
   created_at: string;
   items?: OrderItem[];
+  customer_name_snapshot?: string;
 }
 
 export interface NotificationPreference {
@@ -366,6 +376,7 @@ export interface UserProfile {
   motivation?: string;
   experience_level?: string;
   notification_preferences?: NotificationPreference;
+  streak?: number;
 }
 
 export interface Booking {

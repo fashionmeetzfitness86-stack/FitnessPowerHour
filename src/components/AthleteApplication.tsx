@@ -5,7 +5,7 @@ import {
   Shield, Globe, MessageSquare, Instagram, Image as ImageIcon, Video as VideoIcon
 } from 'lucide-react';
 import { supabase } from '../supabase';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { MediaCapture } from './MediaCapture';
 

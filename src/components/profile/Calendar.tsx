@@ -4,7 +4,7 @@ import { Calendar as CalendarIcon, Clock, Plus, Tag, ArrowRight, Play, CheckCirc
 import { UserProfile, CalendarSession, ServiceRequest, ServiceAvailability } from '../../types';
 import { supabase } from '../../supabase';
 
-export const Calendar = ({ user }: { user: UserProfile }) => {
+export const Calendar = ({ user, showToast }: { user: UserProfile, showToast?: any }) => {
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [availability, setAvailability] = useState<ServiceAvailability[]>([]);

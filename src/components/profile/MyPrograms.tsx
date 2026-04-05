@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PlaySquare, CheckCircle, ArrowRight, Play, Calendar, FileText, CheckCircle2, MessageSquare, Award } from 'lucide-react';
 import { UserProfile, UserProgramAssignment, ProgramTemplate, ProgramTemplateVideo } from '../../types';
 import { supabase } from '../../supabase';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../App';
 
 export const MyPrograms = ({ user }: { user: UserProfile }) => {
   const [assignments, setAssignments] = useState<(UserProgramAssignment & { program_template: ProgramTemplate })[]>([]);
