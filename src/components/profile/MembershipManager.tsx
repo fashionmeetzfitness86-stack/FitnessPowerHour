@@ -23,25 +23,6 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
       price: '$19.99',
       period: 'per month',
       features: ['Access to basic workouts', 'Limited training content', 'Community forum access', 'Public challenges']
-    },
-    {
-      name: 'Elite',
-      price: '$59',
-      period: 'per month',
-      features: ['Full training system', 'Retreat priority access', 'Community features & Live Q&A', 'Special product drops', '1-on-1 mindset coaching', 'Personalized nutrition plan', 'Direct trainer messaging']
-    },
-    {
-      name: 'Local Collective',
-      price: '$299',
-      period: 'per month',
-      features: ['Everything in Elite', '1x Free Cold-Pressed Juice / mo', '1x Free Ginger Shot / mo', '1x Free Beverage of choice / mo', 'Physical Local Pass']
-    },
-    {
-      name: 'Physical Local Pass',
-      price: '$59',
-      period: '3 or 7 Days',
-      features: ['Full gym access', '1x Free Cold-Pressed Juice', '1x Free Ginger Shot', '1x Free Beverage of choice', 'QR Code Digital Pass'],
-      isPass: true
     }
   ];
 
@@ -111,30 +92,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
     }
   };
 
-  const notifyAdminOfPurchase = async (type: string, tier: string) => {
-    try {
-      await supabase.from('notifications').insert({
-        user_id: 'super_admin_placeholder', // Should be the actual super admin ID
-        title: 'New Membership/Pass Purchase',
-        message: `${user.full_name} has purchased a ${tier} ${type}.`,
-        type: 'purchase',
-        created_at: new Date().toISOString(),
-        is_read: false
-      });
-    } catch (err) {
-      console.error('Admin notification failed:', err);
-    }
-  };
 
-  const handlePassPurchase = async () => {
-    setLoading(true);
-    // Simulate payment
-    await new Promise(r => setTimeout(r, 2000));
-    setPassStep(3);
-    setLoading(false);
-    showToast('Payment successful. Your local pass is active!', 'success');
-    notifyAdminOfPurchase('pass', selectedTier || 'Local Pass');
-  };
 
   return (
     <div className="space-y-12 fade-in">
@@ -230,199 +188,58 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
               exit={{ scale: 0.9, opacity: 0 }}
               className="card-gradient w-full max-w-xl p-12 space-y-10 rounded-[4rem] border border-brand-teal/20 shadow-2xl relative"
             >
-              {selectedTier === 'Physical Local Pass' && passStep === 1 && (
-                <div className="space-y-10">
-                   <div className="text-center space-y-4">
-                     <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Step 1 / 3: Enrollment</span>
-                     <h3 className="text-3xl font-black uppercase tracking-tighter">Local <span className="text-brand-teal">Pass</span> Protocol</h3>
-                   </div>
-                   
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                         <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">First Name</label>
-                         <input 
-                           value={passData.firstName}
-                           onChange={e => setPassData({...passData, firstName: e.target.value})}
-                           className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold outline-none focus:border-brand-teal transition-all"
-                         />
-                      </div>
-                      <div className="space-y-2">
-                         <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">Last Name</label>
-                         <input 
-                           value={passData.lastName}
-                           onChange={e => setPassData({...passData, lastName: e.target.value})}
-                           className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold outline-none focus:border-brand-teal transition-all"
-                         />
-                      </div>
-                      <div className="space-y-2 col-span-2">
-                         <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">Mobile Signal (Phone)</label>
-                         <input 
-                           placeholder="+1 (305) 000-0000"
-                           value={passData.phone}
-                           onChange={e => setPassData({...passData, phone: e.target.value})}
-                           className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-xs font-bold outline-none focus:border-brand-teal transition-all"
-                         />
-                      </div>
-                      <div className="space-y-4 col-span-2 pt-4">
-                         <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">Question: Why are you traveling to Miami?</label>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {[
-                              'Fitness Retreat',
-                              'Luxury Vacation',
-                              'Business & Training',
-                              'Local Experience',
-                              'FMF Competition'
-                            ].map(opt => (
-                              <button 
-                                key={opt}
-                                onClick={() => setPassData({...passData, reason: opt})}
-                                className={`px-6 py-4 rounded-2xl text-[10px] uppercase tracking-widest font-black border transition-all ${
-                                  passData.reason === opt ? 'bg-brand-teal/20 border-brand-teal text-brand-teal shadow-glow-teal' : 'bg-white/5 border-white/10 text-white/40 hover:border-white/20'
-                                }`}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                         </div>
-                      </div>
-                   </div>
-
-                   <button 
-                     onClick={() => setPassStep(2)}
-                     disabled={!passData.lastName || !passData.phone || !passData.reason}
-                     className="w-full py-6 bg-brand-teal text-black text-[11px] uppercase tracking-[0.5em] font-black rounded-3xl hover:scale-105 transition-all shadow-glow-teal disabled:opacity-30"
-                   >
-                     Authorize Payment Link
-                   </button>
-                </div>
-              )}
-
-              {selectedTier === 'Physical Local Pass' && passStep === 2 && (
-                <div className="space-y-12 text-center">
-                   <div className="space-y-4">
-                     <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Step 2 / 3: Authorization</span>
-                     <h3 className="text-3xl font-black uppercase tracking-tighter">Syncing <span className="text-brand-coral">Payment</span></h3>
-                   </div>
-                   
-                   <div className="p-10 bg-white/5 border border-white/10 rounded-[3rem] space-y-8">
-                      <div className="flex justify-between items-center px-4">
-                         <span className="text-[10px] uppercase tracking-widest text-white/40 font-black">Authorized Pass:</span>
-                         <span className="text-lg font-black uppercase tracking-tighter">{selectedTier}</span>
-                      </div>
-                      <div className="flex justify-between items-center px-4">
-                         <span className="text-[10px] uppercase tracking-widest text-white/40 font-black">Total Charge:</span>
-                         <span className="text-3xl font-black text-brand-coral">$59.00</span>
-                      </div>
-                   </div>
-
-                   <div className="flex gap-6">
-                      <button 
-                        onClick={handlePassPurchase}
-                        disabled={loading}
-                        className="flex-1 py-6 bg-brand-coral text-black text-[11px] uppercase tracking-[0.5em] font-black rounded-3xl hover:scale-105 transition-all shadow-glow-coral flex items-center justify-center gap-3"
-                      >
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Process Authorization'}
-                      </button>
-                      <button 
-                        onClick={() => setPassStep(1)}
-                        className="px-10 py-6 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.5em] font-black rounded-3xl hover:text-white"
-                      >
-                        Back
-                      </button>
-                   </div>
-                </div>
-              )}
-
-              {selectedTier === 'Physical Local Pass' && passStep === 3 && (
-                <div className="space-y-12 text-center animate-in zoom-in duration-500">
-                   <div className="space-y-4">
-                     <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 mx-auto border border-emerald-500/30">
-                        <Check size={48} />
-                     </div>
-                     <h3 className="text-4xl font-black uppercase tracking-tighter">Access <span className="text-emerald-500">Authorized</span></h3>
-                     <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-black">Your Local Pass is Syncing...</p>
-                   </div>
-                   
-                   <div className="relative group">
-                      <div className="absolute -inset-4 bg-emerald-500/10 blur-3xl rounded-full group-hover:opacity-100 transition-opacity" />
-                      <div className="relative bg-white p-6 rounded-[2.5rem] w-64 h-64 mx-auto flex items-center justify-center shadow-2xl">
-                         <QrCode size={180} className="text-black" />
-                      </div>
-                   </div>
-
-                   <div className="space-y-4">
-                      <p className="text-xs text-white/60 font-medium leading-relaxed uppercase tracking-widest">
-                         Present this code at the Miami Beach Headquarters <br/> to receive your physical pass and drinks.
-                      </p>
-                      <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 font-black">
-                         Expres in 7 Days • Security Hash: {Math.random().toString(36).substring(7).toUpperCase()}
-                      </div>
-                   </div>
-
-                   <button 
-                     onClick={() => setSelectedTier(null)}
-                     className="w-full py-6 border border-white/10 text-[11px] uppercase tracking-[0.5em] font-black rounded-3xl hover:bg-white hover:text-black transition-all"
-                   >
-                     Close & Return
-                   </button>
-                </div>
-              )}
-
-              {selectedTier !== 'Physical Local Pass' && (
-                <div className="space-y-10">
-                   {/* Normal Membership Sync Content */}
-                   <div className="flex justify-between items-start">
-                    <div className="space-y-4">
-                      <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center text-brand-teal">
-                        <Shield size={32} />
-                      </div>
-                      <h3 className="text-4xl font-black uppercase tracking-tighter">Sync <span className="text-brand-teal">{selectedTier}</span> Protocol</h3>
+              <div className="space-y-10">
+                 <div className="flex justify-between items-start">
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center text-brand-teal">
+                      <Shield size={32} />
                     </div>
-                    <button 
-                      onClick={() => setSelectedTier(null)}
-                      className="p-3 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
-                    >
-                      <X className="text-white/40 hover:text-white" size={24} />
-                    </button>
+                    <h3 className="text-4xl font-black uppercase tracking-tighter">Sync <span className="text-brand-teal">{selectedTier}</span> Protocol</h3>
                   </div>
+                  <button 
+                    onClick={() => setSelectedTier(null)}
+                    className="p-3 bg-white/5 rounded-full hover:bg-white/10 transition-colors"
+                  >
+                    <X className="text-white/40 hover:text-white" size={24} />
+                  </button>
+                </div>
 
-                  <div className="space-y-8">
-                    <div className="p-8 bg-white/5 rounded-3xl space-y-4 border border-white/10">
-                      <h4 className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Protocol Parameters</h4>
-                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {tiers.find(t => t.name === selectedTier)?.features.map((f, i) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <Check size={14} className="text-brand-teal mt-1 shrink-0" />
-                            <span className="text-[11px] text-white/60 uppercase tracking-wide font-medium">{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    <div className="flex items-baseline justify-center gap-2 border-y border-white/5 py-8">
-                       <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold">Authorized Rate:</span>
-                       <span className="text-5xl font-black text-white">{tiers.find(t => t.name === selectedTier)?.price}</span>
-                       <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold">/ MONTH</span>
-                    </div>
+                <div className="space-y-8">
+                  <div className="p-8 bg-white/5 rounded-3xl space-y-4 border border-white/10">
+                    <h4 className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Protocol Parameters</h4>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {tiers.find(t => t.name === selectedTier)?.features.map((f, i) => (
+                        <li key={i} className="flex items-start gap-3">
+                          <Check size={14} className="text-brand-teal mt-1 shrink-0" />
+                          <span className="text-[11px] text-white/60 uppercase tracking-wide font-medium">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-
-                  <div className="flex gap-4">
-                    <button 
-                      onClick={handleUpdate}
-                      disabled={loading}
-                      className="flex-1 py-5 bg-brand-teal text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:scale-105 transition-all shadow-glow-teal flex items-center justify-center gap-3"
-                    >
-                      {loading ? <><Loader2 size={18} className="animate-spin" /> Synchronizing...</> : 'Authorize Sync'}
-                    </button>
-                    <button 
-                      onClick={() => setSelectedTier(null)}
-                      className="flex-1 py-5 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
-                    >
-                      Cancel
-                    </button>
+                  
+                  <div className="flex items-baseline justify-center gap-2 border-y border-white/5 py-8">
+                     <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold">Authorized Rate:</span>
+                     <span className="text-5xl font-black text-white">{tiers.find(t => t.name === selectedTier)?.price}</span>
+                     <span className="text-[10px] uppercase tracking-widest text-white/20 font-bold">/ MONTH</span>
                   </div>
                 </div>
-              )}
+
+                <div className="flex gap-4">
+                  <button 
+                    onClick={handleUpdate}
+                    disabled={loading}
+                    className="flex-1 py-5 bg-brand-teal text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:scale-105 transition-all shadow-glow-teal flex items-center justify-center gap-3"
+                  >
+                    {loading ? <><Loader2 size={18} className="animate-spin" /> Synchronizing...</> : 'Authorize Sync'}
+                  </button>
+                  <button 
+                    onClick={() => setSelectedTier(null)}
+                    className="flex-1 py-5 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

@@ -16,7 +16,22 @@ create table if not exists public.profiles (
   "personalBests" jsonb default '[]',
   "orderHistory" jsonb default '[]',
   profile_image text,
+  profile_images text[] default '{}',
   bio text,
+  short_bio text,
+  phone text,
+  city text,
+  country text,
+  date_of_birth date,
+  age integer,
+  height text,
+  weight text,
+  workout_style text,
+  training_goals text,
+  fitness_level text default 'Intermediate',
+  limitations_or_injuries text,
+  motivation text,
+  onboarding_completed boolean default false,
   updated_at timestamptz not null default now()
 );
 

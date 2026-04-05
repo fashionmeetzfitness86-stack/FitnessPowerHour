@@ -57,20 +57,7 @@ export const FreeAccessGate = ({ user }: { user: any }) => {
                 View Memberships <Zap size={16} />
               </button>
               
-              <div className="grid grid-cols-2 gap-4">
-                 <button 
-                   onClick={() => { setShow(false); navigate('/membership'); }}
-                   className="py-4 border border-brand-coral/30 text-brand-coral hover:bg-brand-coral/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
-                 >
-                   3-Day Pass
-                 </button>
-                 <button 
-                   onClick={() => { setShow(false); navigate('/membership'); }}
-                   className="py-4 border border-brand-coral/30 text-brand-coral hover:bg-brand-coral/10 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
-                 >
-                   7-Day Pass
-                 </button>
-              </div>
+
             </div>
 
             <div className="pt-8 border-t border-white/10 flex flex-col gap-4">

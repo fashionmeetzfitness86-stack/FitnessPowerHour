@@ -10,7 +10,7 @@ interface OnboardingFlowProps {
 }
 
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, showToast }) => {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [goal, setGoal] = useState('');
   const [experience, setExperience] = useState('');
@@ -32,13 +32,11 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, show
     if (!user) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('profiles').update({
+      await updateProfile({
         training_goals: goal,
         workout_style: experience,
         onboarding_completed: true
-      }).eq('id', user.id);
-
-      if (error) throw error;
+      });
       
       // Dispatch Onboarding Complete Notification
       await supabase.from('notifications').insert({
