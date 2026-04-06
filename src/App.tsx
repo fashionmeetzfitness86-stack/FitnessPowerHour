@@ -860,9 +860,15 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const navLinks = [
-    { name: 'Home', path: user ? '/profile' : '/' },
-    ...(user ? [] : [{ name: 'Philosophy', path: '/philosophy' }]),
+  const navLinks = user ? [
+    { name: 'Home', path: '/profile' },
+    { name: 'Community', path: '/community' },
+    { name: 'Shop', path: '/shop' },
+    { name: 'Retreats', path: '/retreats' },
+    { name: 'Services', path: '/services' },
+  ] : [
+    { name: 'Home', path: '/' },
+    { name: 'Philosophy', path: '/philosophy' },
     { name: 'Athletes', path: '/athletes' },
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
@@ -898,18 +904,11 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-6">
-          {(user?.role === 'admin' || user?.role === 'super_admin') && (
-            <Link to="/admin/dashboard" className="hidden lg:flex items-center space-x-2 text-xs uppercase tracking-widest text-brand-teal hover:text-white transition-colors">
-              <ShieldCheck size={16} />
-              <span>{user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span>
-            </Link>
-          )}
           {user ? (
             <div className="hidden lg:flex items-center space-x-4">
               <NotificationBell />
-              <Link to="/profile" className="flex flex-col items-end group">
-                <span className="text-[10px] uppercase tracking-widest font-bold text-brand-teal group-hover:text-white transition-colors">{user.full_name}</span>
-                <span className="text-[8px] uppercase tracking-widest text-white/40">{user.tier}</span>
+              <Link to="/profile" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Profile Dashboard">
+                <User size={18} />
               </Link>
               <Link to="/order-history" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Order History">
                 <ShoppingBag size={18} />
@@ -966,10 +965,9 @@ const Navbar = () => {
                         <Link 
                           to="/profile" 
                           onClick={() => setIsOpen(false)}
-                          className="flex flex-col"
+                          className="text-white/60 hover:text-brand-teal transition-colors flex items-center gap-2 text-xs uppercase tracking-widest"
                         >
-                          <span className="text-sm font-bold text-brand-teal uppercase tracking-widest">{user.full_name}</span>
-                          <span className="text-[10px] text-white/40 uppercase tracking-widest">{user.tier}</span>
+                          <User size={16} /> Profile Dashboard
                         </Link>
                       </div>
                       <button 
@@ -979,13 +977,6 @@ const Navbar = () => {
                         Logout
                       </button>
                     </div>
-                    <Link 
-                      to="/order-history" 
-                      onClick={() => setIsOpen(false)}
-                      className="text-white/60 text-xs uppercase tracking-widest hover:text-brand-teal transition-colors"
-                    >
-                      Order History
-                    </Link>
                   </div>
                 ) : (
                   <Link 
@@ -5990,8 +5981,8 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
         <main>
           <AnimatePresence mode="wait">
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/philosophy" element={<Philosophy />} />
+              <Route path="/" element={user ? <Navigate to="/profile" replace /> : <Home />} />
+              <Route path="/philosophy" element={user ? <Navigate to="/profile" replace /> : <Philosophy />} />
               <Route path="/mission" element={<Mission />} />
               <Route path="/run-club" element={<RunClub />} />
               <Route path="/services" element={<Services />} />
