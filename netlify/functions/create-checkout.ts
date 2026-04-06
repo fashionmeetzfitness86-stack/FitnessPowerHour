@@ -32,6 +32,9 @@ export default async (req: Request) => {
     const body = await req.json();
     const { type, items, tier, userId, userEmail, successUrl, cancelUrl } = body;
 
+    let origin = 'https://fitnesspowerhour.com';
+    try { origin = new URL(req.url).origin; } catch(e) { origin = req.headers.get('origin') || origin; }
+
     if (type === 'membership') {
       // Membership subscription checkout
       const membership = MEMBERSHIP_PRICES[tier];
@@ -60,8 +63,8 @@ export default async (req: Request) => {
           },
           quantity: 1
         }],
-        success_url: successUrl || `${new URL(req.url).origin}/#/profile?payment=success&tier=${encodeURIComponent(tier)}`,
-        cancel_url: cancelUrl || `${new URL(req.url).origin}/#/profile?payment=cancelled`
+        success_url: successUrl || `${origin}/#/profile?payment=success&tier=${encodeURIComponent(tier)}`,
+        cancel_url: cancelUrl || `${origin}/#/membership?payment=cancelled`
       });
 
       return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
@@ -124,8 +127,8 @@ export default async (req: Request) => {
           cart_context: cartContextStr // Embedded precisely for the webhook to execute fulfillment
         },
         line_items: lineItems,
-        success_url: successUrl || `${new URL(req.url).origin}/#/profile?payment=success&type=shop`,
-        cancel_url: cancelUrl || `${new URL(req.url).origin}/#/shop?payment=cancelled`
+        success_url: successUrl || `${origin}/#/profile?payment=success&type=shop`,
+        cancel_url: cancelUrl || `${origin}/#/shop?payment=cancelled`
       });
 
       return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
@@ -156,8 +159,8 @@ export default async (req: Request) => {
           },
           quantity: 1
         }],
-        success_url: successUrl || `${new URL(req.url).origin}/#/profile?payment=success&type=retreat_deposit`,
-        cancel_url: cancelUrl || `${new URL(req.url).origin}/#/profile`
+        success_url: successUrl || `${origin}/#/profile?payment=success&type=retreat_deposit`,
+        cancel_url: cancelUrl || `${origin}/#/profile`
       });
 
       return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {
@@ -187,8 +190,8 @@ export default async (req: Request) => {
           },
           quantity: 1
         }],
-        success_url: successUrl || `${new URL(req.url).origin}/#/profile?payment=success&type=service`,
-        cancel_url: cancelUrl || `${new URL(req.url).origin}/`
+        success_url: successUrl || `${origin}/#/profile?payment=success&type=service`,
+        cancel_url: cancelUrl || `${origin}/`
       });
 
       return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), {

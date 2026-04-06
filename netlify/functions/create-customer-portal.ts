@@ -37,9 +37,12 @@ export default async (req: Request) => {
 
     const customer = customers.data[0];
 
+    let origin = 'https://fitnesspowerhour.com';
+    try { origin = new URL(req.url).origin; } catch(e) { origin = req.headers.get('origin') || origin; }
+
     const session = await stripe.billingPortal.sessions.create({
       customer: customer.id,
-      return_url: returnUrl || `${new URL(req.url).origin}/#/profile`,
+      return_url: returnUrl || `${origin}/#/profile`,
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
