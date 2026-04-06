@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
 );
 
-const stripe = new Stripe(process.env.STRIPE_API_KEY!, { apiVersion: '2026-02-25.clover' });
+const stripe = new Stripe(process.env.STRIPE_API_KEY!, { apiVersion: '2026-02-25.clover' as any });
 
 const MEMBERSHIP_PRICES: Record<string, { amount: number; name: string }> = {
   Basic: { amount: 1999, name: 'Basic Membership' },

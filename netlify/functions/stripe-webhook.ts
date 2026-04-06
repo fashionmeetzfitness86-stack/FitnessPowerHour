@@ -217,21 +217,27 @@ export default async (req: Request) => {
           console.log(`[stripe-webhook] Service booking paid: ${serviceName} on ${date} at ${time}`);
           
           if (uId) {
-            // Create a calendar session
-            await supabase.from('calendar_sessions').insert({
+            // Get user data
+            let userName = 'User';
+            let userEmail = 'Unknown';
+            const { data: userData } = await supabase.from('profiles').select('full_name, email').eq('id', uId).single();
+            if (userData) {
+               userName = userData.full_name;
+               userEmail = userData.email || 'Unknown';
+            }
+
+            // Create a booking
+            await supabase.from('bookings').insert({
               user_id: uId,
-              title: `${serviceName} (${time})`,
+              user_name: userName,
+              user_email: userEmail,
+              service_type: serviceName.toLowerCase().includes('personal training') ? 'personal_training' : 'flex_mob',
+              service_name: serviceName,
               date: date,
-              duration: 60,
-              type: 'service',
-              status: 'scheduled',
+              time: time,
+              status: 'pending',
               created_at: new Date().toISOString()
             });
-            
-            // Get user name
-            let userName = 'User';
-            const { data: userData } = await supabase.from('profiles').select('full_name').eq('id', uId).single();
-            if (userData) userName = userData.full_name;
 
             const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');
             if (superAdmins) {
