@@ -652,8 +652,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!session?.user) return;
 
       const { error } = await supabase.from('profiles').update({
-        ...profileUpdate,
-        updated_at: new Date().toISOString()
+        ...profileUpdate
       }).eq('id', session.user.id);
 
       if (error) throw error;
