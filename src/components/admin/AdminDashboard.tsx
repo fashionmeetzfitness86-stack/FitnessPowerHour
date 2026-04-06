@@ -28,6 +28,7 @@ import { VideoManager } from './VideoManager';
 import { CommunityManager } from './CommunityManager';
 import { OrderManager } from './OrderManager';
 import { ServiceManager } from './ServiceManager';
+import { RetreatManager } from './RetreatManager';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -129,15 +130,22 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              })));
            }
            if (pRes.data) setPosts(pRes.data);
-        } else if (activeTab === 'services' && serviceRequests.length === 0) {
-           const [csRes, srRes, saRes] = await Promise.all([
+        } else if (activeTab === 'bookings' && bookingRequests.length === 0) {
+           const [bRes, csRes, saRes] = await Promise.all([
+             supabase.from('bookings').select('*').order('date', { ascending: false }).limit(50),
              supabase.from('calendar_sessions').select('*').order('session_date', { ascending: false }).limit(50),
-             supabase.from('service_requests').select('*').order('requested_date', { ascending: false }).limit(50),
              supabase.from('service_availability').select('*').limit(50)
            ]);
+           if (bRes.data) setBookingRequests(bRes.data);
            if (csRes.data) setCalendarSessions(csRes.data);
-           if (srRes.data) setServiceRequests(srRes.data);
            if (saRes.data) setServiceAvailability(saRes.data);
+        } else if (activeTab === 'retreats' && retreats.length === 0) {
+           const [rtRes, raRes] = await Promise.all([
+             supabase.from('retreats').select('*').limit(50),
+             supabase.from('retreat_applications').select('*').limit(50)
+           ]);
+           if (rtRes.data) setRetreats(rtRes.data);
+           if (raRes.data) setRetreatApplications(raRes.data);
         }
       } catch (error) {
         console.error('Error fetching admin data:', error);
@@ -421,16 +429,23 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     try {
       const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
       if (error) throw error;
-      setBookingRequests(prev => prev.filter(b => b.id !== id));
-      logActivity('UPDATE_BOOKING', 'booking', id, { status });
-      showToast(`Service stream ${status}`, 'success');
-    } catch (err) { showToast('Stream sync failed', 'error'); }
+      setBookingRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      showToast(`Booking ${status}`, 'success');
+      
+      const req = bookingRequests.find(r => r.id === id);
+      if (status === 'approved' && req) {
+         // Optionally insert into calendar_sessions or logic can be handled client-side
+      }
+    } catch (err) {
+      showToast('Failed to update booking status', 'error');
+    }
   };
 
   const sidebarItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'content', label: 'Content', icon: PlayCircle },
     { id: 'bookings', label: 'Bookings', icon: Calendar },
+    { id: 'retreats', label: 'Retreats', icon: MapPin },
     { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
@@ -478,6 +493,15 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           bookings={bookingRequests} 
           onUpdateStatus={handleUpdateBookingStatus} 
           showToast={showToast} 
+        />
+      );
+      case 'retreats': return (
+        <RetreatManager
+          retreats={retreats}
+          applications={retreatApplications}
+          onAdd={() => {}}
+          onReview={handleReviewRetreatApp}
+          onDelete={handleDeleteRetreat}
         />
       );
       case 'community': return (

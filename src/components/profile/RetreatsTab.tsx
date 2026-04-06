@@ -22,7 +22,7 @@ export const RetreatsTab = ({ user, showToast }: { user: UserProfile, showToast:
 
       // Fetch user requests 
       const { data: requests, error: qError } = await supabase
-        .from('retreat_requests')
+        .from('retreat_applications')
         .select('*')
         .eq('user_id', user.id);
 

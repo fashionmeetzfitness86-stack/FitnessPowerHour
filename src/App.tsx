@@ -428,7 +428,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       const profile: UserProfile = {
         ...data,
         email: data.email || sessionEmail,
-        full_name: data.full_name || data.name || data.email || sessionEmail || 'Member',
+        full_name: data.full_name || data.name || ((data.email || sessionEmail) ? (data.email || sessionEmail).split('@')[0] : 'Member'),
         signup_date: data.signup_date || data.joinedAt || data.created_at || new Date().toISOString(),
         role: data.role || ((data.email || sessionEmail)?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user'),
         status: data.status || 'active',
@@ -861,8 +861,8 @@ const Navbar = () => {
   const location = useLocation();
 
   const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Philosophy', path: '/philosophy' },
+    { name: 'Home', path: user ? '/profile' : '/' },
+    ...(user ? [] : [{ name: 'Philosophy', path: '/philosophy' }]),
     { name: 'Athletes', path: '/athletes' },
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
@@ -874,7 +874,7 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 w-full z-50 glass-nav">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="flex flex-col leading-none">
+        <Link to={user ? '/profile' : '/'} className="flex flex-col leading-none">
           <span className="text-xl font-bold tracking-tighter text-brand-teal uppercase">Fitness Power Hour</span>
           <span className="text-[10px] tracking-[0.3em] uppercase text-white/40">by Fashion meetz Fitness</span>
         </Link>
@@ -2629,7 +2629,7 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
   const { cart, removeFromCart, updateQuantity, totalPrice, totalItems, clearCart } = useCart();
   const { user } = useAuth();
   const isMember = user && user.tier !== 'Basic';
-  const discount = 0.3;
+  const discount = 0.2;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const handleCheckout = async () => {
@@ -2764,7 +2764,7 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                   </div>
                   {isMember && (
                     <div className="flex justify-between text-[10px] uppercase tracking-widest text-brand-teal">
-                      <span>Member Discount (30%)</span>
+                      <span>Member Discount (20%)</span>
                       <span>-${Math.floor(totalPrice * discount)}</span>
                     </div>
                   )}
@@ -2838,7 +2838,7 @@ const Store = () => {
   };
 
   const isMember = user && user.tier !== 'Basic';
-  const discount = 0.3; // 30% discount for members
+  const discount = 0.2; // 20% discount for members
 
   const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle', 'Nutrition'];
   const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection', 'Mike Water Fitness'];
@@ -2870,7 +2870,7 @@ const Store = () => {
                     <Zap size={20} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-brand-teal">Unlock 30% Member Discount</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-brand-teal">Unlock 20% Member Discount</p>
                     <p className="text-[8px] uppercase tracking-widest text-white/40">Join the Power Hour Collective</p>
                   </div>
                 </div>
@@ -3217,7 +3217,7 @@ const Store = () => {
                   { title: 'Video Library', desc: 'Complete workout video library with 100+ sessions' },
                   { title: 'Structured Programs', desc: 'Expertly designed training programs for all levels' },
                   { title: 'Training Calendar', desc: 'Personalized scheduling and progress tracking' },
-                  { title: '30% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
+                  { title: '20% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
                   { title: 'Early Access', desc: 'First access to new product drops and limited editions' },
                   { title: 'Priority Retreats', desc: 'Priority booking for FMF Retreat experiences' },
                   { title: 'Community', desc: 'Access to the exclusive FMF inner circle' }
@@ -4513,7 +4513,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                   { title: 'Video Library', desc: 'Complete workout video library with 100+ sessions' },
                   { title: 'Structured Programs', desc: 'Expertly designed training programs for all levels' },
                   { title: 'Training Calendar', desc: 'Personalized scheduling and progress tracking' },
-                  { title: '30% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
+                  { title: '20% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
                   { title: 'Early Access', desc: 'First access to new product drops and limited editions' },
                   { title: 'Priority Retreats', desc: 'Priority booking for FMF Retreat experiences' },
                   { title: 'Community', desc: 'Access to the exclusive FMF inner circle' }

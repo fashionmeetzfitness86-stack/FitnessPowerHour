@@ -16,6 +16,7 @@ import { MyVideos } from './MyVideos';
 import { MembershipManager } from './MembershipManager';
 import { Billing } from './Billing';
 import { RetreatsTab } from './RetreatsTab';
+import { ServicesTab } from './ServicesTab';
 import { OrderHistoryTab } from './OrderHistoryTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
@@ -88,7 +89,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'membership': return <MembershipManager user={user} updateTier={updateTier} showToast={showToast} />;
       case 'billing': return <Billing user={user} showToast={showToast} />;
       case 'videos': return <MyVideos user={user} showToast={showToast} />;
-      case 'services': return <CalendarTab user={user} showToast={showToast} />; // Reusing Calendar capability for now
+      case 'services': return <ServicesTab user={user} showToast={showToast} />;
       case 'retreats': return <RetreatsTab user={user} showToast={showToast} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;

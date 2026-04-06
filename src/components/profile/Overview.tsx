@@ -11,7 +11,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     upcoming: null as CalendarSession | null,
-    pendingAuths: [] as ServiceRequest[],
+    pendingAuths: [] as any[],
     latestMedia: null as UserVideoUpload | null,
     sessionsThisWeek: 0,
     activeProgram: 'FMF Protocol'
@@ -56,7 +56,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
                 .order('session_date', { ascending: true })
                 .limit(1).maybeSingle(),
                 
-        supabase.from('service_requests')
+        supabase.from('bookings')
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('status', 'pending'),
@@ -239,6 +239,27 @@ export const Overview = ({ user }: { user: UserProfile }) => {
             )}
           </div>
         </div>
+
+        {/* Pending Requests Section */}
+        {stats.pendingAuths.length > 0 && (
+           <div className="card-gradient p-8 rounded-[2rem] space-y-6 mt-8">
+             <div className="flex items-center gap-4 text-amber-500">
+               <Shield size={20} />
+               <h3 className="text-xs font-black uppercase tracking-widest">Pending Requests</h3>
+             </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {stats.pendingAuths.map((req, i) => (
+                 <div key={i} className="flex justify-between items-center p-4 bg-white/5 border border-white/10 rounded-2xl">
+                   <div>
+                     <p className="text-sm font-bold uppercase tracking-tight">{req.service_name}</p>
+                     <p className="text-[10px] text-white/40 font-mono mt-1">{req.date} @ {req.time}</p>
+                   </div>
+                   <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"></span>
+                 </div>
+               ))}
+             </div>
+           </div>
+        )}
       </>
       )}
     </div>
