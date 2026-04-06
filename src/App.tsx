@@ -2276,9 +2276,9 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
           throw new Error(data.error || 'Failed to initialize checkout');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating booking checkout:', error);
-      showToast('Checkout protocol failed to sync.', 'error');
+      showToast(error.message || 'Checkout protocol failed to sync.', 'error');
     }
     
     setIsSending(false);
@@ -3749,9 +3749,9 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       } else {
         throw new Error(data.error || 'Failed to initialize checkout');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating booking checkout:', error);
-      showToast('Checkout protocol failed to sync.', 'error');
+      showToast(error.message || 'Checkout protocol failed to sync.', 'error');
     }
   };
 
@@ -3984,9 +3984,9 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
       } else {
         throw new Error(data.error || 'Failed to initialize checkout');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating booking checkout:', error);
-      showToast('Checkout protocol failed to sync.', 'error');
+      showToast(error.message || 'Checkout protocol failed to sync.', 'error');
     }
   };
 
