@@ -50,27 +50,38 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast?: a
             title: 'Personal Session',
             session_date: selectedDate,
             session_time: selectedTime,
-            status: 'approved' // Automatically approved for workout
+            status: 'approved'
          }).select().single();
          if (data) setSessions([...sessions, data]);
+         // Reset Modal
+         setShowModal(false);
+         setActiveStep(1);
+         setSelectedOption(null);
+         setSelectedTime('');
       } else {
-         const type = selectedOption === 'recovery' ? 'flex_mob' : 'personal_training';
-         const { data, error } = await supabase.from('service_requests').insert({
-            user_id: user.id,
-            service_type: type,
-            service_subtype: 'session',
-            requested_date: selectedDate,
-            requested_time: selectedTime,
-            status: 'pending'
-         }).select().single();
-         if (data) setRequests([...requests, data]);
+         const serviceName = selectedOption === 'recovery' ? 'Flex Mob 305 Session' : '1-on-1 Training';
+         const priceAmount = selectedOption === 'recovery' ? 120 : 150;
+         
+         const res = await fetch('/.netlify/functions/create-checkout', {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({
+             type: 'service',
+             serviceName,
+             priceAmount,
+             selectedDate,
+             selectedTime,
+             userId: user.id,
+             userEmail: user.email
+           })
+         });
+         const checkoutData = await res.json();
+         if (checkoutData.url) {
+            window.location.href = checkoutData.url;
+         } else {
+            console.error('Failed to init payment', checkoutData);
+         }
       }
-      
-      // Reset Modal
-      setShowModal(false);
-      setActiveStep(1);
-      setSelectedOption(null);
-      setSelectedTime('');
     } catch (err) {
       console.error(err);
     }
@@ -210,19 +221,31 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast?: a
                      {activeStep === 3 && (
                         <div className="space-y-4">
                            <div className="grid grid-cols-2 gap-3">
-                              {/* Simple hardcoded times vs availability block checking.
-                                  For workouts, any time is valid.
-                                  For services, should technically check availability, but simplified flow mandates fast UX. 
-                               */}
-                              {['06:00', '09:00', '12:00', '15:00', '18:00', '20:00'].map(t => (
-                                 <button 
-                                   key={t}
-                                   onClick={() => setSelectedTime(t)}
-                                   className={`p-4 rounded-xl text-sm font-mono border transition-colors ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white'}`}
-                                 >
-                                    {t}
-                                 </button>
-                              ))}
+                              {(() => {
+                                let availableSlots = ['06:00', '09:00', '12:00', '15:00', '18:00', '20:00'];
+                                if (selectedOption !== 'workout') {
+                                  const dayAvail = availability.filter(a => a.available_date === selectedDate && (!a.status || a.status === 'open'));
+                                  if (dayAvail.length > 0) {
+                                    availableSlots = dayAvail.map(a => a.start_time.substring(0, 5));
+                                  } else {
+                                     availableSlots = [];
+                                  }
+                                }
+                                
+                                if (availableSlots.length === 0) {
+                                   return <p className="col-span-2 text-brand-coral text-xs text-center p-4">No slots available. Check another date.</p>;
+                                }
+
+                                return availableSlots.map(t => (
+                                   <button 
+                                     key={t}
+                                     onClick={() => setSelectedTime(t)}
+                                     className={`p-4 rounded-xl text-sm font-mono border transition-colors ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white'}`}
+                                   >
+                                      {t}
+                                   </button>
+                                ));
+                              })()}
                            </div>
 
                            <button 

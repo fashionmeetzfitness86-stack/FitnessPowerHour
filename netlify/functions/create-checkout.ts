@@ -74,14 +74,7 @@ export default async (req: Request) => {
         return new Response(JSON.stringify({ error: 'No items provided' }), { status: 400 });
       }
 
-      // Fetch user to verify membership discounting natively
-      let isMember = false;
-      if (userId) {
-        const { data: userProfile } = await supabase.from('profiles').select('tier, role').eq('id', userId).single();
-        if (userProfile) {
-           isMember = userProfile.tier === 'Member' || userProfile.role === 'admin' || userProfile.role === 'super_admin';
-        }
-      }
+
 
       // Pull product IDs to get real pricing securely from the DB
       const itemIds = items.map((i: any) => i.id);
@@ -97,7 +90,6 @@ export default async (req: Request) => {
         if (!dbProduct) return null;
 
         const basePrice = Number(dbProduct.price);
-        const finalPrice = isMember ? basePrice * 0.8 : basePrice;
 
         return {
           price_data: {
@@ -106,7 +98,7 @@ export default async (req: Request) => {
               name: dbProduct.name,
               description: dbProduct.category || undefined
             },
-            unit_amount: Math.round(finalPrice * 100)
+            unit_amount: Math.round(basePrice * 100)
           },
           quantity: clientItem.quantity || 1
         };
