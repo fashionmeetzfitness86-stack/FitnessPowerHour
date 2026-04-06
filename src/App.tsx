@@ -419,14 +419,18 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async (userId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const sessionEmail = session?.user?.email || '';
+
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (data) {
       // Map DB columns to app's UserProfile shape
       const profile: UserProfile = {
         ...data,
-        full_name: data.full_name || data.name || data.email || 'Member',
+        email: data.email || sessionEmail,
+        full_name: data.full_name || data.name || data.email || sessionEmail || 'Member',
         signup_date: data.signup_date || data.joinedAt || data.created_at || new Date().toISOString(),
-        role: data.role || (data.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user'),
+        role: data.role || ((data.email || sessionEmail)?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user'),
         status: data.status || 'active',
         created_at: data.created_at || data.signup_date || data.joinedAt || new Date().toISOString(),
         updated_at: data.updated_at || new Date().toISOString()
@@ -436,7 +440,6 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // No profile row found - build user from auth session
-    const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const meta = session.user.user_metadata || {};
       const displayName = meta.display_name || meta.full_name || session.user.email?.split('@')[0] || 'Member';
