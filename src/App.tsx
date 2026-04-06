@@ -2015,8 +2015,7 @@ const VideoLibrary = () => {
       let hasAccess = false;
       if (user?.role === 'admin' || user?.role === 'super_admin') hasAccess = true;
       else if (visibility === 'everyone') hasAccess = true;
-      else if (visibility === 'Basic' && userTier !== 'everyone') hasAccess = true;
-      else if ((visibility === 'Premium' || visibility === 'Elite') && (userTier === 'Elite' || userTier === 'Admin')) hasAccess = true;
+      else if (userTier === 'Basic' || userTier === 'Admin' || userTier === 'super_admin') hasAccess = true;
 
       if (!hasAccess) return false;
 
@@ -2130,7 +2129,7 @@ const VideoLibrary = () => {
                   {video.isPremium && (
                     <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
                       <Zap size={10} fill="white" />
-                      Elite
+                      Premium
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -2139,7 +2138,7 @@ const VideoLibrary = () => {
                         <div className="w-12 h-12 bg-brand-black/80 rounded-full flex items-center justify-center shadow-2xl border border-brand-coral/50">
                           <Zap size={20} className="text-brand-coral" />
                         </div>
-                        <span className="text-[8px] uppercase tracking-widest text-brand-coral font-bold bg-brand-black/80 px-2 py-1 rounded">Unlock with Elite</span>
+                        <span className="text-[8px] uppercase tracking-widest text-brand-coral font-bold bg-brand-black/80 px-2 py-1 rounded">Unlock with Membership</span>
                       </div>
                     ) : (
                       <div className="w-12 h-12 bg-brand-teal/80 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-2xl">
@@ -3266,136 +3265,7 @@ const Store = () => {
   );
 };
 
-const ProgramBuilder = ({ videos, showToast }: { videos: Video[], showToast: (msg: string, type?: 'success' | 'error') => void }) => {
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [programTitle, setProgramTitle] = useState('');
-  const [selectedVideos, setSelectedVideos] = useState<Video[]>([]);
-  const [users, setUsers] = useState<UserProfile[]>([]);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const { data, error } = await supabase.from('users').select('*');
-      if (data) setUsers(data as UserProfile[]);
-      if (error) console.error('Error fetching users:', error);
-    };
-    fetchUsers();
-  }, []);
-
-  const handleAddVideo = (video: Video) => {
-    if (!selectedVideos.find(v => v.id === video.id)) {
-      setSelectedVideos([...selectedVideos, video]);
-    }
-  };
-
-  const handleRemoveVideo = (videoId: string) => {
-    setSelectedVideos(selectedVideos.filter(v => v.id !== videoId));
-  };
-
-  const handleSaveProgram = async () => {
-    if (!selectedUser || !programTitle || selectedVideos.length === 0) {
-      showToast('Please fill all fields', 'error');
-      return;
-    }
-
-    const newProgram: Program = {
-      id: `prog-${Date.now()}`,
-      title: programTitle,
-      description: 'Personalized training program',
-      video_ids: selectedVideos.map(v => v.id),
-      created_by: 'admin',
-      status: 'published',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    try {
-      await supabase.from('user_programs').upsert({
-        id: selectedUser,
-        programs: [newProgram]
-      });
-      showToast('Program linked to user!', 'success');
-      setProgramTitle('');
-      setSelectedVideos([]);
-      setSelectedUser('');
-    } catch (error) {
-      showToast('Error saving program', 'error');
-    }
-  };
-
-  return (
-    <div className="card-gradient p-8 space-y-8">
-      <h3 className="text-xl font-bold uppercase tracking-tight">Build & Link <span className="text-brand-teal">Program</span></h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest text-white/40">Select User</label>
-            <select 
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
-            >
-              <option value="">Choose a user...</option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest text-white/40">Program Title</label>
-            <input 
-              type="text"
-              value={programTitle}
-              onChange={(e) => setProgramTitle(e.target.value)}
-              placeholder="e.g. 4-Week Strength Phase"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-[10px] uppercase tracking-widest text-white/40">Selected Videos ({selectedVideos.length})</label>
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-              {selectedVideos.map(v => (
-                <div key={v.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-                  <span className="text-xs font-bold truncate">{v.title}</span>
-                  <button onClick={() => handleRemoveVideo(v.id)} className="text-brand-coral hover:text-white">
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-              {selectedVideos.length === 0 && (
-                <p className="text-[10px] text-white/20 uppercase tracking-widest text-center py-4">No videos selected</p>
-              )}
-            </div>
-          </div>
-
-          <button onClick={handleSaveProgram} className="btn-primary w-full py-4">Link Program to Profile</button>
-        </div>
-
-        <div className="space-y-4">
-          <label className="text-[10px] uppercase tracking-widest text-white/40">Available Videos</label>
-          <div className="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-            {videos.map(v => (
-              <div 
-                key={v.id} 
-                onClick={() => handleAddVideo(v)}
-                className="flex items-center gap-4 p-3 bg-white/5 rounded-lg border border-white/10 hover:border-brand-teal cursor-pointer transition-all group"
-              >
-                <img src={v.thumbnail_url} className="w-16 h-10 object-cover rounded grayscale group-hover:grayscale-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold truncate">{v.title}</p>
-                  <p className="text-[8px] text-white/40 uppercase tracking-widest">{v.level} â€¢ {v.duration}</p>
-                </div>
-                <Plus size={14} className="text-white/20 group-hover:text-brand-teal" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const EditUserModal = ({ user, onClose, onSave }: { user: UserProfile, onClose: () => void, onSave: (updatedUser: UserProfile) => void }) => {
   const [formData, setFormData] = useState<UserProfile>(user);

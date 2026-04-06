@@ -122,15 +122,10 @@ export const AthleteApplication = ({ showToast }: { showToast: (msg: string, typ
           <div className="space-y-4">
             <h2 className="text-3xl font-bold uppercase tracking-tighter">Your application has been submitted</h2>
             <p className="text-white/40 uppercase tracking-widest text-[10px] leading-relaxed">
-              Thank you for your interest in joining the FMF Elite. Our Super Admin team will review your credentials. If approved, you will automatically be elevated to Athlete status.
+              Thank you for your interest in joining the FMF Athletes. Our Super Admin team will review your credentials. If approved, you will automatically be elevated to Athlete status.
             </p>
+            <button onClick={() => window.location.href = '#/'} className="btn-primary w-full max-w-xs py-4">Return Home</button>
           </div>
-          <button 
-            onClick={() => navigate('/')}
-            className="btn-primary w-full"
-          >
-            Return Home
-          </button>
         </motion.div>
       </div>
     );
@@ -140,7 +135,7 @@ export const AthleteApplication = ({ showToast }: { showToast: (msg: string, typ
     <div className="pt-40 pb-32 px-6">
       <div className="max-w-4xl mx-auto">
         <header className="mb-16 space-y-6 text-center">
-          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Join the Elite</span>
+          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Join the Athletes</span>
           <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Apply to Become an <span className="text-brand-coral">Athlete</span></h1>
           <p className="text-white/40 uppercase tracking-widest text-xs max-w-xl mx-auto leading-relaxed">
             Become an FMF Athlete and lead the movement. Elevate your status, create programs, and help users master their discipline.

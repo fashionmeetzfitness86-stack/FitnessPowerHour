@@ -448,7 +448,7 @@ export const CommunityDetail = ({ user, showToast }: CommunityDetailProps) => {
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase tracking-tight group-hover:text-brand-teal transition-colors">Candidate {idx + 1}</p>
-                      <p className="text-[8px] text-white/20 uppercase tracking-widest font-black">Elite Member</p>
+                      <p className="text-[8px] text-white/20 uppercase tracking-widest font-black">Basic Member</p>
                     </div>
                   </div>
                 ))}
