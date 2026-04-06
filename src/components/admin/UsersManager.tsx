@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserProfile } from '../../types';
+import { Mail, Shield } from 'lucide-react';
 
 interface UsersManagerProps {
   users: UserProfile[];
@@ -53,7 +54,8 @@ export const UsersManager = ({
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Member</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Role</th>
               <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Membership</th>
-              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Status</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold">Status</th>
+              <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-white/40 font-bold text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -91,10 +93,15 @@ export const UsersManager = ({
                     <option value="Basic">Basic</option>
                   </select>
                 </td>
-                <td className="px-6 py-4 text-right">
+                <td className="px-6 py-4">
                   <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold uppercase ${u.status === 'active' || !u.status ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
                     {u.status || 'Active'}
                   </span>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <a href={`mailto:${u.email}`} className="p-2 rounded bg-brand-teal/10 text-brand-teal hover:bg-brand-teal hover:text-black transition-all inline-flex items-center gap-2 text-xs font-bold uppercase px-4 cursor-pointer">
+                     <Mail size={14} /> Email
+                  </a>
                 </td>
               </tr>
             ))}

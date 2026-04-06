@@ -134,12 +134,12 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
         </div>
         <div className="flex flex-col md:flex-row items-end gap-6 w-full md:w-auto">
           <div className="flex bg-white/5 rounded-2xl p-1 overflow-x-auto no-scrollbar w-full md:w-auto">
-            {['overview', 'logs', 'metrics'].map((tab) => (
+            {['overview', 'logs'].map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab as 'overview' | 'logs' | 'metrics')}
+                onClick={() => setActiveTab(tab as 'overview' | 'logs')}
                 className={`px-8 py-3 text-[9px] uppercase tracking-widest font-black rounded-xl transition-all whitespace-nowrap ${
-                  activeTab === tab ? 'bg-brand-teal text-black shadow-lg' : 'text-white/40 hover:text-white'
+                  activeTab === tab ? 'bg-brand-coral text-black shadow-lg' : 'text-white/40 hover:text-white'
                 }`}
               >
                 {tab}
@@ -160,10 +160,9 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
           {/* Main Stat Block */}
           <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Current Streak', value: streak, unit: 'Days', icon: Zap, color: 'text-brand-teal' },
-              { label: 'Sessions', value: completedSessions, unit: 'Total', icon: Activity, color: 'text-brand-coral' },
-              { label: 'Time Trained', value: hoursTrained, unit: 'Hours', icon: Target, color: 'text-blue-400' },
-              { label: 'Intensity Ratio', value: '4.8', unit: 'Factor', icon: Play, color: 'text-purple-400' },
+              { label: 'Current Streak', value: streak, unit: 'Days', icon: Zap, color: 'text-brand-coral' },
+              { label: 'Sessions', value: completedSessions, unit: 'Total', icon: Activity, color: 'text-brand-teal' },
+              { label: 'Time Trained', value: hoursTrained, unit: 'Hours', icon: Target, color: 'text-white' },
             ].map((stat, i) => (
               <div key={i} className="card-gradient p-8 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 border border-white/5 hover:border-brand-teal/30 transition-all group relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4 opacity-5">
@@ -176,8 +175,7 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
             ))}
           </div>
 
-          {/* Milestones */}
-          <div className="card-gradient p-10 space-y-10 lg:col-span-1 border-white/10 rounded-[3rem]">
+          <div className="card-gradient p-10 space-y-10 lg:col-span-3 border-white/10 rounded-[3rem]">
             <div className="flex items-center gap-4 border-b border-white/5 pb-6">
               <Trophy size={20} className="text-brand-teal" />
               <h3 className="text-lg font-black uppercase tracking-tight">Milestone Matrix</h3>
@@ -204,67 +202,7 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
             </div>
           </div>
 
-          {/* Weekly Summary Chart Placeholder */}
-          <div className="card-gradient p-10 space-y-10 lg:col-span-2 flex flex-col border-white/10 rounded-[3rem]">
-            <div className="flex justify-between items-center border-b border-white/5 pb-6">
-              <h3 className="text-lg font-black uppercase tracking-tight">Physiological Load <span className="text-brand-teal">Chart</span></h3>
-              <div className="flex gap-2">
-                 <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-lg border border-white/10">
-                    <div className="w-2 h-2 bg-brand-teal rounded-full" />
-                    <span className="text-[8px] uppercase font-black text-white/40 tracking-widest">Mastery</span>
-                 </div>
-              </div>
-            </div>
-            
-            <div className="flex-grow flex items-end justify-between gap-4 pt-12 relative border-b border-white/5 pb-8 px-4">
-              {/* Decorative Chart Lines */}
-              <div className="absolute top-[20%] w-full border-b border-dashed border-white/5 z-0" />
-              <div className="absolute top-[40%] w-full border-b border-dashed border-white/5 z-0" />
-              <div className="absolute top-[60%] w-full border-b border-dashed border-white/5 z-0" />
-              <div className="absolute top-[80%] w-full border-b border-dashed border-white/5 z-0" />
-              
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => {
-                const height = i === 1 || i === 4 ? 80 : i === 2 ? 60 : i === 5 ? 40 : 20;
-                const active = day === new Date().toLocaleDateString('en-US', { weekday: 'short' });
-                return (
-                  <div key={day} className="flex flex-col items-center gap-6 w-full group cursor-pointer z-10">
-                    <div className="relative w-full max-w-[40px] flex flex-col items-center">
-                       {active && (
-                         <div className="absolute -top-8 bg-brand-teal text-black text-[8px] font-black px-2 py-1 rounded shadow-lg animate-bounce">
-                            NOW
-                         </div>
-                       )}
-                       <motion.div 
-                        initial={{ height: 0 }}
-                        animate={{ height: `${height}%` }}
-                        transition={{ duration: 1.5, type: 'spring', delay: i * 0.1 }}
-                        className={`w-full rounded-t-xl transition-all shadow-lg ${
-                          active ? 'bg-brand-teal shadow-glow-teal' : 'bg-white/5 group-hover:bg-white/20'
-                        }`}
-                      />
-                    </div>
-                    <span className={`text-[9px] uppercase tracking-[0.2em] font-black ${active ? 'text-brand-teal' : 'text-white/40'}`}>{day}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="grid grid-cols-2 gap-12 pt-4">
-              <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                <p className="text-[9px] uppercase tracking-widest text-white/40 mb-2 font-black">Monthly Target</p>
-                <div className="flex items-baseline gap-2">
-                   <span className="text-2xl font-black text-white">16</span>
-                   <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Sessions</span>
-                </div>
-              </div>
-              <div className="p-4 bg-brand-teal/5 rounded-2xl border border-brand-teal/20">
-                <p className="text-[9px] uppercase tracking-widest text-white/40 mb-2 font-black">Yield Ratio</p>
-                 <div className="flex items-baseline gap-2">
-                   <span className="text-2xl font-black text-brand-teal">94%</span>
-                   <span className="text-[10px] uppercase tracking-widest text-brand-teal/20 font-black">Efficiency</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Removed Chart block for simplicity */}
         </div>
       )}
 
@@ -322,38 +260,7 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
         </div>
       )}
 
-      {activeTab === 'metrics' && (
-        <div className="card-gradient p-12 text-center py-32 rounded-[4rem] border-white/10">
-          <div className="scale-125 mb-12">
-             <Target size={64} className="mx-auto text-brand-coral opacity-20" />
-          </div>
-          <h3 className="text-3xl font-black uppercase tracking-tighter mb-4">Physiological <span className="text-brand-coral">Metrics</span></h3>
-          
-          {['Basic', 'Local Collective'].includes(user.tier || '') ? (
-             <>
-               <p className="text-[10px] uppercase tracking-[0.4em] text-white/30 max-w-sm mx-auto font-black leading-relaxed">
-                 Metric visualization active. Maintain your 30-day baseline of EOD check-in data to calibrate the matrix.
-               </p>
-               <div className="mt-12 flex justify-center gap-4">
-                  <div className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-[9px] uppercase font-black text-brand-coral tracking-widest shadow-glow-coral relative overflow-hidden group hover:scale-105 transition-transform cursor-pointer">
-                     <span className="relative z-10">Baseline: {Math.min(completedSessions, 30)}/30 Days</span>
-                  </div>
-               </div>
-             </>
-          ) : (
-             <>
-               <p className="text-[10px] uppercase tracking-[0.4em] text-white/30 max-w-sm mx-auto font-black leading-relaxed">
-                 Advanced physiological metric tracking requires an upgraded protocol access tier. 
-               </p>
-               <div className="mt-12 flex justify-center gap-4">
-                  <button onClick={() => window.location.hash = '#/profile#membership'} className="px-8 py-4 bg-brand-coral text-black rounded-2xl text-[10px] uppercase tracking-widest font-black shadow-glow-coral hover:scale-105 transition-transform">
-                     Unlock Advanced Tracking
-                  </button>
-               </div>
-             </>
-          )}
-        </div>
-      )}
+      {/* Metrics tab removed */}
 
       {/* EOD Check-in Modal */}
       <AnimatePresence>
