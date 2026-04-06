@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Trophy, Calendar as CalendarIcon, Video, Clock, 
-  MapPin, ShoppingBag, Shield, CheckCircle, Loader2, AlertCircle, ArrowRight, User, Dumbbell, Activity, UserPlus, PlaySquare, LineChart
+  MapPin, ShoppingBag, Shield, CheckCircle, Loader2, AlertCircle, ArrowRight, User, Dumbbell, Activity, UserPlus
 } from 'lucide-react';
 import { UserProfile, UserVideoUpload, CalendarSession, ServiceRequest } from '../../types';
 import { supabase } from '../../supabase';
@@ -145,101 +145,93 @@ export const Overview = ({ user }: { user: UserProfile }) => {
            <Loader2 className="text-brand-teal animate-spin" size={40} />
         </div>
       ) : (
-      <>
-        {/* Header / Intro */}
-        <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
-          <div className="w-24 h-24 rounded-[2rem] overflow-hidden border-2 border-brand-teal/50 shadow-[0_0_20px_rgba(45,212,191,0.2)]">
-            {user.profile_image ? (
-              <img src={user.profile_image} alt={user.full_name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-brand-black flex items-center justify-center text-3xl font-black text-brand-teal">
-                {user.full_name?.[0] || 'M'}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        {/* Quick Actions (Dashboard Integration) */}
+        <div className="card-gradient p-8 space-y-6 md:col-span-2 lg:col-span-3 border border-brand-teal/10 relative overflow-hidden rounded-[3rem]">
+           <div className="absolute inset-0 bg-brand-teal/5 blur-3xl pointer-events-none" />
+           <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div>
+                 <h3 className="text-xl font-black uppercase tracking-tighter">Quick Actions</h3>
+                 <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold max-w-sm mt-1">Execute systemic scheduling vectors instantly.</p>
               </div>
-            )}
-          </div>
-          <div>
-            <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter">
-              Welcome, <span className="text-brand-teal">{user.full_name?.split(' ')[0] || 'Athlete'}</span>
-            </h2>
-            <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-2 bg-white/5 inline-block px-3 py-1 rounded">
-              {user.tier || 'Basic'} Membership Active
-            </p>
-          </div>
+              <div className="flex flex-wrap gap-3 w-full md:w-auto">
+                 <button onClick={() => window.location.hash = '#/profile#calendar'} className="flex items-center gap-3 px-6 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all flex-1 md:flex-none">
+                    <Dumbbell size={14} /> Add Workout
+                 </button>
+                 <button onClick={() => window.location.hash = '#/profile#calendar'} className="flex items-center gap-3 px-6 py-4 bg-brand-coral text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:shadow-[0_0_20px_rgba(251,113,133,0.3)] transition-all flex-1 md:flex-none">
+                    <Activity size={14} /> Book Recovery
+                 </button>
+                 <button onClick={() => window.location.hash = '#/profile#calendar'} className="flex items-center gap-3 px-6 py-4 bg-white/10 text-white text-[10px] uppercase tracking-widest font-black rounded-xl hover:bg-white/20 transition-all flex-1 md:flex-none drop-shadow-xl border border-white/10">
+                    <UserPlus size={14} /> Book Training
+                 </button>
+              </div>
+           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-           <button onClick={() => window.location.hash = '#/profile#programs'} className="p-6 bg-brand-teal text-black rounded-3xl hover:scale-105 transition-all text-center flex flex-col items-center gap-3">
-              <PlaySquare size={24} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Start Program</span>
-           </button>
-           <button onClick={() => window.location.hash = '#/profile#progress'} className="p-6 bg-brand-coral text-black rounded-3xl hover:scale-105 transition-all text-center flex flex-col items-center gap-3">
-              <LineChart size={24} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Log Progress</span>
-           </button>
-           <button onClick={() => window.location.hash = '#/profile#calendar'} className="p-6 bg-white/5 text-white border border-white/10 rounded-3xl hover:bg-brand-teal/10 hover:border-brand-teal/50 hover:text-brand-teal transition-all text-center flex flex-col items-center gap-3">
-              <CalendarIcon size={24} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Book Service</span>
-           </button>
-           <a href="#/shop" className="p-6 bg-white/5 text-white border border-white/10 rounded-3xl hover:bg-white/10 transition-all text-center flex flex-col items-center gap-3">
-              <ShoppingBag size={24} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Visit Store</span>
-           </a>
-        </div>
-
-        {/* Next Session & Progress Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          <div className="card-gradient p-8 space-y-6 flex flex-col justify-between rounded-[2rem]">
+        {/* Next Session */}
+        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer" onClick={() => window.location.hash = '#/profile#calendar'}>
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-brand-teal">
               <CalendarIcon size={20} />
-              <h3 className="text-xs font-black uppercase tracking-widest">Next Session</h3>
+              <h3 className="text-[10px] font-black uppercase tracking-widest">Next Session</h3>
             </div>
-            <div>
-              {stats.upcoming ? (
-                 <div>
-                    <h4 className="text-2xl font-black uppercase tracking-tight leading-none mb-2">{stats.upcoming.title}</h4>
-                    <div className="flex items-center gap-2 text-white/60 text-xs font-mono">
-                       <Clock size={12} className="text-brand-teal" /> {stats.upcoming.session_date} @ {stats.upcoming.session_time || 'ALL DAY'}
-                    </div>
-                 </div>
-              ) : (
-                 <p className="text-sm font-bold uppercase tracking-tight text-white/40 italic">Nothing scheduled yet.</p>
-              )}
-            </div>
-            <button onClick={() => window.location.hash = '#/profile#calendar'} className="w-full py-4 bg-white/5 text-white text-[10px] uppercase font-black tracking-widest rounded-xl hover:bg-white/10 mt-auto">
-              View Calendar
-            </button>
+            <ArrowRight size={14} className="text-white/20" />
           </div>
-
-          <div className="card-gradient p-8 space-y-6 flex flex-col justify-between rounded-[2rem]">
-            <div className="flex items-center gap-4 text-brand-coral">
-              <Activity size={20} />
-              <h3 className="text-xs font-black uppercase tracking-widest">Progress Summary</h3>
-            </div>
-            <div className="flex justify-around items-center py-4">
-               <div className="text-center space-y-1">
-                  <p className="text-4xl font-black text-white">{streakCount}</p>
-                  <p className="text-[8px] uppercase tracking-widest text-brand-coral font-bold">Day Streak</p>
+          <div>
+            {stats.upcoming ? (
+               <div>
+                  <h4 className="text-2xl font-black uppercase tracking-tight leading-none mb-2">{stats.upcoming.title}</h4>
+                  <div className="flex items-center gap-2 text-white/60 text-xs font-mono">
+                     <Clock size={12} className="text-brand-teal" /> {stats.upcoming.session_date} @ {stats.upcoming.session_time || 'ALL DAY'}
+                  </div>
                </div>
-               <div className="w-px h-12 bg-white/10" />
-               <div className="text-center space-y-1">
-                  <p className="text-4xl font-black text-white">{stats.sessionsThisWeek}</p>
-                  <p className="text-[8px] uppercase tracking-widest text-brand-teal font-bold">Sessions This Week</p>
-               </div>
-            </div>
-            {!hasCheckedInToday ? (
-              <button onClick={handleDailyCheckIn} className="w-full py-4 bg-brand-coral text-black text-[10px] uppercase font-black tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(251,113,133,0.4)] mt-auto flex justify-center gap-2 items-center">
-                 <CheckCircle size={14} /> Check In Today
-              </button>
             ) : (
-              <div className="w-full py-4 text-brand-teal text-[10px] uppercase font-black tracking-widest rounded-xl bg-brand-teal/10 flex justify-center items-center gap-2 mt-auto">
-                 <CheckCircle size={14} /> Checked in for today
-              </div>
+               <p className="text-sm font-bold uppercase tracking-tight text-white/40 italic">No Sessions Booked</p>
             )}
           </div>
         </div>
-      </>
+
+        {/* Pending Requests */}
+        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer" onClick={() => window.location.hash = '#/profile#calendar'}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-amber-500">
+              <Clock size={20} />
+              <h3 className="text-[10px] font-black uppercase tracking-widest">Pending Requests</h3>
+            </div>
+            {stats.pendingAuths.length > 0 && <span className="bg-amber-500 text-black text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full drop-shadow-lg">{stats.pendingAuths.length}</span>}
+          </div>
+          <div>
+            {stats.pendingAuths.length > 0 ? (
+               <div className="space-y-4">
+                  {stats.pendingAuths.slice(0, 2).map(r => (
+                     <div key={r.id} className="bg-black/40 p-3 rounded-xl border border-white/5 flex flex-col gap-1">
+                        <span className="text-[10px] font-bold uppercase text-white/80">{r.service_subtype.replace('_', ' ')}</span>
+                        <span className="text-[8px] tracking-widest font-mono text-amber-500/70 border border-amber-500/10 self-start px-2 py-0.5 rounded uppercase">Awaiting Auth</span>
+                     </div>
+                  ))}
+               </div>
+            ) : (
+               <p className="text-sm font-bold uppercase tracking-tight text-white/40 italic">All Cleared</p>
+            )}
+          </div>
+        </div>
+
+        {/* Active Program */}
+        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer" onClick={() => window.location.hash = '#/profile#programs'}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-brand-coral">
+              <Activity size={20} />
+              <h3 className="text-[10px] font-black uppercase tracking-widest">Active Program</h3>
+            </div>
+            <ArrowRight size={14} className="text-white/20" />
+          </div>
+          <div>
+             <h4 className="text-xl font-black uppercase tracking-tight leading-none mb-2">{stats.activeProgram}</h4>
+             <p className="text-[10px] tracking-widest uppercase text-brand-coral font-bold bg-brand-coral/10 inline-block px-2 py-1 rounded">System Protocol Active</p>
+          </div>
+        </div>
+      </div>
       )}
     </div>
   );

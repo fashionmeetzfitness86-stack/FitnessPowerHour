@@ -485,7 +485,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           communities={communities} 
           posts={posts} 
           users={users} 
-          onAdd={handleSaveCommunity} 
+          onAdd={() => {}} 
           onDeleteCommunity={handleDeleteCommunity} 
           onDeletePost={handleDeletePost} 
         />
