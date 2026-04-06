@@ -9,7 +9,6 @@ export const Shop = ({ user }: { user: UserProfile | null }) => {
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState('All');
   
-  const isMember = user?.tier === 'Member' || user?.role === 'admin' || user?.role === 'super_admin';
 
   useEffect(() => {
     fetchProducts();
@@ -31,10 +30,7 @@ export const Shop = ({ user }: { user: UserProfile | null }) => {
   const recommended = products.filter(p => p.is_recommended);
   const gridProducts = products.filter(p => filterCategory === 'All' || p.category === filterCategory);
 
-  const calculatePrice = (base: number) => {
-    if (isMember) return (base * 0.8).toFixed(2);
-    return base.toFixed(2);
-  };
+
 
   if (loading) {
      return (
@@ -59,15 +55,7 @@ export const Shop = ({ user }: { user: UserProfile | null }) => {
             Curated provisions for the tactical athlete. Train with structure. Recover with intention.
           </p>
           
-          {!isMember && (
-             <div className="mt-8 bg-brand-teal/5 border border-brand-teal/20 backdrop-blur-md rounded-2xl p-6 shadow-[0_0_30px_rgba(45,212,191,0.1)] transition-all">
-                <div className="flex items-center justify-center gap-3 mb-2 text-brand-teal">
-                   <Star size={18} />
-                   <h3 className="text-sm font-black uppercase tracking-widest">Join FMF to unlock 20% off</h3>
-                </div>
-                <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Members automatically receive tactical pricing on all physical assets.</p>
-             </div>
-          )}
+
         </div>
       </header>
 
@@ -95,9 +83,7 @@ export const Shop = ({ user }: { user: UserProfile | null }) => {
                          
                          <div>
                             <div className="flex items-end gap-3 mb-6">
-                               <p className="text-4xl font-black tracking-tighter">${calculatePrice(p.price)}</p>
-                               {isMember && <span className="text-[10px] bg-brand-teal/20 text-brand-teal font-black tracking-widest px-2 py-1 rounded uppercase mb-1.5 border border-brand-teal/30">Active Member Price</span>}
-                               {!isMember && <span className="text-xs text-white/40 line-through mb-1.5">${p.price}</span>}
+                               <p className="text-4xl font-black tracking-tighter">${p.price.toFixed(2)}</p>
                             </div>
                             
                             {p.external_link ? (
@@ -165,8 +151,7 @@ export const Shop = ({ user }: { user: UserProfile | null }) => {
                        <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-white/40">{p.category}</p>
                        <h4 className="text-lg font-black uppercase tracking-tight group-hover:text-brand-coral transition-colors">{p.name}</h4>
                        <div className="flex items-center gap-3">
-                          <p className="text-sm font-black tracking-tighter">${calculatePrice(p.price)}</p>
-                          {isMember && <span className="text-[8px] bg-brand-teal/20 text-brand-teal font-black tracking-widest px-1.5 py-0.5 rounded border border-brand-teal/30">Memb. Price</span>}
+                          <p className="text-sm font-black tracking-tighter">${p.price.toFixed(2)}</p>
                        </div>
                     </div>
                  </div>

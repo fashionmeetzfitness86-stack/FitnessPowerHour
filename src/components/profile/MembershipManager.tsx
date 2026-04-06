@@ -92,14 +92,48 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
     }
   };
 
+  const handleManageSubscription = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/.netlify/functions/create-customer-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userEmail: user.email,
+          returnUrl: window.location.href
+        })
+      });
+
+      const data = await res.json();
+      if (data.url) {
+         window.location.href = data.url;
+      } else {
+         showToast(data.error || 'Failed to connect to billing portal.', 'error');
+      }
+    } catch (err) {
+      showToast('Error redirecting to portal.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
   return (
     <div className="space-y-12 fade-in">
       <header className="space-y-4">
-        <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
-          Membership <span className="text-brand-teal">Management</span>
-        </h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
+            Membership <span className="text-brand-teal">Management</span>
+          </h2>
+          <button 
+            className="py-4 px-8 bg-white text-black hover:bg-brand-teal transition-all text-xs uppercase font-black tracking-widest rounded-xl shadow-[0_0_20px_rgba(45,212,191,0.2)] flex items-center justify-center gap-2"
+            onClick={handleManageSubscription}
+            disabled={loading}
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Manage Subscription'}
+          </button>
+        </div>
         <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">
           Upgrade or downgrade your access tier. Payment processed securely via Stripe.
         </p>

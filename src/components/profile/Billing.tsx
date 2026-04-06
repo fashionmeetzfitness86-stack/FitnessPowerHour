@@ -47,6 +47,31 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
     }
   };
 
+  const handleManageSubscription = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/.netlify/functions/create-customer-portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userEmail: user.email,
+          returnUrl: window.location.href
+        })
+      });
+
+      const data = await res.json();
+      if (data.url) {
+         window.location.href = data.url;
+      } else {
+         showToast(data.error || 'Failed to connect to billing portal.', 'error');
+      }
+    } catch (err) {
+      showToast('Error redirecting to portal.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchMembership();
   }, [user.id]);
@@ -150,10 +175,11 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
           </div>
 
           <button 
-            className="w-full py-5 bg-white/[0.03] border border-white/10 hover:border-brand-teal/50 hover:bg-white/[0.05] transition-all text-[10px] uppercase font-black tracking-[0.3em] rounded-2xl flex items-center justify-center gap-3 group"
-            onClick={() => setShowPaymentModal(true)} // User wants to see details/update
+            className="w-full py-5 bg-white text-black hover:bg-brand-teal transition-all text-xs uppercase font-black tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)]"
+            onClick={handleManageSubscription}
+            disabled={loading}
           >
-            Update Payment Method <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Manage Subscription'}
           </button>
         </div>
       </div>

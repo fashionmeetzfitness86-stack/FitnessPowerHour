@@ -6,7 +6,6 @@ import { MediaCapture } from '../MediaCapture';
 interface VideoManagerProps {
   videos: Video[];
   categories: VideoCategory[];
-  athletes?: any[];
   onUpload: () => void;
   onEdit: (video: Video) => void;
   onDelete: (id: string) => void;

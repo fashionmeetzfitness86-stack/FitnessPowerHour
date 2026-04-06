@@ -15,9 +15,9 @@ import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
 import { 
   UserProfile, Video, Product, Order, Retreat, 
-  Community, ActivityLog, Athlete, VideoCategory,
+  Community, ActivityLog, VideoCategory,
   Brand, RetreatApplication,
-  CommunityPost, Package, SiteContent, AthleteApplication,
+  CommunityPost, Package, SiteContent,
   ProgramTemplate, UserProgramAssignment,
   CalendarSession, ServiceRequest, ServiceAvailability
 } from '../../types';
@@ -48,8 +48,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [retreats, setRetreats] = useState<Retreat[]>([]);
   const [retreatApplications, setRetreatApplications] = useState<RetreatApplication[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
-  const [athletes, setAthletes] = useState<Athlete[]>([]);
-  const [athleteApplications, setAthleteApplications] = useState<AthleteApplication[]>([]);
+
   const [programTemplates, setProgramTemplates] = useState<ProgramTemplate[]>([]);
   const [userProgramAssignments, setUserProgramAssignments] = useState<UserProgramAssignment[]>([]);
   
@@ -80,91 +79,66 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [
-          usersRes, videosRes, videoCatsRes, productsRes, 
-          brandsRes, retreatsRes, packagesRes, 
-          athletesRes, programsRes, communitiesRes, ordersRes, 
-          retreatAppsRes, postsRes, logsRes, commCatsRes, commReqsRes, commMembersRes,
-          bookingsRes, siteContentRes, athleteAppsRes, assignmentsRes,
-          calSessionsRes, servReqsRes, servAvailRes
-        ] = await Promise.all([
-          supabase.from('profiles').select('*'),
-          supabase.from('videos').select('*'),
-          supabase.from('video_categories').select('*'),
-          supabase.from('products').select('*'),
-          supabase.from('brands').select('*'),
-          supabase.from('retreats').select('*'),
-          supabase.from('packages').select('*'),
-          supabase.from('athletes').select('*'),
-          supabase.from('program_templates').select('*'),
-          supabase.from('communities').select('*'),
-          supabase.from('orders').select('*'),
-          supabase.from('retreat_applications').select('*'),
-          supabase.from('posts').select('*'),
-          supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20),
-          supabase.from('community_categories').select('*'),
-          supabase.from('community_requests').select('*'),
-          supabase.from('community_members').select('*'),
-          supabase.from('bookings').select('*').eq('status', 'pending'),
-          supabase.from('site_content').select('*'),
-          supabase.from('athlete_applications').select('*'),
-          supabase.from('user_program_assignments').select('*'),
-          supabase.from('calendar_sessions').select('*'),
-          supabase.from('service_requests').select('*'),
-          supabase.from('service_availability').select('*')
-        ]);
+        if (activeTab === 'overview' && !stats.users) {
+           const [{ count: uCount }, { count: pCount }, { count: oCount }, { count: cCount }, logsRes, ordersRes] = await Promise.all([
+             supabase.from('profiles').select('*', { count: 'exact', head: true }),
+             supabase.from('products').select('*', { count: 'exact', head: true }),
+             supabase.from('orders').select('*', { count: 'exact', head: true }),
+             supabase.from('communities').select('*', { count: 'exact', head: true }),
+             supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20),
+             supabase.from('orders').select('total_amount').eq('status', 'paid')
+           ]);
+           
+           const totalRevenue = ordersRes.data?.reduce((acc: number, curr: any) => acc + (curr.total_amount || 0), 0) || 0;
 
-        if (usersRes.data) setUsers(usersRes.data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
-        if (videosRes.data) setVideos(videosRes.data);
-        if (videoCatsRes.data) setVideoCategories(videoCatsRes.data);
-        if (productsRes.data) setProducts(productsRes.data);
-        if (brandsRes.data) setBrands(brandsRes.data);
-        if (retreatsRes.data) setRetreats(retreatsRes.data);
-        if (packagesRes.data) setPackages(packagesRes.data);
-        if (athletesRes.data) setAthletes(athletesRes.data);
-        if (programsRes.data) setProgramTemplates(programsRes.data);
-        if (assignmentsRes?.data) setUserProgramAssignments(assignmentsRes.data);
-        if (communitiesRes.data) setCommunities(communitiesRes.data);
-        if (ordersRes.data) setOrders(ordersRes.data);
-        if (commCatsRes.data) setCommunityCategories(commCatsRes.data);
-        if (commReqsRes.data) setCommunityJoiningRequests(commReqsRes.data);
-        if (commMembersRes.data) setCommunityMembers(commMembersRes.data);
-        if (bookingsRes.data) setBookingRequests(bookingsRes.data);
-        if (siteContentRes.data) setSiteContent(siteContentRes.data);
-        if (athleteAppsRes.data) setAthleteApplications(athleteAppsRes.data);
-        if (calSessionsRes?.data) setCalendarSessions(calSessionsRes.data);
-        if (servReqsRes?.data) setServiceRequests(servReqsRes.data);
-        if (servAvailRes?.data) setServiceAvailability(servAvailRes.data);
-        
-        if (communitiesRes.data && commMembersRes.data) {
-          setCommunities(communitiesRes.data.map(c => ({
-            ...c,
-            members: commMembersRes.data.filter(m => m.community_id === c.id).map(m => m.user_id)
-          })));
+           setStats({
+             users: uCount || 0,
+             products: pCount || 0,
+             orders: oCount || 0,
+             communities: cCount || 0,
+             revenue: totalRevenue.toFixed(2)
+           });
+           if (logsRes.data) setActivityLogs(logsRes.data);
+        } else if (activeTab === 'users' && users.length === 0) {
+           const { data } = await supabase.from('profiles').select('*').limit(50);
+           if (data) setUsers(data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
+        } else if (activeTab === 'content' && videos.length === 0) {
+           const [vRes, vcRes] = await Promise.all([
+             supabase.from('videos').select('*').order('created_at', { ascending: false }).limit(50),
+             supabase.from('video_categories').select('*')
+           ]);
+           if (vRes.data) setVideos(vRes.data);
+           if (vcRes.data) setVideoCategories(vcRes.data);
+        } else if (activeTab === 'shop' && products.length === 0) {
+           const [pRes, oRes] = await Promise.all([
+             supabase.from('products').select('*').limit(50),
+             supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(50)
+           ]);
+           if (pRes.data) setProducts(pRes.data);
+           if (oRes.data) setOrders(oRes.data);
+        } else if (activeTab === 'community' && communities.length === 0) {
+           const [cRes, cmRes, pRes] = await Promise.all([
+             supabase.from('communities').select('*').limit(20),
+             supabase.from('community_members').select('*'),
+             supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50)
+           ]);
+           if (cRes.data && cmRes.data) {
+             setCommunities(cRes.data.map((c: any) => ({
+               ...c,
+               members: cmRes.data.filter((m: any) => m.community_id === c.id).map((m: any) => m.user_id)
+             })));
+           }
+           if (pRes.data) setPosts(pRes.data);
+        } else if (activeTab === 'services' && serviceRequests.length === 0) {
+           const [csRes, srRes, saRes] = await Promise.all([
+             supabase.from('calendar_sessions').select('*').order('session_date', { ascending: false }).limit(50),
+             supabase.from('service_requests').select('*').order('requested_date', { ascending: false }).limit(50),
+             supabase.from('service_availability').select('*').limit(50)
+           ]);
+           if (csRes.data) setCalendarSessions(csRes.data);
+           if (srRes.data) setServiceRequests(srRes.data);
+           if (saRes.data) setServiceAvailability(saRes.data);
         }
-        if (retreatAppsRes.data) setRetreatApplications(retreatAppsRes.data.map((app: any) => ({
-          ...app,
-          userName: usersRes.data?.find(u => u.id === app.user_id)?.full_name || 'Unknown',
-          userEmail: usersRes.data?.find(u => u.id === app.user_id)?.email || 'Unknown'
-        })));
-        if (postsRes.data) setPosts(postsRes.data.map((p: any) => ({
-          ...p,
-          authorName: usersRes.data?.find(u => u.id === p.author_id)?.full_name || 'Unknown'
-        })));
-        if (logsRes.data) setActivityLogs(logsRes.data);
-
-        setStats({
-          users: usersRes.data?.length || 0,
-          activeMembers: usersRes.data?.filter(u => u.status === 'active' && u.tier && u.tier !== 'Free Access').length || 0,
-          athletes: athletesRes.data?.length || 0,
-          programs: programsRes.data?.filter(p => p.status === 'published').length || 0,
-          products: productsRes.data?.length || 0,
-          orders: ordersRes.data?.length || 0,
-          communities: communitiesRes.data?.length || 0,
-          retreatRequests: retreatAppsRes.data?.filter(a => a.status === 'pending').length || 0,
-          serviceRequests: bookingsRes.data?.length || 0,
-          revenue: ordersRes.data?.reduce((acc, curr) => acc + curr.total_amount, 0).toFixed(2) || '0.00'
-        });
       } catch (error) {
         console.error('Error fetching admin data:', error);
         showToast('System synchronization error', 'error');
@@ -174,7 +148,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     };
 
     fetchData();
-  }, [user]);
+  }, [user, activeTab]);
 
   // Handlers
   const handleSaveCommunity = async (data: Partial<Community>) => {
@@ -299,6 +273,17 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
 
   const handleDeleteVideo = async (id: string) => {
     try {
+      const videoToDelete = videos.find(v => v.id === id);
+      if (videoToDelete && videoToDelete.video_url) {
+        // Extract file path from public URL and clear it from Storage to prevent memory leaks
+        const urlParts = videoToDelete.video_url.split('/fmf-media/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          const { error: storageError } = await supabase.storage.from('fmf-media').remove([filePath]);
+          if (storageError) console.error('Failed to remove asset from storage:', storageError);
+        }
+      }
+
       await supabase.from('videos').delete().eq('id', id);
       setVideos(prev => prev.filter(v => v.id !== id));
       logActivity('DELETE_VIDEO', 'video', id);
@@ -306,25 +291,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     } catch (err) { showToast('Purge failed', 'error'); }
   };
 
-  const handleSaveAthlete = async (data: Partial<Athlete>) => {
-    try {
-      if (data.id) {
-        const { error } = await supabase.from('athletes').update(data).eq('id', data.id);
-        if (error) throw error;
-        setAthletes(prev => prev.map(a => a.id === data.id ? { ...a, ...data } as Athlete : a));
-        logActivity('UPDATE_ATHLETE', 'athlete', data.id, data);
-        showToast('Athlete dossier updated', 'success');
-      } else {
-        const { data: newA, error } = await supabase.from('athletes').insert(data).select().single();
-        if (error) throw error;
-        if (newA) {
-          setAthletes(prev => [newA, ...prev]);
-          logActivity('CREATE_ATHLETE', 'athlete', newA.id, newA);
-        }
-        showToast('New athlete authorized', 'success');
-      }
-    } catch (err) { showToast('Athlete sync failed', 'error'); }
-  };
 
   const handleSaveProgramTemplate = async (data: Partial<ProgramTemplate>) => {
     try {
@@ -378,49 +344,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     }
   };
 
-  const handleReviewAthleteApp = async (app: AthleteApplication, status: 'approved' | 'rejected') => {
-    try {
-      await supabase.from('athlete_applications').update({ status }).eq('id', app.id);
-      if (status === 'approved') {
-        const { error } = await supabase.from('profiles').update({ role: 'athlete' }).eq('id', app.user_id);
-        if (error) throw error;
-        
-        await supabase.from('athletes').insert({
-          user_id: app.user_id,
-          name: app.name,
-          category: app.category,
-          bio: app.bio,
-          images: app.images,
-          videos: app.videos,
-          social_links: app.social_links,
-          status: 'active'
-        });
-        showToast(`${app.name} elevated to Athlete status`, 'success');
-      } else {
-        showToast(`Application from ${app.name} rejected`, 'info');
-      }
-      setAthleteApplications(prev => prev.map(a => a.id === app.id ? { ...a, status } : a));
-    } catch (err) { showToast('Execution failed', 'error'); }
-  };
 
-  const handleRemoveAthleteRole = async (userId: string) => {
-    try {
-      await supabase.from('profiles').update({ role: 'user' }).eq('id', userId);
-      await supabase.from('athletes').update({ status: 'inactive' }).eq('user_id', userId);
-      setAthletes(prev => prev.filter(a => a.user_id !== userId));
-      showToast('Athlete role revoked', 'success');
-    } catch (err) { showToast('Revocation failed', 'error'); }
-  };
-
-  const handleDeactivateAthlete = async (id: string) => {
-    try {
-      const athlete = athletes.find(a => a.id === id);
-      const newStatus = athlete?.status === 'active' ? 'inactive' : 'active';
-      await supabase.from('athletes').update({ status: newStatus }).eq('id', id);
-      setAthletes(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
-      showToast('Athlete status toggled', 'success');
-    } catch (err) { showToast('Status update failed', 'error'); }
-  };
 
   const handleSavePackage = async (data: Partial<Package>) => {
     try {
@@ -544,7 +468,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <VideoManager 
           videos={videos} 
           categories={videoCategories} 
-          athletes={athletes} 
           onUpload={() => handleSaveVideo({ title: 'New Video', visibility_status: 'draft', level: 'Beginner' })} 
           onEdit={handleSaveVideo} 
           onDelete={handleDeleteVideo} 

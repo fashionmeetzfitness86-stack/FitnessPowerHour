@@ -84,7 +84,6 @@ export const ShopManager = ({
                        
                        <div className="flex gap-4 items-center mb-6">
                            <p className="text-2xl font-black tracking-tighter">${p.price}</p>
-                           <span className="text-[10px] uppercase tracking-widest text-emerald-400 bg-emerald-400/10 px-2 py-1 inline-block rounded font-bold">${(p.price * 0.8).toFixed(2)} Memb</span>
                        </div>
 
                        <div className="mt-auto grid grid-cols-2 gap-3">
@@ -125,16 +124,10 @@ export const ShopManager = ({
                     <input type="text" value={editingProduct.name || ''} onChange={e => setEditingProduct({...editingProduct, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-brand-coral text-white font-black uppercase text-xl" />
                  </div>
 
-                 <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 gap-4">
                     <div>
                        <label className="text-[10px] uppercase tracking-widest text-white/40 font-black mb-2 block font-mono">Standard Price ($)</label>
                        <input type="number" value={editingProduct.price || ''} onChange={e => setEditingProduct({...editingProduct, price: parseFloat(e.target.value)})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 outline-none focus:border-brand-coral text-brand-coral font-black text-xl" />
-                    </div>
-                    <div>
-                        <label className="text-[10px] uppercase tracking-widest text-emerald-400/50 font-black mb-2 block font-mono">Member Price (-20%)</label>
-                        <div className="w-full bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-4 text-emerald-400 font-black text-xl tracking-tighter cursor-not-allowed">
-                           ${((editingProduct.price || 0) * 0.8).toFixed(2)}
-                        </div>
                     </div>
                  </div>
 

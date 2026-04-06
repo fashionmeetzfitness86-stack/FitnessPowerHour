@@ -20,7 +20,7 @@ import { OrderHistoryTab } from './OrderHistoryTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
 import { ReferralTab } from './ReferralTab';
-import { AthleteDashboard } from '../athlete/AthleteDashboard';
+
 import { InternalFeed } from '../InternalFeed';
 import { OnboardingFlow } from './OnboardingFlow';
 
@@ -96,7 +96,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
       case 'referrals': return <ReferralTab user={user} showToast={showToast} />;
-      case 'athlete': return <AthleteDashboard athleteUser={user} showToast={showToast} />;
       case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
       default: return <Overview user={user} />;
     }

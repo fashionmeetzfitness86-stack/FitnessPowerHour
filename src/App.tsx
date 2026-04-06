@@ -12,10 +12,8 @@ import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, us
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ProfileDashboard } from './components/profile/ProfileDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { AthleteDashboard } from './components/athlete/AthleteDashboard';
-import { CommunityPage } from './components/community/CommunityPage';
 import { CommunityDetail } from './components/community/CommunityDetail';
-import { AthleteApplication } from './components/AthleteApplication';
+import { CommunityPage } from './components/community/CommunityPage';
 import { AuthCallback } from './components/auth/AuthCallback';
 
 import { FreeAccessGate } from './components/FreeAccessGate';
@@ -1299,7 +1297,7 @@ const Home = () => {
                 <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Full Video Library Access</li>
                 <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Program Builder Tracker</li>
                 <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Service Booking Privileges</li>
-                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> 20% Store Discount</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> VIP Access to FMF Store</li>
               </ul>
               <button onClick={() => navigate('/membership')} className="w-full btn-primary bg-brand-teal text-black border-transparent shadow-glow-teal hover:scale-105 transition-all">
                 Become a Member
@@ -1341,7 +1339,7 @@ const Home = () => {
         <div className="max-w-5xl mx-auto text-center space-y-10">
           <ShoppingBag size={48} className="mx-auto text-brand-teal opacity-50" />
           <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">Official <span className="text-brand-coral border-b-2 border-brand-coral pb-1">Apparel</span></h2>
-          <p className="text-white/60 text-lg uppercase tracking-widest">Members receive 20% off automatically applied at checkout.</p>
+          <p className="text-white/60 text-lg uppercase tracking-widest">Exclusive access for active members only.</p>
           <button onClick={() => navigate('/shop')} className="btn-secondary px-12 py-4">Visit Store</button>
         </div>
       </section>
@@ -5999,8 +5997,6 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/program" element={<ProgramPage />} />
               <Route path="/videos" element={<VideoLibrary />} />
               <Route path="/video/:id" element={<VideoDetail />} />
-              <Route path="/athlete-application" element={<AthleteApplication showToast={showToast} />} />
-              <Route path="/athletes" element={<Athletes />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
@@ -6023,13 +6019,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
                   <Navigate to="/" replace />
                 )
               } />
-              <Route path="/athlete/dashboard" element={
-                user && user.role === 'athlete' ? (
-                  <AthleteDashboard athleteUser={user} showToast={showToast} />
-                ) : (
-                  <Navigate to="/" replace />
-                )
-              } />
+
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AnimatePresence>
