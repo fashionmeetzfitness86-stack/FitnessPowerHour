@@ -53,7 +53,7 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
 
   // Scaffold dummy history for visual alignment until full Stripe sync
   const history: BillingHistory[] = [
-    { id: 'inv_12345', user_id: user.id, amount: 59.00, status: 'paid', date: '2026-07-24', description: 'Elite Membership - Monthly' },
+    { id: 'inv_12345', user_id: user.id, amount: 19.99, status: 'paid', date: '2026-07-24', description: 'Basic Membership - Monthly' },
   ];
 
   return (
@@ -86,7 +86,7 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
               <p className="text-[10px] uppercase tracking-widest text-brand-teal mt-1">Billed Monthly</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-brand-teal">$59.00</p>
+              <p className="text-2xl font-bold text-brand-teal">$19.99</p>
               <p className="text-[8px] uppercase tracking-widest text-white/40">USD / mo</p>
             </div>
           </div>

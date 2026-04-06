@@ -184,7 +184,7 @@ export const RetreatsTab = ({ user, showToast }: { user: UserProfile, showToast:
           <div>
             <h4 className="font-bold text-sm uppercase tracking-tight text-brand-coral mb-2">Priority Selection</h4>
             <p className="text-[10px] text-brand-coral/60 uppercase tracking-widest leading-relaxed font-bold max-w-2xl">
-              Elite & Local Collective members receive 48-hour priority access and a 15% discount on all global retreat bookings before they open to the public. Upgrade your membership to secure your spot.
+              Basic & Local Collective members receive 48-hour priority access and a 15% discount on all global retreat bookings before they open to the public. Upgrade your membership to secure your spot.
             </p>
           </div>
         </div>

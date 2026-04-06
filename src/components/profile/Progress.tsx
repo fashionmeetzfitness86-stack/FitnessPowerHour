@@ -329,7 +329,7 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
           </div>
           <h3 className="text-3xl font-black uppercase tracking-tighter mb-4">Physiological <span className="text-brand-coral">Metrics</span></h3>
           
-          {['Elite', 'Local Collective'].includes(user.tier || '') ? (
+          {['Basic', 'Local Collective'].includes(user.tier || '') ? (
              <>
                <p className="text-[10px] uppercase tracking-[0.4em] text-white/30 max-w-sm mx-auto font-black leading-relaxed">
                  Metric visualization active. Maintain your 30-day baseline of EOD check-in data to calibrate the matrix.

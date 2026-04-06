@@ -5,8 +5,7 @@ import { supabase } from '../../supabase';
 import { UserProfile, UserVideoUpload } from '../../types';
 
 export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: (msg: string, type?: any) => void }) => {
-  const isBasic = user.tier === 'Basic';
-  const uploadLimit = isBasic ? 3 : 50; 
+  const uploadLimit = 50;
   
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -72,11 +71,6 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: (m
   };
 
   const processFile = (selectedFile: File) => {
-    const isVideo = selectedFile.type.startsWith('video/');
-    if (isBasic && isVideo) {
-      showToast('Video uploads restricted. Upgrade to Elite for video support.', 'error');
-      return;
-    }
     if (selectedFile.size > 500 * 1024 * 1024) {
       showToast('Maximum file size is 500MB.', 'error');
       return;
@@ -215,11 +209,11 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: (m
               >
                 <div className="flex justify-center gap-4 mb-6">
                   <Camera size={32} className="text-white/10" />
-                  <Video size={32} className={isBasic ? "text-white/5" : "text-white/10"} />
+                  <Video size={32} className="text-white/10" />
                 </div>
                 <h4 className="text-xs font-black uppercase tracking-[0.2em] mb-2">Protocol Ready</h4>
                 <p className="text-[8px] uppercase tracking-widest text-white/20 mb-8 max-w-[180px] mx-auto font-bold text-center">
-                  {isBasic ? 'Image sync authorized. Upgrade to Elite for video support.' : 'Authorizing media sync up to 500MB.'}
+                  Authorizing media sync up to 500MB.
                 </p>
                 
                 <div className="flex gap-4 w-full">
@@ -235,8 +229,8 @@ export const MyVideos = ({ user, showToast }: { user: UserProfile, showToast: (m
                   >
                     Upload Asset
                   </button>
-                  <input ref={cameraInputRef} type="file" accept={isBasic ? "image/*" : "image/*,video/*"} capture="environment" className="hidden" onChange={handleFileChange} />
-                  <input ref={fileInputRef} type="file" accept={isBasic ? "image/*" : "image/*,video/*"} className="hidden" onChange={handleFileChange} />
+                  <input ref={cameraInputRef} type="file" accept="image/*,video/*" capture="environment" className="hidden" onChange={handleFileChange} />
+                  <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileChange} />
                 </div>
               </div>
             ) : (

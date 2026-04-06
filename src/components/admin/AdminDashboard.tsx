@@ -23,26 +23,11 @@ import {
 } from '../../types';
 
 import { AdminOverview } from './AdminOverview';
-import { AdminCalendarControl } from './AdminCalendarControl';
-import { CMSManager } from './CMSManager';
 import { UsersManager } from './UsersManager';
-import { AthleteManager } from './AthleteManager';
 import { VideoManager } from './VideoManager';
-import { ProgramManager } from './ProgramManager';
-import { RetreatManager } from './RetreatManager';
 import { CommunityManager } from './CommunityManager';
-import { ShopManager } from './ShopManager';
 import { OrderManager } from './OrderManager';
-import { PackageManager } from './PackageManager';
-import { LogManager } from './LogManager';
-
 import { ServiceManager } from './ServiceManager';
-import { NotificationManager } from './NotificationManager';
-import { RoleManager } from './RoleManager';
-import { SettingsManager } from './SettingsManager';
-import { ScannerManager } from './ScannerManager';
-import { Settings as SettingsIcon } from 'lucide-react';
-import { QrCode } from 'lucide-react';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -519,24 +504,12 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   };
 
   const sidebarItems = [
-    { id: 'overview', label: 'Ecosystem Overview', icon: LayoutDashboard },
-    { id: 'users', label: 'Member Directory', icon: Users },
-    { id: 'athletes', label: 'Athlete Roster', icon: Trophy },
-    { id: 'programs', label: 'System Protocols', icon: ListChecks },
-    { id: 'calendar', label: 'Ops Calendar', icon: Calendar },
-    { id: 'cms', label: 'CMS Engine', icon: Edit2, adminOnly: true },
-    { id: 'content', label: 'Media Vault', icon: PlayCircle },
-    { id: 'shop', label: 'Global Store', icon: ShoppingBag },
-    { id: 'orders', label: 'Fulfillment Logic', icon: ClipboardList },
-    { id: 'packages', label: 'Access Tiering', icon: PackageIcon },
-    { id: 'community', label: 'Collective Hub', icon: MessageSquare },
-    { id: 'retreats', label: 'Venture Board', icon: MapPin },
-    { id: 'scanner', label: 'Nexus Scanner', icon: QrCode },
-    { id: 'services', label: 'Service Streams', icon: Activity },
-    { id: 'notifications', label: 'Comm Signal', icon: Mail },
-    { id: 'roles', label: 'Encryption Keys', icon: ShieldAlert, adminOnly: true },
-    { id: 'settings', label: 'System Core', icon: SettingsIcon, adminOnly: true },
-    { id: 'logs', label: 'Quantum Logs', icon: History, adminOnly: true },
+    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'content', label: 'Content', icon: PlayCircle },
+    { id: 'bookings', label: 'Bookings', icon: Calendar },
+    { id: 'community', label: 'Community', icon: MessageSquare },
+    { id: 'users', label: 'Users', icon: Users },
+    { id: 'orders', label: 'Orders', icon: ShoppingBag },
   ];
 
   const renderContent = () => {
@@ -567,98 +540,21 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           currentUser={user}
         />
       );
-      case 'athletes': return (
-        <AthleteManager 
-          athletes={athletes} 
-          applications={athleteApplications}
-          programs={programTemplates} 
-          videos={videos} 
-          onReviewApplication={handleReviewAthleteApp}
-          onEditAthlete={(athlete) => { /* To be implemented */ }}
-          onRemoveRole={handleRemoveAthleteRole}
-          onDeactivate={handleDeactivateAthlete}
-        />
-      );
-      case 'cms': return (
-        <CMSManager 
-          contentKeys={siteContent}
-          onAdd={() => {}}
-          onEdit={handleSaveSiteContent}
-          onDelete={handleDeleteSiteContent}
-          showToast={showToast}
-        />
-      );
       case 'content': return (
         <VideoManager 
           videos={videos} 
           categories={videoCategories} 
           athletes={athletes} 
-          onUpload={() => handleSaveVideo({ title: 'New Transmission', visibility_status: 'draft', level: 'Beginner' })} 
+          onUpload={() => handleSaveVideo({ title: 'New Video', visibility_status: 'draft', level: 'Beginner' })} 
           onEdit={handleSaveVideo} 
           onDelete={handleDeleteVideo} 
         />
       );
-      case 'programs': return (
-        <ProgramManager 
-          templates={programTemplates} 
-          assignments={userProgramAssignments}
-          users={users} 
-          videos={videos} 
-          onAddTemplate={() => handleSaveProgramTemplate({ title: 'New Protocol', status: 'draft' })} 
-          onEditTemplate={handleSaveProgramTemplate} 
-          onAssignProgram={handleAssignProgram}
-          onDeleteTemplate={handleDeleteTemplate} 
-        />
-      );
-      case 'calendar': return (
-        <AdminCalendarControl 
-          sessions={calendarSessions} 
-          requests={serviceRequests} 
-          availability={serviceAvailability} 
-          users={users} 
-          onApproveRequest={async (id) => {
-             await supabase.from('service_requests').update({ status: 'approved' }).eq('id', id);
-             setServiceRequests(p => p.map(r => r.id === id ? { ...r, status: 'approved' } : r));
-             
-             // Also insert generic calendar session for visibility
-             const req = serviceRequests.find(r => r.id === id);
-             if (req) {
-                 const { data } = await supabase.from('calendar_sessions').insert({
-                     user_id: req.user_id,
-                     source_type: 'service',
-                     title: req.service_subtype.replace('_', ' '),
-                     session_date: req.requested_date,
-                     session_time: req.requested_time,
-                     status: 'approved'
-                 }).select().single();
-                 if (data) setCalendarSessions(p => [...p, data]);
-             }
-             showToast('Service request authorized', 'success');
-          }} 
-          onRejectRequest={async (id) => {
-             await supabase.from('service_requests').update({ status: 'rejected' }).eq('id', id);
-             setServiceRequests(p => p.map(r => r.id === id ? { ...r, status: 'rejected' } : r));
-             showToast('Request isolated/rejected', 'success');
-          }} 
-          onAddAvailability={async (data) => {
-             const { data: nAvail } = await supabase.from('service_availability').insert(data).select().single();
-             if (nAvail) setServiceAvailability(p => [...p, nAvail]);
-             showToast('Operational window defined', 'success');
-          }} 
-          onUpdateSessionStatus={async (id, status) => {
-             await supabase.from('calendar_sessions').update({ status }).eq('id', id);
-             setCalendarSessions(p => p.map(s => s.id === id ? { ...s, status } : s));
-             showToast('Session status overridden', 'success');
-          }} 
-        />
-      );
-      case 'retreats': return (
-        <RetreatManager 
-          retreats={retreats} 
-          applications={retreatApplications} 
-          onAdd={() => {}} 
-          onReview={handleReviewRetreatApp} 
-          onDelete={handleDeleteRetreat} 
+      case 'bookings': return (
+        <ServiceManager 
+          bookings={bookingRequests} 
+          onUpdateStatus={handleUpdateBookingStatus} 
+          showToast={showToast} 
         />
       );
       case 'community': return (
@@ -671,17 +567,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onDeletePost={handleDeletePost} 
         />
       );
-      case 'scanner': return <ScannerManager showToast={showToast} />;
-      case 'shop': return (
-        <ShopManager 
-          products={products} 
-          searchQuery={searchQuery} 
-          setSearchQuery={setSearchQuery} 
-          onAdd={() => handleSaveProduct({ name: 'Commercial Node Element', is_active: false, price: 0 })} 
-          onEdit={handleSaveProduct} 
-          onDelete={handleDeleteProduct} 
-        />
-      );
       case 'orders': return (
         <OrderManager 
           orders={orders} 
@@ -689,38 +574,11 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onUpdateStatus={async (id, status) => {
              await supabase.from('orders').update({ status }).eq('id', id);
              setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as any } : o));
-             showToast('Transaction logic updated', 'success');
+             showToast('Updated', 'success');
           }} 
           onViewDetails={() => {}} 
         />
       );
-      case 'packages': return (
-        <PackageManager 
-          packages={packages} 
-          onSave={handleSavePackage} 
-          onDelete={handleDeletePackage} 
-        />
-      );
-      case 'logs': return (
-        <LogManager logs={activityLogs} />
-      );
-      case 'services': return (
-        <ServiceManager 
-          bookings={bookingRequests} 
-          onUpdateStatus={handleUpdateBookingStatus} 
-          showToast={showToast} 
-        />
-      );
-      case 'notifications': return <NotificationManager showToast={showToast} />;
-      case 'roles': return (
-        <RoleManager 
-          users={users} 
-          onUpdateRole={(id, role) => handleUpdateUser(id, { role: role as any })} 
-          showToast={showToast} 
-          currentUser={user}
-        />
-      );
-      case 'settings': return <SettingsManager showToast={showToast} />;
       default: return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-8">
           <div className="w-24 h-24 rounded-[2rem] bg-brand-teal/5 flex items-center justify-center text-brand-teal/20 border-2 border-dashed border-white/5 animate-pulse">
@@ -761,7 +619,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <nav className="flex-grow px-4 space-y-1 overflow-y-auto no-scrollbar pb-12">
           <p className="px-6 text-[9px] uppercase tracking-[0.3em] text-white/20 font-black mb-4">Core Systems</p>
           {sidebarItems.map((item) => {
-            if (item.adminOnly && user.role !== 'super_admin') return null;
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             

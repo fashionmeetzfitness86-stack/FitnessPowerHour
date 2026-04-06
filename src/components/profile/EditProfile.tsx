@@ -295,7 +295,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
               <select name="fitness_level" value={formData.fitness_level} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral outline-none transition-colors appearance-none outline-none">
                 <option value="Beginner">Beginner</option>
                 <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced - Elite</option>
+                <option value="Advanced">Advanced - Basic</option>
               </select>
             </div>
 

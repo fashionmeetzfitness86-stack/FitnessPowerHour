@@ -107,6 +107,7 @@ export interface ProgramTemplate {
   status: 'draft' | 'active' | 'archived';
   created_at: string;
   updated_at: string;
+  athlete_id?: string;
 }
 
 export interface ProgramTemplateVideo {
@@ -239,19 +240,26 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  category: string;
+  category?: string;
   images: string[];
   video_url?: string;
   external_link?: string;
-  is_recommended: boolean;
-  is_active: boolean;
+  is_recommended?: boolean;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
   brand_id?: string;
   category_id?: string;
+  ingredients?: string[];
   featured_image?: string;
   gallery?: string[];
   sizes?: string[];
+  slug?: string;
+  compare_at_price?: number;
+  sku?: string;
+  status?: string;
+  inventory_count?: number;
+  benefits?: string[];
 }
 
 export type Program = ProgramTemplate;
