@@ -5969,7 +5969,7 @@ const About = () => (
 // --- Main App ---
 
 const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string, t?: 'success' | 'error' | 'info' | 'warning') => void; toast: any; setToast: any }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateTier } = useAuth();
 
   return (
     <Router>
@@ -6000,7 +6000,13 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/shop/:category" element={<Store />} />
               <Route path="/shop/product/:id" element={<ProductDetail />} />
               <Route path="/brand/:slug" element={<BrandPage />} />
-              <Route path="/profile" element={<ProfileDashboard user={user!} showToast={showToast} />} />
+              <Route path="/profile" element={
+                user ? (
+                  <ProfileDashboard user={user} logout={logout} updateTier={updateTier} showToast={showToast} />
+                ) : (
+                  <Navigate to="/membership?mode=login" replace />
+                )
+              } />
               <Route path="/order-history" element={<OrderHistory />} />
               <Route path="/recovery" element={<Recovery />} />
               <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
