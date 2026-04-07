@@ -71,7 +71,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     { id: 'progress', label: 'Progress Tracking', icon: LineChart },
     { id: 'calendar', label: 'Workout Calendar', icon: Calendar },
     { id: 'programs', label: 'My Programs', icon: PlaySquare },
-    { id: 'videos', label: 'My Videos', icon: Video },
     { id: 'membership', label: 'Membership', icon: Shield },
     { id: 'billing', label: 'Billing', icon: CreditCard },
     { id: 'retreats', label: 'Retreats', icon: Map },
@@ -87,7 +86,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'progress': return <Progress user={user} showToast={showToast} />;
       case 'calendar': return <CalendarTab user={user} showToast={showToast} />;
       case 'programs': return <MyPrograms user={user} />;
-      case 'videos': return <MyVideos user={user} showToast={showToast} />;
       case 'membership': return <MembershipManager user={user} updateTier={updateTier} showToast={showToast} />;
       case 'billing': return <Billing user={user} showToast={showToast} />;
       case 'services': return <ServicesTab user={user} showToast={showToast} />;

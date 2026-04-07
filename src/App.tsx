@@ -861,8 +861,11 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
+  const hasActiveMembership = user?.tier === 'Basic' || user?.tier === 'Elite' || user?.role === 'admin' || user?.role === 'super_admin';
+
   const navLinks = user ? [
     { name: 'Home', path: '/profile' },
+    ...(hasActiveMembership ? [{ name: 'Videos', path: '/videos' }] : []),
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },

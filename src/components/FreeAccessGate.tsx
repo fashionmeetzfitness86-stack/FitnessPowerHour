@@ -7,7 +7,7 @@ export const FreeAccessGate = ({ user }: { user: any }) => {
   const location = useLocation();
 
   // Determine if the user holds an active membership (admin/super_admin bypass this)
-  const isMember = user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin');
+  const isMember = user && (user.tier === 'Basic' || user.tier === 'Elite' || user.role === 'admin' || user.role === 'super_admin');
 
   // Hard-locked routes
   const lockedPaths = [
