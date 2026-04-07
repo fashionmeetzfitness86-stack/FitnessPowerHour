@@ -1,8 +1,6 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_API_KEY!, { apiVersion: '2026-02-25.clover' });
-
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || 'https://ujfpepmszqrptmcauqaa.supabase.co',
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
@@ -10,8 +8,14 @@ const supabase = createClient(
 
 export default async (req: Request) => {
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
+
+  if (!process.env.STRIPE_API_KEY) {
+    return new Response(JSON.stringify({ error: 'System not connected to Stripe' }), { status: 500 });
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_API_KEY, { apiVersion: '2026-02-25.clover' as any });
 
   const body = await req.text();
   const sig = req.headers.get('stripe-signature');
