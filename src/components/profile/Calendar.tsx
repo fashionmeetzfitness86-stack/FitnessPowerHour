@@ -63,9 +63,9 @@ export const Calendar = ({ user, showToast }: { user: UserProfile, showToast?: a
          setSelectedOption(null);
          setSelectedTime('');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      if (showToast) showToast('Failed to schedule workout', 'error');
+      if (showToast) showToast(err.message || 'Failed to schedule workout', 'error');
     }
   };
 
