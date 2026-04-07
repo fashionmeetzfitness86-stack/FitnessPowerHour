@@ -25,7 +25,11 @@ import { OnboardingFlow } from './OnboardingFlow';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(user && !user.onboarding_completed);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    const shouldShow = sessionStorage.getItem('intent_onboarding') === 'true';
+    if (shouldShow) sessionStorage.removeItem('intent_onboarding');
+    return shouldShow && user && !user.onboarding_completed;
+  });
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#')) {
@@ -100,7 +104,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     }
 
     switch (activeTab) {
-      case 'overview': return <Overview user={user} />;
+      case 'overview': return <Overview user={user} setShowOnboarding={setShowOnboarding} />;
       case 'progress': return <Progress user={user} showToast={showToast} />;
       case 'calendar': return <CalendarTab user={user} showToast={showToast} />;
       case 'programs': return <MyPrograms user={user} />;
@@ -111,7 +115,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
       case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
-      default: return <Overview user={user} />;
+      default: return <Overview user={user} setShowOnboarding={setShowOnboarding} />;
     }
   };
 
@@ -156,6 +160,14 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
                  </div>
               )}
             </div>
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
+              <Link
+                to="/admin/dashboard"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all mb-4"
+              >
+                <Shield size={14} /> Admin Dashboard
+              </Link>
+            )}
             <div className="pt-4 border-t border-white/10">
               <button
                 onClick={logout}

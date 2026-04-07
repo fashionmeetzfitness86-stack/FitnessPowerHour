@@ -14,8 +14,15 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: hidden;
+  }
   body {
     @apply bg-brand-black text-brand-white font-sans antialiased;
+    overscroll-behavior-y: none;
+    overflow-x: hidden;
   }
 }
 

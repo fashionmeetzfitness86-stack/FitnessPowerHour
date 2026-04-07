@@ -25,7 +25,7 @@ import {
   Filter, Search, User, Quote, Plus, Minus, Upload, Link2, Send, Bell, Trash2,
   Youtube, ExternalLink, Share2, Trophy, Check, Users, Power, Ban, Layout, Globe,
   Edit2, Truck, Eye, Printer, UserPlus, UserMinus, MoreHorizontal,
-  LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award
+  LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award, Shield
 } from 'lucide-react';
 import { AthletesDirectory } from './components/athletes/AthletesDirectory';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
@@ -851,7 +851,7 @@ const NotificationBell = () => {
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   }, [pathname]);
   return null;
 };
@@ -870,6 +870,7 @@ const Navbar = () => {
     { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },
     { name: 'Services', path: '/services' },
+    ...(user?.role === 'admin' || user?.role === 'super_admin' ? [{ name: 'Admin', path: '/admin/dashboard' }] : []),
   ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
@@ -911,6 +912,11 @@ const Navbar = () => {
           {user ? (
             <div className="hidden lg:flex items-center space-x-4">
               <NotificationBell />
+              {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                <Link to="/admin/dashboard" className="px-4 py-2 bg-brand-teal/10 border border-brand-teal/30 hover:bg-brand-teal hover:text-black rounded-full transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <Shield size={14} /> Admin Dashboard
+                </Link>
+              )}
               <Link to="/profile" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Profile Dashboard">
                 <User size={18} />
               </Link>
@@ -973,6 +979,15 @@ const Navbar = () => {
                         >
                           <User size={16} /> Profile Dashboard
                         </Link>
+                        {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                          <Link 
+                            to="/admin/dashboard" 
+                            onClick={() => setIsOpen(false)}
+                            className="text-brand-teal flex items-center gap-2 text-xs uppercase tracking-widest font-black"
+                          >
+                            <Shield size={16} /> Admin Dashboard
+                          </Link>
+                        )}
                       </div>
                       <button 
                         onClick={() => { logout(); setIsOpen(false); }}
@@ -4388,6 +4403,10 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
       if (isLogin) {
         await login(formData.email, formData.password);
         showToast('Logged in successfully');
+        const p = new URLSearchParams(location.search);
+        if (p.get('confirmed') === 'true') {
+           sessionStorage.setItem('intent_onboarding', 'true');
+        }
         setFormData({ name: '', email: '', password: '', confirmPassword: '' });
       } else {
         if (formData.password !== formData.confirmPassword) {
