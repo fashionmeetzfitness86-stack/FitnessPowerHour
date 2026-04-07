@@ -25,6 +25,7 @@ import { OnboardingFlow } from './OnboardingFlow';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(user && !user.onboarding_completed);
   const [activeTab, setActiveTab] = useState(() => {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#')) {
@@ -116,14 +117,17 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   return (
     <div className="pt-40 pb-32 px-6 bg-brand-black text-white">
-      {user && !user.onboarding_completed && (
+      {showOnboarding && (
         <OnboardingFlow 
           showToast={showToast} 
           onComplete={() => {
-            // Update local user state immediately to hide onboarding
-            user.onboarding_completed = true;
+            // Guarantee unmount by manually toggling our state
+            setShowOnboarding(false);
+            if (user) user.onboarding_completed = true;
+            setActiveTab('membership');
+            window.location.hash = '#/profile#membership';
             // Force re-render or push to refresh from context
-            showToast('Onboarding finished. Let\'s go!', 'success');
+            showToast('Onboarding finished. Let\'s get your membership set up!', 'success');
           }} 
         />
       )}
@@ -142,7 +146,15 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
             </div>
             <div>
               <h2 className="text-xl font-bold uppercase tracking-tight">{user.full_name || 'Member'}</h2>
-              <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1">{user.tier || 'Basic'} Member</p>
+              <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1 mb-2">{user.tier || 'Basic'} Member</p>
+              {user.training_goals && user.workout_style && (
+                 <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-white/10 text-center">
+                    <span className="text-[8px] text-white/40 uppercase tracking-widest font-bold">Protocol Objective</span>
+                    <span className="text-[10px] text-brand-coral uppercase tracking-widest font-black truncate">
+                      {String(user.training_goals).replace('_', ' ')} / {user.workout_style}
+                    </span>
+                 </div>
+              )}
             </div>
             <div className="pt-4 border-t border-white/10">
               <button
@@ -160,13 +172,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    if (item.id === 'membership' && (!user.tier || user.tier === 'Free Access')) {
-                      window.location.href = '/shop';
-                      return;
-                    }
-                    setActiveTab(item.id);
-                  }}
+                  onClick={() => setActiveTab(item.id)}
                   className={`flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${
                     activeTab === item.id
                       ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
@@ -186,13 +192,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
-                    if (item.id === 'membership' && (!user.tier || user.tier === 'Free Access')) {
-                      window.location.href = '/shop';
-                      return;
-                    }
-                    setActiveTab(item.id);
-                  }}
+                  onClick={() => setActiveTab(item.id)}
                   className={`flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl transition-all flex-shrink-0 ${
                     activeTab === item.id
                       ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'

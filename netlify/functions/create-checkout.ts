@@ -1,11 +1,6 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || 'https://ujfpepmszqrptmcauqaa.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
-);
-
 export default async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('', {
@@ -21,21 +16,26 @@ export default async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
-  if (!process.env.STRIPE_API_KEY) {
-    console.error('FATAL: STRIPE_API_KEY is not defined in Netlify environment variables');
-    return new Response(JSON.stringify({ error: 'STRIPE_API_KEY missing - Platform cannot process payments until billing variables are linked in Netlify.' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
-  }
-
-  const stripe = new Stripe(process.env.STRIPE_API_KEY, { apiVersion: '2026-02-25.clover' as any });
-
   const MEMBERSHIP_PRICES: Record<string, { amount: number; name: string }> = {
     Basic: { amount: 1999, name: 'Basic Membership' },
   };
 
   try {
+    if (!process.env.STRIPE_API_KEY) {
+      throw new Error('STRIPE_API_KEY missing - Platform cannot process payments until billing variables are linked in Netlify.');
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_API_KEY, { apiVersion: '2026-02-25.clover' as any });
+
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    if (!supabaseKey) {
+      throw new Error('Supabase key is missing in environment variables.');
+    }
+    const supabase = createClient(
+      process.env.VITE_SUPABASE_URL || 'https://ujfpepmszqrptmcauqaa.supabase.co',
+      supabaseKey
+    );
+
     const body = await req.json();
     const { type, items, tier, userId, userEmail, successUrl, cancelUrl } = body;
 
