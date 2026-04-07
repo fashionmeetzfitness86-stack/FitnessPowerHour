@@ -9,9 +9,8 @@ export const FreeAccessGate = ({ user }: { user: any }) => {
   // Determine if the user holds an active membership (admin/super_admin bypass this)
   const isMember = user && (user.tier === 'Basic' || user.tier === 'Elite' || user.role === 'admin' || user.role === 'super_admin');
 
-  // Hard-locked routes
+  // Hard-locked routes (removed /profile so free users can edit settings/billing)
   const lockedPaths = [
-    '/profile', 
     '/program', 
     '/videos', 
     '/services', 

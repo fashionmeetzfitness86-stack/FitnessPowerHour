@@ -4292,9 +4292,9 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [localPassModal, setLocalPassModal] = useState<any>(null);
 
-  // Close modal and go to profile when user logs in
+  // Close modal and go to profile when user logs in (must have active membership to prevent infinite FreeAccessGate loop)
   useEffect(() => {
-    if (user) {
+    if (user && (user.tier === 'Basic' || user.tier === 'Elite' || user.role === 'admin' || user.role === 'super_admin')) {
       setIsRegistering(false);
       navigate('/profile');
     }
