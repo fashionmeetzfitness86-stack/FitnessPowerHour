@@ -27,6 +27,7 @@ import {
   Edit2, Truck, Eye, Printer, UserPlus, UserMinus, MoreHorizontal,
   LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award
 } from 'lucide-react';
+import { AthletesDirectory } from './components/athletes/AthletesDirectory';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
 import { 
   Video, 
@@ -3741,11 +3742,11 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error(data.error || 'Failed to initialize checkout');
+        showToast(data.error || 'Failed to initialize checkout payload from server.', 'error');
       }
     } catch (error: any) {
       console.error('Error creating booking checkout:', error);
-      showToast(error.message || 'Checkout protocol failed to sync.', 'error');
+      showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
     }
   };
 
@@ -3976,11 +3977,11 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error(data.error || 'Failed to initialize checkout');
+        showToast(data.error || 'Failed to initialize checkout payload from server.', 'error');
       }
     } catch (error: any) {
       console.error('Error creating booking checkout:', error);
-      showToast(error.message || 'Checkout protocol failed to sync.', 'error');
+      showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
     }
   };
 
@@ -5989,6 +5990,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
               <Route path="/program" element={<ProgramPage />} />
+              <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
               <Route path="/videos" element={<VideoLibrary />} />
               <Route path="/video/:id" element={<VideoDetail />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
