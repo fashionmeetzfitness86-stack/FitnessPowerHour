@@ -12,6 +12,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
   const [stats, setStats] = useState({
     upcoming: null as CalendarSession | null,
     pendingAuths: [] as any[],
+    trainerRequests: [] as any[],
     latestMedia: null as UserVideoUpload | null,
     sessionsThisWeek: 0,
     activeProgram: 'FMF Protocol'
@@ -48,7 +49,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
       lastWeek.setDate(lastWeek.getDate() - 7);
       const lastWeekStr = lastWeek.toISOString();
 
-      const [upcomingRes, pendingRes, mediaRes, weekRes, programRes] = await Promise.all([
+      const [upcomingRes, pendingRes, mediaRes, weekRes, programRes, trainerRequestsRes] = await Promise.all([
         supabase.from('calendar_sessions')
                 .select('*')
                 .eq('user_id', user.id)
@@ -73,7 +74,9 @@ export const Overview = ({ user }: { user: UserProfile }) => {
                 .eq('status', 'completed')
                 .gte('session_date', lastWeekStr.split('T')[0]),
                 
-        supabase.from('user_program_assignments').select(`*, program:programs(*)`).eq('user_id', user.id).eq('status', 'active').limit(1).maybeSingle()
+        supabase.from('user_program_assignments').select(`*, program:programs(*)`).eq('user_id', user.id).eq('status', 'active').limit(1).maybeSingle(),
+        
+        supabase.from('trainer_requests').select('*, athlete:users!athlete_id(full_name)').eq('user_id', user.id).order('created_at', { ascending: false }).limit(2)
       ]);
 
       setStats({
@@ -81,7 +84,8 @@ export const Overview = ({ user }: { user: UserProfile }) => {
         pendingAuths: pendingRes.data || [],
         latestMedia: mediaRes.data,
         sessionsThisWeek: weekRes.data?.length || 0,
-        activeProgram: (programRes.data as any)?.program?.title || 'System Protocol'
+        activeProgram: (programRes.data as any)?.program?.title || 'System Protocol',
+        trainerRequests: trainerRequestsRes.data || []
       });
     } catch (err) {
       console.error('Error fetching overview stats:', err);
@@ -229,6 +233,36 @@ export const Overview = ({ user }: { user: UserProfile }) => {
           <div>
              <h4 className="text-xl font-black uppercase tracking-tight leading-none mb-2">{stats.activeProgram}</h4>
              <p className="text-[10px] tracking-widest uppercase text-brand-coral font-bold bg-brand-coral/10 inline-block px-2 py-1 rounded">System Protocol Active</p>
+          </div>
+        </div>
+
+        {/* Trainer Requests */}
+        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all md:col-span-2 lg:col-span-1 cursor-pointer" onClick={() => window.location.hash = '#/athletes'}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-brand-teal">
+              <User size={20} />
+              <h3 className="text-[10px] font-black uppercase tracking-widest">Trainer Protocol</h3>
+            </div>
+          </div>
+          <div>
+            {stats.trainerRequests.length > 0 ? (
+               <div className="space-y-4">
+                  {stats.trainerRequests.map((r: any) => (
+                     <div key={r.id} className="bg-black/40 p-3 rounded-xl border border-white/5 flex flex-col gap-1">
+                        <span className="text-[10px] font-bold uppercase text-white/80">Athlete: {r.athlete?.full_name}</span>
+                        <span className={`text-[8px] tracking-widest font-mono self-start px-2 py-0.5 rounded uppercase ${
+                           r.status === 'approved' ? 'text-brand-teal border border-brand-teal/20 bg-brand-teal/10' :
+                           r.status === 'rejected' ? 'text-brand-coral border border-brand-coral/20 bg-brand-coral/10' :
+                           'text-amber-500 border border-amber-500/20 bg-amber-500/10'
+                        }`}>
+                           {r.status}
+                        </span>
+                     </div>
+                  ))}
+               </div>
+            ) : (
+               <p className="text-sm font-bold uppercase tracking-tight text-white/40 italic">No Active Trainers</p>
+            )}
           </div>
         </div>
       </div>

@@ -52,6 +52,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   // Calendar & Services System
   const [calendarSessions, setCalendarSessions] = useState<CalendarSession[]>([]);
   const [bookingRequests, setBookingRequests] = useState<any[]>([]);
+  const [trainerRequests, setTrainerRequests] = useState<any[]>([]);
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -119,12 +120,14 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
            }
            if (pRes.data) setPosts(pRes.data);
         } else if (activeTab === 'bookings' && bookingRequests.length === 0) {
-           const [bRes, csRes] = await Promise.all([
+           const [bRes, csRes, tRes] = await Promise.all([
              supabase.from('bookings').select('*').order('date', { ascending: false }).limit(50),
-             supabase.from('calendar_sessions').select('*').order('session_date', { ascending: false }).limit(50)
+             supabase.from('calendar_sessions').select('*').order('session_date', { ascending: false }).limit(50),
+             supabase.from('trainer_requests').select('*, athlete:users!athlete_id(full_name), user:users!user_id(full_name)').order('created_at', { ascending: false }).limit(50)
            ]);
            if (bRes.data) setBookingRequests(bRes.data);
            if (csRes.data) setCalendarSessions(csRes.data);
+           if (tRes.data) setTrainerRequests(tRes.data);
         } else if (activeTab === 'retreats' && retreats.length === 0) {
            const [rtRes, raRes] = await Promise.all([
              supabase.from('retreats').select('*').limit(50),
@@ -341,10 +344,28 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       
       const req = bookingRequests.find(r => r.id === id);
       if (status === 'approved' && req) {
-         // Optionally insert into calendar_sessions or logic can be handled client-side
+         await supabase.from('calendar_sessions').insert({
+            user_id: req.user_id,
+            title: `Session: ${req.service_type}`,
+            session_date: req.date || req.requested_date,
+            session_time: req.time_slot || req.requested_time,
+            status: 'scheduled'
+         });
+         showToast('Added to calendar', 'success');
       }
     } catch (err) {
       showToast('Failed to update booking status', 'error');
+    }
+  };
+
+  const handleUpdateTrainerRequestStatus = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase.from('trainer_requests').update({ status }).eq('id', id);
+      if (error) throw error;
+      setTrainerRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      showToast(`Trainer request ${status}`, 'success');
+    } catch (err) {
+      showToast('Failed to update trainer request', 'error');
     }
   };
 
@@ -398,7 +419,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       case 'bookings': return (
         <ServiceManager 
           bookings={bookingRequests} 
+          trainerRequests={trainerRequests}
           onUpdateStatus={handleUpdateBookingStatus} 
+          onUpdateTrainerRequestStatus={handleUpdateTrainerRequestStatus}
           showToast={showToast} 
         />
       );

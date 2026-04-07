@@ -3,13 +3,16 @@ import { Calendar, CheckCircle, XCircle } from 'lucide-react';
 
 interface ServiceManagerProps {
   bookings: any[];
+  trainerRequests?: any[];
   onUpdateStatus: (id: string, status: 'approved' | 'rejected') => void;
-  showToast?: any; // kept for compatibility
+  onUpdateTrainerRequestStatus?: (id: string, status: 'approved' | 'rejected') => void;
+  showToast?: any;
 }
 
-export const ServiceManager = ({ bookings, onUpdateStatus }: ServiceManagerProps) => {
+export const ServiceManager = ({ bookings, trainerRequests = [], onUpdateStatus, onUpdateTrainerRequestStatus }: ServiceManagerProps) => {
 
   const filteredBookings = bookings.filter(b => b.status === 'pending');
+  const filteredTrainerReqs = trainerRequests.filter(r => r.status === 'pending');
 
   return (
     <div className="space-y-8 fade-in">
@@ -67,13 +70,34 @@ export const ServiceManager = ({ bookings, onUpdateStatus }: ServiceManagerProps
           </tbody>
         </table>
 
-        {filteredBookings.length === 0 && (
+        {filteredBookings.length === 0 && filteredTrainerReqs.length === 0 && (
           <div className="p-12 text-center text-white/40 text-sm">
              <Calendar size={48} className="mx-auto opacity-20 mb-4" />
-             No pending bookings right now.
+             No pending requests right now.
           </div>
         )}
       </div>
+
+      {filteredTrainerReqs.length > 0 && (
+         <div className="bg-white/5 border border-white/10 p-6 rounded-3xl mt-8">
+            <h2 className="text-2xl font-bold uppercase tracking-tight mb-4">Trainer Requests</h2>
+            <div className="grid grid-cols-1 gap-4">
+               {filteredTrainerReqs.map(req => (
+                  <div key={req.id} className="bg-black/20 p-6 rounded-2xl border border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                     <div>
+                        <p className="text-brand-teal text-[10px] uppercase font-bold tracking-widest leading-none mb-1">Athlete: {req.athlete?.full_name}</p>
+                        <h4 className="text-lg font-black uppercase">{req.user?.full_name || 'User'} <span className="text-white/40 text-[10px] lowercase tracking-normal"> wants to train</span></h4>
+                        <p className="text-white/60 text-sm mt-2 max-w-lg italic">"{req.message || 'No specific goals written. Ready to work.'}"</p>
+                     </div>
+                     <div className="flex gap-2 w-full md:w-auto">
+                        <button onClick={() => onUpdateTrainerRequestStatus?.(req.id, 'rejected')} className="btn-outline border-brand-coral text-brand-coral hover:bg-brand-coral hover:text-black py-2 flex-1 md:flex-none">Reject</button>
+                        <button onClick={() => onUpdateTrainerRequestStatus?.(req.id, 'approved')} className="btn-primary py-2 flex-1 md:flex-none">Accept Protocol</button>
+                     </div>
+                  </div>
+               ))}
+            </div>
+         </div>
+      )}
     </div>
   );
 };
