@@ -1781,7 +1781,7 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
   const [benefitsInput, setBenefitsInput] = useState('');
   const [tagsInput, setTagsInput] = useState('');
 
-  if (!user || user.role !== 'admin') {
+  if (!user || !(user.role === 'admin' || user.role === 'super_admin')) {
     return null;
   }
 
@@ -2042,7 +2042,7 @@ const VideoLibrary = () => {
               <h1 className="text-5xl font-bold uppercase tracking-tighter mb-4">Video <span className="text-brand-teal">Library</span></h1>
               <p className="text-white/40 uppercase tracking-widest text-xs">Master your movement with guided sessions</p>
             </div>
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
               <button 
                 onClick={() => setIsUploadModalOpen(true)}
                 className="btn-primary flex items-center gap-2"
