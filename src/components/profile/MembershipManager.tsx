@@ -70,7 +70,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
       if (data.url) {
         window.location.href = data.url;
       } else {
-        showToast('Stripe node connection failed. Direct sync required.', 'error');
+        showToast(data.error || 'Stripe node connection failed. Direct sync required.', 'error');
         // Fallback for testing if function doesn't exist
         if (process.env.NODE_ENV === 'development') {
            showToast('Dev Mode: Synchronizing tier directly.', 'success');
