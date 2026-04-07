@@ -5454,7 +5454,7 @@ const VideoDetail = () => {
                 <div className="space-y-6">
                   <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-brand-teal">Key Benefits</h3>
                   <div className="space-y-4">
-                    {video.benefits.map((benefit, i) => (
+                    {(video.benefits || []).map((benefit, i) => (
                       <div key={i} className="flex items-center gap-4 group">
                         <div className="w-2 h-2 rounded-full bg-brand-teal group-hover:scale-150 transition-transform" />
                         <span className="text-xs uppercase tracking-widest text-white/80">{benefit}</span>
