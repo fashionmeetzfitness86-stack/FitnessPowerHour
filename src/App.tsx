@@ -3745,9 +3745,9 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       if (data.url) {
         window.location.href = data.url;
       } else {
-        showToast(data.error || 'Failed to initialize checkout payload from server.', 'error');
+        showToast(data.error || data.errorMessage || data.message || 'Failed to initialize checkout payload from server.', 'error');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating booking checkout:', error);
       showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
     }
@@ -3980,9 +3980,9 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        showToast(data.error || 'Failed to initialize checkout payload from server.', 'error');
+        showToast(data.error || data.errorMessage || data.message || 'Failed to initialize checkout payload from server.', 'error');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating booking checkout:', error);
       showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
     }
