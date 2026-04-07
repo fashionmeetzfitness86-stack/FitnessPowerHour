@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, Users, Send, Shield, Bell, X, Camera, Upload, Image as ImageIcon, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
+import { MessageSquare, Users, Send, Shield, Bell, X, Camera, Upload, Image as ImageIcon, Heart, MessageCircle, Share2, MoreHorizontal, Tag } from 'lucide-react';
 import { supabase } from '../supabase';
 import { UserProfile } from '../types';
 
 export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast: (msg: string, type?: any) => void }) => {
   const [posts, setPosts] = useState<any[]>([]);
   const [newPost, setNewPost] = useState('');
+  const [category, setCategory] = useState('General');
   const [isPosting, setIsPosting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+
+  const categories = ['Announcement', 'Athlete Message', 'Admin Message', 'General'];
 
   useEffect(() => {
     fetchPosts();
@@ -18,7 +21,7 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
     const channel = supabase
       .channel('internal_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
-        setPosts(prev => [payload.new, ...prev]);
+        fetchPosts(); // Refetch to get author profile
       })
       .subscribe();
 
@@ -75,6 +78,7 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
         content: newPost,
         image_url: imageUrl,
         is_internal: true,
+        category: category,
         created_at: new Date().toISOString()
       });
 
@@ -82,6 +86,7 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
 
       showToast('Post synchronized with internal frequency.', 'success');
       setNewPost('');
+      setCategory('General');
       setFile(null);
       setIsSharing(false);
       fetchPosts();
@@ -102,7 +107,7 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
              </div>
              <h2 className="text-3xl font-black uppercase tracking-tighter">Internal <span className="text-brand-teal">Feed</span></h2>
           </div>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-black">Admin + Athlete Secure Layer</p>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-black">Secure Member Layer</p>
         </div>
         <button 
           onClick={() => setIsSharing(true)}
@@ -126,7 +131,19 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
               
               <div className="space-y-2">
                  <h3 className="text-2xl font-black uppercase tracking-tight">New <span className="text-brand-teal">Communication</span></h3>
-                 <p className="text-[9px] uppercase tracking-widest text-white/20 font-black">Authorized transmission only</p>
+                 <p className="text-[9px] uppercase tracking-widest text-white/20 font-black">Select category for targeted audience</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {categories.map(c => (
+                    <button 
+                        key={c}
+                        onClick={() => setCategory(c)}
+                        className={`px-4 py-2 rounded-xl text-[8px] uppercase tracking-widest font-black border transition-all ${category === c ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 text-white/40 border-white/10 hover:border-white/30'}`}
+                    >
+                        {c}
+                    </button>
+                ))}
               </div>
 
               <textarea 
@@ -160,7 +177,7 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
       <div className="space-y-8">
         {posts.map((post, i) => (
           <motion.article 
-            key={post.id}
+            key={post.id} 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
@@ -176,7 +193,12 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
                     <h4 className="text-lg font-black uppercase tracking-tight">{post.author?.full_name}</h4>
                     {post.author?.role === 'admin' && <Shield size={14} className="text-brand-teal" />}
                   </div>
-                  <p className="text-[9px] uppercase tracking-widest text-white/20 font-black">{new Date(post.created_at).toLocaleDateString()} â€¢ SIGNAL VERIFIED</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-[9px] uppercase tracking-widest text-white/20 font-black">{new Date(post.created_at).toLocaleDateString()} • SIGNAL VERIFIED</p>
+                    <span className="text-[8px] uppercase tracking-widest font-black text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded flex items-center gap-1">
+                        <Tag size={8} /> {post.category || 'General'}
+                    </span>
+                  </div>
                 </div>
               </div>
               <button className="p-3 text-white/10 hover:text-white transition-colors">
@@ -197,10 +219,10 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
 
             <div className="flex items-center gap-12 pt-6 border-t border-white/5">
                <button className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-coral transition-colors font-black">
-                  <Heart size={16} /> 12 Likes
+                  <Heart size={16} /> Likes
                </button>
                <button className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-teal transition-colors font-black">
-                  <MessageCircle size={16} /> 4 Responses
+                  <MessageCircle size={16} /> Responses
                </button>
                <button className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors font-black">
                   <Share2 size={16} /> Signal Boost

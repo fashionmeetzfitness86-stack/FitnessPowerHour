@@ -82,14 +82,13 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     { id: 'orders', label: 'Order History', icon: ShoppingBag },
     { id: 'settings', label: 'Edit Profile', icon: Settings },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'referrals', label: 'Invite & Earn', icon: Users },
   ];
 
   const renderContent = () => {
-    const isEliteMember = user?.tier === 'Basic' || user?.tier === 'Elite' || user?.role === 'admin' || user?.role === 'super_admin';
+    const isMember = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
     const lockedTabs = ['progress', 'calendar', 'programs', 'internal-feed', 'services', 'retreats'];
     
-    if (!isEliteMember && lockedTabs.includes(activeTab)) {
+    if (!isMember && lockedTabs.includes(activeTab)) {
       return (
         <div className="flex flex-col items-center justify-center p-16 text-center card-gradient rounded-[3rem] border border-brand-teal/20 shadow-2xl space-y-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-brand-teal/5 blur-3xl rounded-full" />
