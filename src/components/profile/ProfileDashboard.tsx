@@ -81,6 +81,23 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
   ];
 
   const renderContent = () => {
+    const isEliteMember = user?.tier === 'Basic' || user?.tier === 'Elite' || user?.role === 'admin' || user?.role === 'super_admin';
+    const lockedTabs = ['progress', 'calendar', 'programs', 'internal-feed', 'services', 'retreats'];
+    
+    if (!isEliteMember && lockedTabs.includes(activeTab)) {
+      return (
+        <div className="flex flex-col items-center justify-center p-16 text-center card-gradient rounded-[3rem] border border-brand-teal/20 shadow-2xl space-y-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-brand-teal/5 blur-3xl rounded-full" />
+          <Shield size={48} className="text-brand-teal animate-pulse relative z-10" />
+          <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter relative z-10">Premium <span className="text-brand-teal">Required</span></h2>
+          <p className="text-white/50 text-sm max-w-sm relative z-10">This dashboard section requires an active FMF membership to access tracking and scheduling tools.</p>
+          <button onClick={() => setActiveTab('membership')} className="mt-4 px-8 py-4 bg-brand-teal text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-xl hover:scale-105 transition-all relative z-10 shadow-glow-teal">
+            Upgrade Membership
+          </button>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'overview': return <Overview user={user} />;
       case 'progress': return <Progress user={user} showToast={showToast} />;

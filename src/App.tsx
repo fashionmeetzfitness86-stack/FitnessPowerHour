@@ -1781,7 +1781,7 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
   const [benefitsInput, setBenefitsInput] = useState('');
   const [tagsInput, setTagsInput] = useState('');
 
-  if (!user || user.role !== 'admin') {
+  if (!user || !(user.role === 'admin' || user.role === 'super_admin')) {
     return null;
   }
 
@@ -2042,7 +2042,7 @@ const VideoLibrary = () => {
               <h1 className="text-5xl font-bold uppercase tracking-tighter mb-4">Video <span className="text-brand-teal">Library</span></h1>
               <p className="text-white/40 uppercase tracking-widest text-xs">Master your movement with guided sessions</p>
             </div>
-            {user?.role === 'admin' && (
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
               <button 
                 onClick={() => setIsUploadModalOpen(true)}
                 className="btn-primary flex items-center gap-2"
@@ -4292,9 +4292,9 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [localPassModal, setLocalPassModal] = useState<any>(null);
 
-  // Close modal and go to profile when user logs in
+  // Close modal and go to profile when user logs in (must have active membership to prevent infinite FreeAccessGate loop)
   useEffect(() => {
-    if (user) {
+    if (user && (user.tier === 'Basic' || user.tier === 'Elite' || user.role === 'admin' || user.role === 'super_admin')) {
       setIsRegistering(false);
       navigate('/profile');
     }
@@ -5454,7 +5454,7 @@ const VideoDetail = () => {
                 <div className="space-y-6">
                   <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-brand-teal">Key Benefits</h3>
                   <div className="space-y-4">
-                    {video.benefits.map((benefit, i) => (
+                    {(video.benefits || []).map((benefit, i) => (
                       <div key={i} className="flex items-center gap-4 group">
                         <div className="w-2 h-2 rounded-full bg-brand-teal group-hover:scale-150 transition-transform" />
                         <span className="text-xs uppercase tracking-widest text-white/80">{benefit}</span>

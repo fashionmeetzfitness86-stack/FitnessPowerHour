@@ -1,7 +1,5 @@
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_API_KEY!, { apiVersion: '2026-02-25.clover' });
-
 export default async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('', {
@@ -16,6 +14,16 @@ export default async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
+
+  if (!process.env.STRIPE_API_KEY) {
+    console.error('FATAL: STRIPE_API_KEY is not defined in Netlify environment variables');
+    return new Response(JSON.stringify({ error: 'STRIPE_API_KEY missing - Platform cannot access billing portal until keys are linked in Netlify.' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_API_KEY, { apiVersion: '2026-02-25.clover' as any });
 
   try {
     const body = await req.json();
