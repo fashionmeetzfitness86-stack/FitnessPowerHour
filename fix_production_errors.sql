@@ -1,9 +1,38 @@
--- 🚨 RUN THIS IN SUPABASE SQL EDITOR TO FIX PRODUCTION ERRORS 🚨
--- This script ensures all missing profile columns and notification matrices are synchronized.
+-- 🚨 BULLETPROOF PRODUCTION SCHEMA SYNC 🚨
+-- Run this in your Supabase SQL Editor to ensure ALL profile fields are synchronized.
 
 DO $$ 
 BEGIN
-    -- 1. FIX: Missing 'notification_preferences' (Resolves Dashboard Error)
+    -- Core Identity & Contact
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "full_name" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "phone" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "city" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "country" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "date_of_birth" DATE; EXCEPTION WHEN duplicate_column THEN END;
+    
+    -- Fitness & Physical Markers
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "height" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "weight" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "fitness_level" TEXT DEFAULT 'Intermediate'; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "workout_style" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "training_goals" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "limitations_or_injuries" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "motivation" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "bio" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "short_bio" TEXT; EXCEPTION WHEN duplicate_column THEN END;
+
+    -- System State & Gamification
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "onboarding_completed" BOOLEAN DEFAULT false; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "streak_count" INTEGER DEFAULT 0; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "last_checkin" TIMESTAMPTZ; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "tier" TEXT DEFAULT 'Basic'; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "last_tier_change_date" TIMESTAMPTZ; EXCEPTION WHEN duplicate_column THEN END;
+    
+    -- Media and Arrays
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "profile_images" TEXT[] DEFAULT '{}'; EXCEPTION WHEN duplicate_column THEN END;
+    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "favorites" TEXT[] DEFAULT '{}'; EXCEPTION WHEN duplicate_column THEN END;
+
+    -- Preference/Notification Matrix
     BEGIN 
         ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "notification_preferences" JSONB DEFAULT '{
             "billing_reminders": true,
@@ -16,25 +45,7 @@ BEGIN
         }'::jsonb;
     EXCEPTION WHEN duplicate_column THEN END;
 
-    -- 2. Ensure extra metadata fields for programs and scheduling exist
-    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "height" TEXT; EXCEPTION WHEN duplicate_column THEN END;
-    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "weight" TEXT; EXCEPTION WHEN duplicate_column THEN END;
-    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "workout_style" TEXT; EXCEPTION WHEN duplicate_column THEN END;
-    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "training_goals" TEXT; EXCEPTION WHEN duplicate_column THEN END;
-    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "streak_count" INTEGER DEFAULT 0; EXCEPTION WHEN duplicate_column THEN END;
-    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "last_checkin" TIMESTAMPTZ; EXCEPTION WHEN duplicate_column THEN END;
-
-    -- 3. Ensure onboarding state is tracked
-    BEGIN ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS "onboarding_completed" BOOLEAN DEFAULT false; EXCEPTION WHEN duplicate_column THEN END;
-
 END $$;
 
--- 4. Reload Schema to ensure PostgREST picks up changes immediately
+-- Reload Schema to ensure PostgREST picks up changes immediately
 NOTIFY pgrst, 'reload schema';
-
--- 📝 NOTE ON STRIPE ERROR ("STRIPE NODE CONNECTION FAILED"):
--- This is caused by missing environment variables in your Netlify Dashboard. 
--- Please ensure the following variables are set in Netlify -> Site Configuration -> Environment Variables:
--- 1. STRIPE_API_KEY (Your Stripe Secret Key)
--- 2. SUPABASE_SERVICE_ROLE_KEY (Found in Supabase API Settings)
--- 3. VITE_SUPABASE_URL (Your Supabase Project URL)
