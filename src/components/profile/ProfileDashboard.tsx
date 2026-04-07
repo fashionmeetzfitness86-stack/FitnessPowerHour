@@ -66,31 +66,35 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-    { id: 'programs', label: 'My Program', icon: PlaySquare },
-    { id: 'progress', label: 'Progress', icon: LineChart },
-    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    ...(user?.role === 'athlete' ? [{ id: 'athlete', label: 'Athlete Intel', icon: Shield }] : []),
+    ...(user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'athlete' ? [{ id: 'internal-feed', label: 'Internal Feed', icon: MessageSquare }] : []),
+    { id: 'progress', label: 'Progress Tracking', icon: LineChart },
+    { id: 'calendar', label: 'Workout Calendar', icon: Calendar },
+    { id: 'programs', label: 'My Programs', icon: PlaySquare },
+    { id: 'videos', label: 'My Videos', icon: Video },
     { id: 'membership', label: 'Membership', icon: Shield },
     { id: 'billing', label: 'Billing', icon: CreditCard },
-    { id: 'videos', label: 'My Videos', icon: Video },
-    { id: 'services', label: 'Services', icon: Users },
     { id: 'retreats', label: 'Retreats', icon: Map },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    { id: 'orders', label: 'Order History', icon: ShoppingBag },
+    { id: 'settings', label: 'Edit Profile', icon: Settings },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'referrals', label: 'Invite & Earn', icon: Users },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'overview': return <Overview user={user} />;
-      case 'programs': return <MyPrograms user={user} />;
       case 'progress': return <Progress user={user} showToast={showToast} />;
       case 'calendar': return <CalendarTab user={user} showToast={showToast} />;
+      case 'programs': return <MyPrograms user={user} />;
+      case 'videos': return <MyVideos user={user} showToast={showToast} />;
       case 'membership': return <MembershipManager user={user} updateTier={updateTier} showToast={showToast} />;
       case 'billing': return <Billing user={user} showToast={showToast} />;
-      case 'videos': return <MyVideos user={user} showToast={showToast} />;
       case 'services': return <ServicesTab user={user} showToast={showToast} />;
       case 'retreats': return <RetreatsTab user={user} showToast={showToast} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
+      case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
       default: return <Overview user={user} />;
     }
   };
