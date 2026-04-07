@@ -27,6 +27,7 @@ import {
   Edit2, Truck, Eye, Printer, UserPlus, UserMinus, MoreHorizontal,
   LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award
 } from 'lucide-react';
+import { AthletesDirectory } from './components/athletes/AthletesDirectory';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
 import { 
   Video, 
@@ -428,7 +429,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       const profile: UserProfile = {
         ...data,
         email: data.email || sessionEmail,
-        full_name: data.full_name || data.name || data.email || sessionEmail || 'Member',
+        full_name: data.full_name || data.name || ((data.email || sessionEmail) ? (data.email || sessionEmail).split('@')[0] : 'Member'),
         signup_date: data.signup_date || data.joinedAt || data.created_at || new Date().toISOString(),
         role: data.role || ((data.email || sessionEmail)?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user'),
         status: data.status || 'active',
@@ -860,7 +861,13 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const navLinks = [
+  const navLinks = user ? [
+    { name: 'Home', path: '/profile' },
+    { name: 'Community', path: '/community' },
+    { name: 'Shop', path: '/shop' },
+    { name: 'Retreats', path: '/retreats' },
+    { name: 'Services', path: '/services' },
+  ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
     { name: 'Athletes', path: '/athletes' },
@@ -874,7 +881,7 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 w-full z-50 glass-nav">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="flex flex-col leading-none">
+        <Link to={user ? '/profile' : '/'} className="flex flex-col leading-none">
           <span className="text-xl font-bold tracking-tighter text-brand-teal uppercase">Fitness Power Hour</span>
           <span className="text-[10px] tracking-[0.3em] uppercase text-white/40">by Fashion meetz Fitness</span>
         </Link>
@@ -898,18 +905,11 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center space-x-6">
-          {(user?.role === 'admin' || user?.role === 'super_admin') && (
-            <Link to="/admin/dashboard" className="hidden lg:flex items-center space-x-2 text-xs uppercase tracking-widest text-brand-teal hover:text-white transition-colors">
-              <ShieldCheck size={16} />
-              <span>{user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span>
-            </Link>
-          )}
           {user ? (
             <div className="hidden lg:flex items-center space-x-4">
               <NotificationBell />
-              <Link to="/profile" className="flex flex-col items-end group">
-                <span className="text-[10px] uppercase tracking-widest font-bold text-brand-teal group-hover:text-white transition-colors">{user.full_name}</span>
-                <span className="text-[8px] uppercase tracking-widest text-white/40">{user.tier}</span>
+              <Link to="/profile" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Profile Dashboard">
+                <User size={18} />
               </Link>
               <Link to="/order-history" className="p-2 hover:bg-white/5 rounded-full transition-colors text-white/40 hover:text-brand-teal" title="Order History">
                 <ShoppingBag size={18} />
@@ -966,10 +966,9 @@ const Navbar = () => {
                         <Link 
                           to="/profile" 
                           onClick={() => setIsOpen(false)}
-                          className="flex flex-col"
+                          className="text-white/60 hover:text-brand-teal transition-colors flex items-center gap-2 text-xs uppercase tracking-widest"
                         >
-                          <span className="text-sm font-bold text-brand-teal uppercase tracking-widest">{user.full_name}</span>
-                          <span className="text-[10px] text-white/40 uppercase tracking-widest">{user.tier}</span>
+                          <User size={16} /> Profile Dashboard
                         </Link>
                       </div>
                       <button 
@@ -979,13 +978,6 @@ const Navbar = () => {
                         Logout
                       </button>
                     </div>
-                    <Link 
-                      to="/order-history" 
-                      onClick={() => setIsOpen(false)}
-                      className="text-white/60 text-xs uppercase tracking-widest hover:text-brand-teal transition-colors"
-                    >
-                      Order History
-                    </Link>
                   </div>
                 ) : (
                   <Link 
@@ -2629,7 +2621,7 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
   const { cart, removeFromCart, updateQuantity, totalPrice, totalItems, clearCart } = useCart();
   const { user } = useAuth();
   const isMember = user && user.tier !== 'Basic';
-  const discount = 0.3;
+  const discount = 0.2;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const handleCheckout = async () => {
@@ -2764,7 +2756,7 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                   </div>
                   {isMember && (
                     <div className="flex justify-between text-[10px] uppercase tracking-widest text-brand-teal">
-                      <span>Member Discount (30%)</span>
+                      <span>Member Discount (20%)</span>
                       <span>-${Math.floor(totalPrice * discount)}</span>
                     </div>
                   )}
@@ -2838,7 +2830,7 @@ const Store = () => {
   };
 
   const isMember = user && user.tier !== 'Basic';
-  const discount = 0.3; // 30% discount for members
+  const discount = 0.2; // 20% discount for members
 
   const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle', 'Nutrition'];
   const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection', 'Mike Water Fitness'];
@@ -2870,7 +2862,7 @@ const Store = () => {
                     <Zap size={20} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-brand-teal">Unlock 30% Member Discount</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-brand-teal">Unlock 20% Member Discount</p>
                     <p className="text-[8px] uppercase tracking-widest text-white/40">Join the Power Hour Collective</p>
                   </div>
                 </div>
@@ -3217,7 +3209,7 @@ const Store = () => {
                   { title: 'Video Library', desc: 'Complete workout video library with 100+ sessions' },
                   { title: 'Structured Programs', desc: 'Expertly designed training programs for all levels' },
                   { title: 'Training Calendar', desc: 'Personalized scheduling and progress tracking' },
-                  { title: '30% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
+                  { title: '20% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
                   { title: 'Early Access', desc: 'First access to new product drops and limited editions' },
                   { title: 'Priority Retreats', desc: 'Priority booking for FMF Retreat experiences' },
                   { title: 'Community', desc: 'Access to the exclusive FMF inner circle' }
@@ -3750,11 +3742,11 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error(data.error || 'Failed to initialize checkout');
+        showToast(data.error || 'Failed to initialize checkout payload from server.', 'error');
       }
     } catch (error) {
       console.error('Error creating booking checkout:', error);
-      showToast('Checkout protocol failed to sync.', 'error');
+      showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
     }
   };
 
@@ -3985,11 +3977,11 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
       if (data.url) {
         window.location.href = data.url;
       } else {
-        throw new Error(data.error || 'Failed to initialize checkout');
+        showToast(data.error || 'Failed to initialize checkout payload from server.', 'error');
       }
     } catch (error) {
       console.error('Error creating booking checkout:', error);
-      showToast('Checkout protocol failed to sync.', 'error');
+      showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
     }
   };
 
@@ -4513,7 +4505,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                   { title: 'Video Library', desc: 'Complete workout video library with 100+ sessions' },
                   { title: 'Structured Programs', desc: 'Expertly designed training programs for all levels' },
                   { title: 'Training Calendar', desc: 'Personalized scheduling and progress tracking' },
-                  { title: '30% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
+                  { title: '20% Store Discount', desc: 'Preferred pricing across the entire FMF store' },
                   { title: 'Early Access', desc: 'First access to new product drops and limited editions' },
                   { title: 'Priority Retreats', desc: 'Priority booking for FMF Retreat experiences' },
                   { title: 'Community', desc: 'Access to the exclusive FMF inner circle' }
@@ -5978,7 +5970,7 @@ const About = () => (
 // --- Main App ---
 
 const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string, t?: 'success' | 'error' | 'info' | 'warning') => void; toast: any; setToast: any }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateTier } = useAuth();
 
   return (
     <Router>
@@ -5990,14 +5982,15 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
         <main>
           <AnimatePresence mode="wait">
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/philosophy" element={<Philosophy />} />
+              <Route path="/" element={user ? <Navigate to="/profile" replace /> : <Home />} />
+              <Route path="/philosophy" element={user ? <Navigate to="/profile" replace /> : <Philosophy />} />
               <Route path="/mission" element={<Mission />} />
               <Route path="/run-club" element={<RunClub />} />
               <Route path="/services" element={<Services />} />
               <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
               <Route path="/program" element={<ProgramPage />} />
+              <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
               <Route path="/videos" element={<VideoLibrary />} />
               <Route path="/video/:id" element={<VideoDetail />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
@@ -6009,7 +6002,13 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/shop/:category" element={<Store />} />
               <Route path="/shop/product/:id" element={<ProductDetail />} />
               <Route path="/brand/:slug" element={<BrandPage />} />
-              <Route path="/profile" element={<ProfileDashboard user={user!} showToast={showToast} />} />
+              <Route path="/profile" element={
+                user ? (
+                  <ProfileDashboard user={user} logout={logout} updateTier={updateTier} showToast={showToast} />
+                ) : (
+                  <Navigate to="/membership?mode=login" replace />
+                )
+              } />
               <Route path="/order-history" element={<OrderHistory />} />
               <Route path="/recovery" element={<Recovery />} />
               <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />

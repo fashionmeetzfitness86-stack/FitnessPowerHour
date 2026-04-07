@@ -184,7 +184,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
             </div>
 
             <div className="flex flex-col gap-6">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Identity Asset Protocol (Max 10 Images)</label>
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Profile Pictures (Max 10)</label>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {(formData.profile_images || []).map((img, idx) => (
                   <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white/5 group">
@@ -265,8 +265,8 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
             </div>
             
             <div className="space-y-2 pt-4">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Short Bio / Mantra</label>
-              <textarea name="short_bio" value={formData.short_bio} onChange={handleChange} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors resize-none" placeholder="What drives you?" />
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Short Bio</label>
+              <textarea name="short_bio" value={formData.short_bio} onChange={handleChange} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors resize-none" placeholder="Tell us about your fitness journey..." />
             </div>
           </div>
         </div>
@@ -315,26 +315,26 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
           <div className="card-gradient p-10 space-y-8 border-brand-coral/20">
             <div className="flex items-center gap-4 border-b border-white/5 pb-4">
               <Shield size={24} className="text-brand-coral" />
-              <h3 className="text-lg font-bold uppercase tracking-tight">Security Protocol</h3>
+              <h3 className="text-lg font-bold uppercase tracking-tight">Account Security</h3>
             </div>
 
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/60 font-bold mb-2">
-                  <Mail size={12} /> Email Rotation
+                  <Mail size={12} /> Email Settings
                 </div>
                 <button 
                   type="button"
                   onClick={() => setShowEmailModal(true)}
                   className="flex items-center gap-3 px-8 py-4 border border-white/10 hover:border-brand-coral/50 bg-white/5 rounded-2xl text-[10px] uppercase tracking-widest font-bold text-white transition-all w-full"
                 >
-                  <Mail size={16} className="text-brand-coral" /> Request Email Change Sync
+                  <Mail size={16} className="text-brand-coral" /> Request Email Change
                 </button>
               </div>
 
               <div className="space-y-4 pt-4 border-t border-white/5">
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/60 font-bold mb-2">
-                  <Key size={12} /> Access Credentials
+                  <Key size={12} /> Password Settings
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="relative">
@@ -374,7 +374,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   onClick={() => handleUpdateSecurity('password')}
                   className="w-full py-4 bg-white text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:bg-brand-teal transition-all disabled:opacity-50"
                 >
-                  Authorize Password Sync
+                  Update Password
                 </button>
               </div>
             </div>
@@ -402,13 +402,13 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                 <div className="w-16 h-16 bg-brand-coral/10 rounded-2xl flex items-center justify-center text-brand-coral mx-auto">
                   <Mail size={32} />
                 </div>
-                <h3 className="text-3xl font-black uppercase tracking-tighter text-center">Email <span className="text-brand-coral">Rotation</span></h3>
-                <p className="text-center text-[10px] uppercase tracking-widest text-white/40 font-bold">Initiate a secure transfer for your primary login credential.</p>
+                <h3 className="text-3xl font-black uppercase tracking-tighter text-center">Change <span className="text-brand-coral">Email</span></h3>
+                <p className="text-center text-[10px] uppercase tracking-widest text-white/40 font-bold">Initiate an email update request.</p>
               </div>
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-black">Authorized New Email</label>
+                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-black">New Email Address</label>
                   <input 
                     type="email"
                     name="newEmail"
@@ -429,14 +429,14 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   }}
                   className="flex-1 py-5 bg-brand-coral text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:scale-105 transition-all shadow-glow-coral"
                 >
-                  Authorize Change
+                  Confirm Change
                 </button>
                 <button 
                   type="button"
                   onClick={() => setShowEmailModal(false)}
                   className="flex-1 py-5 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
                 >
-                  Cancel Protocol
+                  Cancel
                 </button>
               </div>
             </motion.div>

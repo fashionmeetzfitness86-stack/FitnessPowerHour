@@ -16,10 +16,9 @@ import { MyVideos } from './MyVideos';
 import { MembershipManager } from './MembershipManager';
 import { Billing } from './Billing';
 import { RetreatsTab } from './RetreatsTab';
-import { OrderHistoryTab } from './OrderHistoryTab';
+import { ServicesTab } from './ServicesTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
-import { ReferralTab } from './ReferralTab';
 
 import { InternalFeed } from '../InternalFeed';
 import { OnboardingFlow } from './OnboardingFlow';
@@ -91,11 +90,10 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'videos': return <MyVideos user={user} showToast={showToast} />;
       case 'membership': return <MembershipManager user={user} updateTier={updateTier} showToast={showToast} />;
       case 'billing': return <Billing user={user} showToast={showToast} />;
+      case 'services': return <ServicesTab user={user} showToast={showToast} />;
       case 'retreats': return <RetreatsTab user={user} showToast={showToast} />;
-      case 'orders': return <OrderHistoryTab user={user} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
-      case 'referrals': return <ReferralTab user={user} showToast={showToast} />;
       case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
       default: return <Overview user={user} />;
     }
@@ -142,14 +140,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
           </div>
 
           <nav className="card-gradient p-4 flex-col gap-1 hidden lg:flex">
-            {(user?.role === 'admin' || user?.role === 'super_admin') && (
-              <Link
-                to="/admin/dashboard"
-                className="flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold text-brand-teal bg-brand-teal/5 hover:bg-brand-teal/10 hover:text-white transition-all mb-4 border border-brand-teal/20"
-              >
-                <Shield size={16} /> Admin Command Center
-              </Link>
-            )}
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -176,15 +166,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
           {/* Mobile Tab Scroller */}
           <div className="lg:hidden flex gap-4 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
-            {(user?.role === 'admin' || user?.role === 'super_admin') && (
-              <Link
-                to="/admin/dashboard"
-                className="flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl bg-brand-teal/10 text-brand-teal border border-brand-teal/20 transition-all flex-shrink-0"
-              >
-                <Shield size={20} />
-                <span className="text-[8px] uppercase tracking-widest font-bold text-center w-full truncate">Admin</span>
-              </Link>
-            )}
             {navItems.map((item) => {
               const Icon = item.icon;
               return (

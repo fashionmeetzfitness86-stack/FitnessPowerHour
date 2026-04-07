@@ -28,6 +28,7 @@ import { VideoManager } from './VideoManager';
 import { CommunityManager } from './CommunityManager';
 import { OrderManager } from './OrderManager';
 import { ServiceManager } from './ServiceManager';
+import { RetreatManager } from './RetreatManager';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -44,28 +45,17 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [videos, setVideos] = useState<Video[]>([]);
   const [videoCategories, setVideoCategories] = useState<VideoCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
   const [retreats, setRetreats] = useState<Retreat[]>([]);
   const [retreatApplications, setRetreatApplications] = useState<RetreatApplication[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
-
-  const [programTemplates, setProgramTemplates] = useState<ProgramTemplate[]>([]);
-  const [userProgramAssignments, setUserProgramAssignments] = useState<UserProgramAssignment[]>([]);
   
-  // Calendar System
+  // Calendar & Services System
   const [calendarSessions, setCalendarSessions] = useState<CalendarSession[]>([]);
-  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
-  const [serviceAvailability, setServiceAvailability] = useState<ServiceAvailability[]>([]);
+  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
 
   const [communities, setCommunities] = useState<Community[]>([]);
-  const [communityCategories, setCommunityCategories] = useState<any[]>([]);
-  const [communityJoiningRequests, setCommunityJoiningRequests] = useState<any[]>([]);
-  const [communityMembers, setCommunityMembers] = useState<any[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
-  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
-  const [siteContent, setSiteContent] = useState<SiteContent[]>([]);
   const { logActivity } = useAuth();
   
   const [stats, setStats] = useState<any>({});
@@ -98,7 +88,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              communities: cCount || 0,
              revenue: totalRevenue.toFixed(2)
            });
-           if (logsRes.data) setActivityLogs(logsRes.data);
         } else if (activeTab === 'users' && users.length === 0) {
            const { data } = await supabase.from('profiles').select('*').limit(50);
            if (data) setUsers(data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
@@ -109,7 +98,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
            ]);
            if (vRes.data) setVideos(vRes.data);
            if (vcRes.data) setVideoCategories(vcRes.data);
-        } else if (activeTab === 'shop' && products.length === 0) {
+        } else if (activeTab === 'orders' && products.length === 0) {
            const [pRes, oRes] = await Promise.all([
              supabase.from('products').select('*').limit(50),
              supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(50)
@@ -129,15 +118,20 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              })));
            }
            if (pRes.data) setPosts(pRes.data);
-        } else if (activeTab === 'services' && serviceRequests.length === 0) {
-           const [csRes, srRes, saRes] = await Promise.all([
-             supabase.from('calendar_sessions').select('*').order('session_date', { ascending: false }).limit(50),
-             supabase.from('service_requests').select('*').order('requested_date', { ascending: false }).limit(50),
-             supabase.from('service_availability').select('*').limit(50)
+        } else if (activeTab === 'bookings' && bookingRequests.length === 0) {
+           const [bRes, csRes] = await Promise.all([
+             supabase.from('bookings').select('*').order('date', { ascending: false }).limit(50),
+             supabase.from('calendar_sessions').select('*').order('session_date', { ascending: false }).limit(50)
            ]);
+           if (bRes.data) setBookingRequests(bRes.data);
            if (csRes.data) setCalendarSessions(csRes.data);
-           if (srRes.data) setServiceRequests(srRes.data);
-           if (saRes.data) setServiceAvailability(saRes.data);
+        } else if (activeTab === 'retreats' && retreats.length === 0) {
+           const [rtRes, raRes] = await Promise.all([
+             supabase.from('retreats').select('*').limit(50),
+             supabase.from('retreat_applications').select('*').limit(50)
+           ]);
+           if (rtRes.data) setRetreats(rtRes.data);
+           if (raRes.data) setRetreatApplications(raRes.data);
         }
       } catch (error) {
         console.error('Error fetching admin data:', error);
@@ -181,30 +175,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       console.error('Error saving community:', error);
       showToast('Nexus configuration failed', 'error');
     }
-  };
-
-  const handleSaveSiteContent = async (data: Partial<SiteContent>) => {
-    try {
-      if (data.id) {
-        const { error } = await supabase.from('site_content').update({ ...data, last_updated_by: user.id, updated_at: new Date().toISOString() }).eq('id', data.id);
-        if (error) throw error;
-        setSiteContent(prev => prev.map(c => c.id === data.id ? { ...c, ...data } as SiteContent : c));
-        showToast('Content configured', 'success');
-      } else {
-        const { data: newC, error } = await supabase.from('site_content').insert({ ...data, last_updated_by: user.id }).select().single();
-        if (error) throw error;
-        if (newC) setSiteContent(prev => [newC, ...prev]);
-        showToast('New content block created', 'success');
-      }
-    } catch (err) { showToast('Content update failed', 'error'); }
-  };
-
-  const handleDeleteSiteContent = async (id: string) => {
-    try {
-      await supabase.from('site_content').delete().eq('id', id);
-      setSiteContent(prev => prev.filter(c => c.id !== id));
-      showToast('Content node purged', 'success');
-    } catch (err) { showToast('Purge failed', 'error'); }
   };
 
   const handleDeleteCommunity = async (id: string) => {
@@ -291,61 +261,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     } catch (err) { showToast('Purge failed', 'error'); }
   };
 
-
-  const handleSaveProgramTemplate = async (data: Partial<ProgramTemplate>) => {
-    try {
-      if (data.id) {
-        const { error } = await supabase.from('program_templates').update(data).eq('id', data.id);
-        if (error) throw error;
-        setProgramTemplates(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as ProgramTemplate : p));
-        logActivity('UPDATE_PROGRAM', 'program_template', data.id, data);
-        showToast('System protocol updated', 'success');
-      } else {
-        const { data: newP, error } = await supabase.from('program_templates').insert({ ...data, created_by_user_id: user.id }).select().single();
-        if (error) throw error;
-        if (newP) {
-          setProgramTemplates(prev => [newP, ...prev]);
-          logActivity('CREATE_PROGRAM', 'program_template', newP.id, newP);
-        }
-        showToast('New system template initialized', 'success');
-      }
-    } catch (err) { showToast('Protocol sync failed', 'error'); }
-  };
-
-  const handleAssignProgram = async (userId: string, templateId: string, notes: string) => {
-    try {
-      const { data: assignment, error } = await supabase.from('user_program_assignments').insert({
-        user_id: userId,
-        program_template_id: templateId,
-        assigned_by_user_id: user.id,
-        assigned_by_role: user.role,
-        start_date: new Date().toISOString().split('T')[0],
-        custom_notes: notes,
-        status: 'active'
-      }).select().single();
-      
-      if (error) throw error;
-      if (assignment) {
-        setUserProgramAssignments(prev => [assignment, ...prev]);
-      }
-      showToast('Program assigned successfully', 'success');
-    } catch (err) {
-      showToast('Assignment deployment failed', 'error');
-    }
-  };
-
-  const handleDeleteTemplate = async (id: string) => {
-    try {
-      await supabase.from('program_templates').delete().eq('id', id);
-      setProgramTemplates(prev => prev.filter(p => p.id !== id));
-      showToast('Template purged', 'success');
-    } catch (error) {
-      showToast('Template purge failed', 'error');
-    }
-  };
-
-
-
   const handleSavePackage = async (data: Partial<Package>) => {
     try {
       if (data.id) {
@@ -421,16 +336,23 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     try {
       const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
       if (error) throw error;
-      setBookingRequests(prev => prev.filter(b => b.id !== id));
-      logActivity('UPDATE_BOOKING', 'booking', id, { status });
-      showToast(`Service stream ${status}`, 'success');
-    } catch (err) { showToast('Stream sync failed', 'error'); }
+      setBookingRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      showToast(`Booking ${status}`, 'success');
+      
+      const req = bookingRequests.find(r => r.id === id);
+      if (status === 'approved' && req) {
+         // Optionally insert into calendar_sessions or logic can be handled client-side
+      }
+    } catch (err) {
+      showToast('Failed to update booking status', 'error');
+    }
   };
 
   const sidebarItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'content', label: 'Content', icon: PlayCircle },
     { id: 'bookings', label: 'Bookings', icon: Calendar },
+    { id: 'retreats', label: 'Retreats', icon: MapPin },
     { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
@@ -478,6 +400,15 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           bookings={bookingRequests} 
           onUpdateStatus={handleUpdateBookingStatus} 
           showToast={showToast} 
+        />
+      );
+      case 'retreats': return (
+        <RetreatManager
+          retreats={retreats}
+          applications={retreatApplications}
+          onAdd={() => {}}
+          onReview={handleReviewRetreatApp}
+          onDelete={handleDeleteRetreat}
         />
       );
       case 'community': return (

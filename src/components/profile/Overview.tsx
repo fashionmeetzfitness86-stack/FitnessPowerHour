@@ -11,7 +11,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     upcoming: null as CalendarSession | null,
-    pendingAuths: [] as ServiceRequest[],
+    pendingAuths: [] as any[],
     latestMedia: null as UserVideoUpload | null,
     sessionsThisWeek: 0,
     activeProgram: 'FMF Protocol'
@@ -56,7 +56,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
                 .order('session_date', { ascending: true })
                 .limit(1).maybeSingle(),
                 
-        supabase.from('service_requests')
+        supabase.from('bookings')
                 .select('*')
                 .eq('user_id', user.id)
                 .eq('status', 'pending'),
