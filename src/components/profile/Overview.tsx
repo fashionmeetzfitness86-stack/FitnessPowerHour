@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   Trophy, Calendar as CalendarIcon, Video, Clock, 
-  MapPin, ShoppingBag, Shield, CheckCircle, Loader2, AlertCircle, ArrowRight, User, Dumbbell, Activity, UserPlus
+  MapPin, ShoppingBag, Shield, CheckCircle, Loader2, AlertCircle, ArrowRight, User, Dumbbell, Activity, UserPlus, QrCode, Scan
 } from 'lucide-react';
 import { UserProfile, UserVideoUpload, CalendarSession, ServiceRequest } from '../../types';
 import { supabase } from '../../supabase';
 
-export const Overview = ({ user }: { user: UserProfile }) => {
+export const Overview = ({ user, setShowOnboarding }: { user: UserProfile, setShowOnboarding?: (val: boolean) => void }) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     upcoming: null as CalendarSession | null,
@@ -98,14 +98,13 @@ export const Overview = ({ user }: { user: UserProfile }) => {
     fetchStats();
   }, [user.id]);
 
-  const profileFields = [
-    { key: 'full_name', label: 'Full Name' }, { key: 'phone', label: 'Phone Number' }, { key: 'city', label: 'City' },
-    { key: 'country', label: 'Country' }, { key: 'profile_image', label: 'Profile Photo' }, { key: 'height', label: 'Height' },
-    { key: 'weight', label: 'Weight' }, { key: 'workout_style', label: 'Workout Style' }, { key: 'training_goals', label: 'Goals' }
-  ];
-  
-  const missingFields = profileFields.filter(f => !(user as any)[f.key]);
-  const completionPercentage = Math.round(((profileFields.length - missingFields.length) / profileFields.length) * 100);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-40">
+        <Loader2 className="text-brand-teal animate-spin" size={40} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 fade-in">
@@ -132,7 +131,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
       </div>
       
       {/* DAILY CHECK-IN LOOP */}
-      {!hasCheckedInToday && !loading && (
+      {!hasCheckedInToday && (
          <div className="bg-brand-coral/10 border border-brand-coral/30 p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_30px_rgba(251,113,133,0.1)]">
             <div>
                <h3 className="text-xl font-black uppercase text-brand-coral tracking-tighter">Did you train today?</h3>
@@ -144,60 +143,100 @@ export const Overview = ({ user }: { user: UserProfile }) => {
          </div>
       )}
 
-      {loading ? (
-        <div className="flex items-center justify-center py-40">
-           <Loader2 className="text-brand-teal animate-spin" size={40} />
-        </div>
-      ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      {/* COMPULSORY ONBOARDING TRIGGER (INTENT DRIVEN) */}
+      {!user.onboarding_completed && setShowOnboarding && (
+         <div className="bg-brand-teal/10 border border-brand-teal/30 p-6 rounded-3xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_30px_rgba(45,212,191,0.1)]">
+            <div>
+               <h3 className="text-xl font-black uppercase text-brand-teal tracking-tighter">Protocol Uninitialized</h3>
+               <p className="text-xs font-bold text-white/60 tracking-widest uppercase mt-1">Initialize your kinetic target to tailor the FMF platform to your goals.</p>
+            </div>
+            <button onClick={() => setShowOnboarding(true)} className="w-full md:w-auto px-8 py-4 bg-brand-teal text-black font-black uppercase text-xs tracking-[0.2em] rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all flex items-center justify-center gap-2">
+               <Shield size={16} /> Initialize Protocol
+            </button>
+         </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Quick Actions (Dashboard Integration) */}
-        <div className="card-gradient p-8 space-y-6 md:col-span-2 lg:col-span-3 border border-brand-teal/10 relative overflow-hidden rounded-[3rem]">
-           <div className="absolute inset-0 bg-brand-teal/5 blur-3xl pointer-events-none" />
-           <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-              <div>
-                 <h3 className="text-xl font-black uppercase tracking-tighter">Quick Actions</h3>
-                 <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold max-w-sm mt-1">Execute systemic scheduling vectors instantly.</p>
-              </div>
-              <div className="flex flex-wrap gap-3 w-full md:w-auto">
-                 <button onClick={() => window.location.hash = '#/profile#calendar'} className="flex items-center gap-3 px-6 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all flex-1 md:flex-none">
-                    <Dumbbell size={14} /> Add Workout
-                 </button>
-                 <button onClick={() => window.location.hash = '#/profile#calendar'} className="flex items-center gap-3 px-6 py-4 bg-brand-coral text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:shadow-[0_0_20px_rgba(251,113,133,0.3)] transition-all flex-1 md:flex-none">
-                    <Activity size={14} /> Book Recovery
-                 </button>
-                 <button onClick={() => window.location.hash = '#/profile#calendar'} className="flex items-center gap-3 px-6 py-4 bg-white/10 text-white text-[10px] uppercase tracking-widest font-black rounded-xl hover:bg-white/20 transition-all flex-1 md:flex-none drop-shadow-xl border border-white/10">
-                    <UserPlus size={14} /> Book Training
-                 </button>
+        {/* SYSTEM IDENTITY GATE (QR MATRIX) */}
+        <div className="card-gradient p-8 flex flex-col items-center justify-center text-center space-y-6 border-brand-teal/20 relative overflow-hidden group rounded-[3rem]">
+           <div className="absolute inset-0 bg-brand-teal/5 opacity-0 group-hover:opacity-100 transition-opacity blur-3xl pointer-events-none" />
+           <div className="w-40 h-40 bg-white p-3 rounded-2xl relative shadow-[0_0_50px_rgba(45,212,191,0.2)]">
+              {/* Simulated QR Code via Lucide + Pattern */}
+              <div className="w-full h-full border-4 border-black flex items-center justify-center relative bg-white">
+                 <QrCode size={100} className="text-black" />
+                 <div className="absolute top-0 right-0 w-4 h-4 bg-black" />
+                 <div className="absolute bottom-0 left-0 w-4 h-4 bg-black" />
               </div>
            </div>
+           <div>
+              <p className="text-[10px] uppercase tracking-[0.4em] font-black text-brand-teal mb-2">Member ID Authenticator</p>
+              <h4 className="text-sm font-bold uppercase tracking-widest">{user.full_name || 'Protocol Member'}</h4>
+              <p className="text-white/40 text-[8px] uppercase tracking-widest mt-1 font-mono">{user.id.substring(0, 12).toUpperCase()}</p>
+           </div>
+           <p className="text-white/40 text-[10px] uppercase font-bold px-4 leading-relaxed tracking-wider">Present this matrix at any FMF outpost or for personal training verification.</p>
         </div>
 
-        {/* Next Session */}
-        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer" onClick={() => window.location.hash = '#/profile#calendar'}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 text-brand-teal">
-              <CalendarIcon size={20} />
-              <h3 className="text-[10px] font-black uppercase tracking-widest">Next Session</h3>
+        {/* Next Session + Quick Actions Combined */}
+        <div className="lg:col-span-2 space-y-8">
+            <div className="card-gradient p-8 border-white/10 hover:border-brand-teal/30 transition-all cursor-pointer group rounded-[3rem]" onClick={() => window.location.hash = '#/profile#calendar'}>
+                <div className="flex justify-between items-start mb-6">
+                   <div className="flex items-center gap-4">
+                      <div className="p-3 bg-brand-teal/20 text-brand-teal rounded-xl group-hover:bg-brand-teal group-hover:text-black transition-all">
+                        <CalendarIcon size={20} />
+                      </div>
+                      <div>
+                         <h3 className="text-xs font-black uppercase tracking-widest">Protocol Schedule</h3>
+                         <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Synchronization points are tracked below.</p>
+                      </div>
+                   </div>
+                   <ArrowRight size={14} className="text-white/20 group-hover:translate-x-1 transition-transform" />
+                </div>
+                
+                {stats.upcoming ? (
+                   <div className="bg-white/5 p-6 rounded-[2rem] border border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                      <div className="text-center md:text-left">
+                         <h4 className="text-2xl font-black uppercase tracking-tighter leading-none mb-2">{stats.upcoming.title}</h4>
+                         <div className="flex items-center justify-center md:justify-start gap-4 text-white/60 text-[10px] font-mono tracking-widest uppercase">
+                            <span className="flex items-center gap-2"><Clock size={12} className="text-brand-teal" /> {stats.upcoming.session_date}</span>
+                            <span className="flex items-center gap-2"><Activity size={12} className="text-brand-coral" /> {stats.upcoming.session_time || 'Check-in'}</span>
+                         </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                         <span className="text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1 bg-brand-teal text-black rounded-full">Approved</span>
+                         <div className="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white transition-colors">
+                            <Scan size={16} />
+                         </div>
+                      </div>
+                   </div>
+                ) : (
+                   <div className="bg-white/5 p-8 rounded-[2rem] border border-white/5 border-dashed text-center">
+                      <p className="text-sm font-bold uppercase tracking-tight text-white/20 italic">No Sessions Initialized</p>
+                      <button onClick={(e) => { e.stopPropagation(); window.location.hash = '#/profile#calendar'; }} className="mt-4 text-brand-teal text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Request Session Access</button>
+                   </div>
+                )}
             </div>
-            <ArrowRight size={14} className="text-white/20" />
-          </div>
-          <div>
-            {stats.upcoming ? (
-               <div>
-                  <h4 className="text-2xl font-black uppercase tracking-tight leading-none mb-2">{stats.upcoming.title}</h4>
-                  <div className="flex items-center gap-2 text-white/60 text-xs font-mono">
-                     <Clock size={12} className="text-brand-teal" /> {stats.upcoming.session_date} @ {stats.upcoming.session_time || 'ALL DAY'}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <button onClick={() => window.location.hash = '#/profile#calendar'} className="bg-brand-coral/10 hover:bg-brand-coral hover:text-black border border-brand-coral/30 p-6 rounded-[2rem] flex items-center gap-6 transition-all text-left group">
+                  <Activity size={24} className="text-brand-coral group-hover:text-black" />
+                  <div>
+                      <p className="font-black text-sm uppercase tracking-tight">Request Recovery</p>
+                      <p className="text-[8px] uppercase tracking-widest opacity-60">Flex Mob 305 Access</p>
                   </div>
-               </div>
-            ) : (
-               <p className="text-sm font-bold uppercase tracking-tight text-white/40 italic">No Sessions Booked</p>
-            )}
-          </div>
+               </button>
+               <button onClick={() => window.location.hash = '#/profile#calendar'} className="bg-brand-teal/10 hover:bg-brand-teal hover:text-black border border-brand-teal/30 p-6 rounded-[2rem] flex items-center gap-6 transition-all text-left group">
+                  <UserPlus size={24} className="text-brand-teal group-hover:text-black" />
+                  <div>
+                      <p className="font-black text-sm uppercase tracking-tight">Personal Training</p>
+                      <p className="text-[8px] uppercase tracking-widest opacity-60">1-on-1 Protocol Launch</p>
+                  </div>
+               </button>
+            </div>
         </div>
 
         {/* Pending Requests */}
-        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer" onClick={() => window.location.hash = '#/profile#calendar'}>
+        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer rounded-[3rem]" onClick={() => window.location.hash = '#/profile#calendar'}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-amber-500">
               <Clock size={20} />
@@ -210,7 +249,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
                <div className="space-y-4">
                   {stats.pendingAuths.slice(0, 2).map(r => (
                      <div key={r.id} className="bg-black/40 p-3 rounded-xl border border-white/5 flex flex-col gap-1">
-                        <span className="text-[10px] font-bold uppercase text-white/80">{r.service_subtype.replace('_', ' ')}</span>
+                        <span className="text-[10px] font-bold uppercase text-white/80">{r.service_subtype?.replace('_', ' ') || r.service_name}</span>
                         <span className="text-[8px] tracking-widest font-mono text-amber-500/70 border border-amber-500/10 self-start px-2 py-0.5 rounded uppercase">Awaiting Auth</span>
                      </div>
                   ))}
@@ -222,7 +261,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
         </div>
 
         {/* Active Program */}
-        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer" onClick={() => window.location.hash = '#/profile#programs'}>
+        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all cursor-pointer rounded-[3rem]" onClick={() => window.location.hash = '#/profile#programs'}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-brand-coral">
               <Activity size={20} />
@@ -237,7 +276,7 @@ export const Overview = ({ user }: { user: UserProfile }) => {
         </div>
 
         {/* Trainer Requests */}
-        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all md:col-span-2 lg:col-span-1 cursor-pointer" onClick={() => window.location.hash = '#/athletes'}>
+        <div className="card-gradient p-8 space-y-6 flex flex-col justify-between hover:border-white/20 transition-all md:col-span-2 lg:col-span-1 cursor-pointer rounded-[3rem]" onClick={() => window.location.hash = '#/athletes'}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-brand-teal">
               <User size={20} />
@@ -265,8 +304,8 @@ export const Overview = ({ user }: { user: UserProfile }) => {
             )}
           </div>
         </div>
+
       </div>
-      )}
     </div>
   );
 };
