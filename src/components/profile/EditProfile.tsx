@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Save, UserCircle, Camera, Upload, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X } from 'lucide-react';
+import { Save, UserCircle, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X, Phone, User as UserIcon, Send, ArrowRight } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { UserProfile } from '../../types';
 import { MediaCapture } from '../MediaCapture';
 import { useAuth } from '../../App';
+
 export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
   const { updateProfile, updateSecurity } = useAuth();
   const [formData, setFormData] = useState<Partial<UserProfile>>({
@@ -28,15 +29,18 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
   });
 
   const [securityData, setSecurityData] = useState({
-    newEmail: '',
     newPassword: '',
     confirmPassword: ''
   });
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [trainingRequest, setTrainingRequest] = useState({
+    message: '',
+    phone: user?.phone || '',
+    isSubmitting: false,
+    showModal: false
+  });
 
-  const [isUploading, setIsUploading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -51,55 +55,6 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
       ...prev,
       [e.target.name]: e.target.value
     }));
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !user) return;
-    
-    const remainingSlots = 10 - (formData.profile_images?.length || 0);
-    const filesToUpload = Array.from(files).slice(0, remainingSlots);
-
-    if (filesToUpload.length === 0) {
-      return showToast('Maximum limit of 10 profile images reached.', 'error');
-    }
-
-    try {
-      setIsUploading(true);
-      const newUrls: string[] = [];
-
-      for (const file of filesToUpload as any) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-        const filePath = `profiles/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
-
-        newUrls.push(publicUrl);
-      }
-
-      await updateProfile({ avatar_url: newUrls[newUrls.length - 1] });
-
-      setFormData(prev => ({ 
-        ...prev, 
-        profile_images: [...(prev.profile_images || []), ...newUrls],
-        profile_image: prev.profile_image || newUrls[0]
-      }));
-
-      showToast(`${filesToUpload.length} image(s) uploaded!`, 'success');
-    } catch (error: any) {
-      showToast(error.message || 'Error uploading image', 'error');
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   const handleRemoveImage = (url: string) => {
@@ -118,8 +73,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
     try {
       setIsSaving(true);
       await updateProfile(formData);
-
-      showToast('Profile updated successfully!', 'success');
+      showToast('Neural matrix synchronized successfully.', 'success');
     } catch (error: any) {
       showToast(error.message || 'Error updating profile', 'error');
     } finally {
@@ -127,323 +81,339 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
     }
   };
 
-  const handleUpdateSecurity = async (type: 'email' | 'password') => {
+  const handleUpdatePassword = async () => {
+    if (!securityData.newPassword) return showToast('Enter new password', 'error');
+    if (securityData.newPassword !== securityData.confirmPassword) {
+      return showToast('Passwords do not match', 'error');
+    }
+
     try {
-      const updates: any = {};
-      if (type === 'email') {
-        if (!securityData.newEmail) return showToast('Enter new email', 'error');
-        updates.email = securityData.newEmail;
-      } else {
-        if (!securityData.newPassword) return showToast('Enter new password', 'error');
-        if (securityData.newPassword !== securityData.confirmPassword) {
-          return showToast('Passwords do not match', 'error');
-        }
-        updates.password = securityData.newPassword;
-      }
-
-      if (type === 'email') {
-        await updateSecurity(securityData.newEmail, undefined);
-      } else {
-        await updateSecurity(undefined, securityData.newPassword);
-      }
-
-      showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} update initiated! Check your inbox.`, 'success');
-      setSecurityData({ newEmail: '', newPassword: '', confirmPassword: '' });
+      await updateSecurity(undefined, securityData.newPassword);
+      showToast('Security credentials updated.', 'success');
+      setSecurityData({ newPassword: '', confirmPassword: '' });
     } catch (error: any) {
       showToast(error.message || 'Error updating security settings', 'error');
     }
   };
 
+  const handleTrainingRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTrainingRequest(prev => ({ ...prev, isSubmitting: true }));
+
+    try {
+      // Simulate/Trigger Email-based request
+      // In a real system, this would be a Netlify function call to SendGrid/Postmark
+      const { error } = await supabase.from('service_requests').insert({
+          user_id: user.id,
+          service_type: 'personal_training',
+          service_subtype: 'training_session',
+          notes: `1-ON-1 REQUEST: ${trainingRequest.message}\nPhone: ${trainingRequest.phone}\nLocation: Miami Beach`,
+          status: 'pending'
+      });
+
+      if (error) throw error;
+
+      showToast('1-on-1 Protocol requested. Admin will contact you.', 'success');
+      setTrainingRequest({ message: '', phone: user?.phone || '', isSubmitting: false, showModal: false });
+    } catch (error: any) {
+      showToast(error.message || 'Request failed.', 'error');
+      setTrainingRequest(prev => ({ ...prev, isSubmitting: false }));
+    }
+  };
+
   return (
     <div className="space-y-12 fade-in">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8">
+      {/* HEADER WITH SAVE BUTTON */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8 relative z-10">
         <div>
-          <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
+          <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter">
             Profile <span className="text-brand-teal">Settings</span>
           </h2>
-          <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2 font-bold">
-            Manage your personal data and fitness tracking markers.
+          <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2 font-bold max-w-md">
+            Execute structural updates to your athlete profile.
           </p>
         </div>
-        <button 
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-2 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-bold rounded-xl shadow-lg hover:shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all disabled:opacity-50"
-        >
-          {isSaving ? 'Processing...' : <><Save size={14} /> Save Changes</>}
-        </button>
+        <div className="flex gap-4 w-full md:w-auto">
+            <button 
+                onClick={() => setTrainingRequest(prev => ({ ...prev, showModal: true }))}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 border border-brand-teal text-brand-teal text-[10px] uppercase tracking-widest font-black rounded-xl hover:bg-brand-teal hover:text-black transition-all"
+            >
+                <UserIcon size={14} /> Request 1-on-1
+            </button>
+            <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-[0.2em] font-black rounded-xl shadow-glow-teal transition-all disabled:opacity-50"
+            >
+                {isSaving ? 'Synching...' : <><Save size={14} /> Save Changes</>}
+            </button>
+        </div>
       </header>
 
       <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Basic Information */}
         <div className="space-y-8">
-          <div className="card-gradient p-10 space-y-8">
+          <div className="card-gradient p-8 space-y-8 rounded-[3rem]">
             <div className="flex items-center gap-4 border-b border-white/5 pb-4">
-              <UserCircle size={24} className="text-brand-teal" />
-              <h3 className="text-lg font-bold uppercase tracking-tight">Basic Information</h3>
-            </div>
-
-            <div className="flex flex-col gap-6">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Profile Pictures (Max 10)</label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {(formData.profile_images || []).map((img, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-white/5 group">
-                    <img src={img} alt={`Profile ${idx}`} className="w-full h-full object-cover" />
-                    <button 
-                      type="button"
-                      onClick={() => handleRemoveImage(img)}
-                      className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-lg text-brand-coral opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                    {formData.profile_image === img && (
-                      <div className="absolute inset-x-0 bottom-0 py-1 bg-brand-teal text-black text-[8px] font-black uppercase tracking-widest text-center">
-                        Main
-                      </div>
-                    )}
-                    {formData.profile_image !== img && (
-                      <button 
-                        type="button"
-                        onClick={() => setFormData({...formData, profile_image: img})}
-                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"
-                      >
-                        <span className="text-[8px] font-black uppercase tracking-widest bg-white text-black px-2 py-1 rounded">Set Main</span>
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {(formData.profile_images?.length || 0) < 10 && (
-                  <div className="col-span-2 md:col-span-5 mt-4">
-                    <MediaCapture 
-                      bucket="avatars"
-                      folder={`profiles/${user.id}`}
-                      isAvatar={false}
-                      onUploadSuccess={(url) => {
-                        setFormData(prev => ({ 
-                          ...prev, 
-                          profile_images: [...(prev.profile_images || []), url],
-                          profile_image: prev.profile_image || url
-                        }));
-                        showToast('Image uploaded successfully!', 'success');
-                      }}
-                      onUploadError={(err) => showToast(err.message, 'error')}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Full Name</label>
-                <input required type="text" name="full_name" value={formData.full_name} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none transition-all placeholder:text-white/20" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Email Address</label>
-                <input required type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors opacity-60 cursor-not-allowed text-ellipsis overflow-hidden" disabled />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Phone Number</label>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none transition-all" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Date of Birth</label>
-                <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none transition-all [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Workout Style</label>
-                <input type="text" name="workout_style" value={formData.workout_style} onChange={handleChange} placeholder="e.g. Strength, Yoga, HIIT" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none transition-all placeholder:text-white/20" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">City</label>
-                <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none transition-all placeholder:text-white/20" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Country</label>
-                <input type="text" name="country" value={formData.country} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 outline-none transition-all placeholder:text-white/20" />
-              </div>
-            </div>
-            
-            <div className="space-y-2 pt-4">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Short Bio</label>
-              <textarea name="short_bio" value={formData.short_bio} onChange={handleChange} rows={3} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors resize-none" placeholder="Tell us about your fitness journey..." />
-            </div>
-          </div>
-        </div>
-
-        {/* Fitness Information */}
-        <div className="space-y-8">
-          <div className="card-gradient p-10 space-y-8">
-            <div className="flex items-center gap-4 border-b border-white/5 pb-4">
-              <Activity size={24} className="text-brand-coral" />
-              <h3 className="text-lg font-bold uppercase tracking-tight">Fitness Data</h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Height</label>
-                <input type="text" name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 5'10" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-center focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20 outline-none transition-all placeholder:text-white/20" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Weight</label>
-                <input type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 175 lbs" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-center focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20 outline-none transition-all placeholder:text-white/20" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Fitness Level</label>
-              <div className="relative">
-                <select name="fitness_level" value={formData.fitness_level} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20 outline-none transition-all appearance-none cursor-pointer">
-                  <option value="Beginner" className="bg-brand-black text-white">Beginner</option>
-                  <option value="Intermediate" className="bg-brand-black text-white">Intermediate</option>
-                  <option value="Advanced" className="bg-brand-black text-white">Advanced</option>
-                </select>
-                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                  <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Training Goals</label>
-              <input type="text" name="training_goals" value={formData.training_goals} onChange={handleChange} placeholder="e.g. Hypertrophy, Mobility" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20 outline-none transition-all placeholder:text-white/20" />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-brand-coral flex items-center gap-2 font-bold mb-2">
-                <AlertCircle size={14} /> Limitations / Injuries
-              </label>
-              <textarea name="limitations_or_injuries" value={formData.limitations_or_injuries} onChange={handleChange} rows={2} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20 outline-none transition-all resize-none placeholder:text-white/20" placeholder="Describe any current injuries..." />
-            </div>
-          </div>
-
-          <div className="card-gradient p-10 space-y-8 border-brand-coral/20">
-            <div className="flex items-center gap-4 border-b border-white/5 pb-4">
-              <Shield size={24} className="text-brand-coral" />
-              <h3 className="text-lg font-bold uppercase tracking-tight">Account Security</h3>
+              <UserCircle size={20} className="text-brand-teal" />
+              <h3 className="text-sm font-black uppercase tracking-widest">Identify Protocol</h3>
             </div>
 
             <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/60 font-bold mb-2">
-                  <Mail size={12} /> Email Settings
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Profile Imagery (Min 1 / Max 10)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    {(formData.profile_images || []).map((img, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
+                        <img src={img} alt={`Profile ${idx}`} className="w-full h-full object-cover" />
+                        <button 
+                        type="button"
+                        onClick={() => handleRemoveImage(img)}
+                        className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-lg text-brand-coral opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                        <Trash2 size={12} />
+                        </button>
+                        {formData.profile_image === img && (
+                        <div className="absolute inset-x-0 bottom-0 py-1 bg-brand-teal text-black text-[8px] font-black uppercase tracking-widest text-center shadow-lg">
+                            Main
+                        </div>
+                        )}
+                        {formData.profile_image !== img && (
+                        <button 
+                            type="button"
+                            onClick={() => setFormData({...formData, profile_image: img})}
+                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"
+                        >
+                            <span className="text-[8px] font-black uppercase tracking-widest bg-white text-black px-2 py-1 rounded">Set</span>
+                        </button>
+                        )}
+                    </div>
+                    ))}
+                    {(formData.profile_images?.length || 0) < 10 && (
+                        <div className="aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center hover:border-brand-teal/50 transition-colors">
+                            <MediaCapture 
+                                bucket="avatars"
+                                folder={`profiles/${user.id}`}
+                                isAvatar={false}
+                                onUploadSuccess={(url) => {
+                                    setFormData(prev => ({ 
+                                        ...prev, 
+                                        profile_images: [...(prev.profile_images || []), url],
+                                        profile_image: prev.profile_image || url
+                                    }));
+                                    showToast('Visual credential added.', 'success');
+                                }}
+                                onUploadError={(err) => showToast(err.message, 'error')}
+                            />
+                        </div>
+                    )}
                 </div>
-                <button 
-                  type="button"
-                  onClick={() => setShowEmailModal(true)}
-                  className="flex items-center gap-3 px-8 py-4 border border-white/10 hover:border-brand-coral/50 bg-white/5 rounded-2xl text-[10px] uppercase tracking-widest font-bold text-white transition-all w-full"
-                >
-                  <Mail size={16} className="text-brand-coral" /> Request Email Change
-                </button>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-white/5">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/60 font-bold mb-2">
-                  <Key size={12} /> Password Settings
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Full Name</label>
+                  <input required type="text" name="full_name" value={formData.full_name} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <input 
-                      type={showPassword ? "text" : "password"} 
-                      name="newPassword"
-                      value={securityData.newPassword}
-                      onChange={handleSecurityChange}
-                      placeholder="New Password" 
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20 outline-none transition-all pr-12 text-white" 
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-white/20 hover:text-white"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  <input 
-                    type={showPassword ? "text" : "password"} 
-                    name="confirmPassword"
-                    value={securityData.confirmPassword}
-                    onChange={handleSecurityChange}
-                    placeholder="Confirm New Password" 
-                    className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-sm focus:border-brand-coral focus:ring-2 focus:ring-brand-coral/20 outline-none transition-all text-white ${
-                      securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword ? 'border-brand-coral' : 'border-white/10'
-                    }`} 
-                  />
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Email Address</label>
+                  <input required type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm opacity-40 cursor-not-allowed outline-none" disabled />
                 </div>
-                {securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword && (
-                  <p className="text-[10px] uppercase tracking-widest text-brand-coral font-bold mt-2">Credentials mismatch: Verification required.</p>
-                )}
-                <button 
-                  type="button"
-                  disabled={!securityData.newPassword || securityData.newPassword !== securityData.confirmPassword}
-                  onClick={() => handleUpdateSecurity('password')}
-                  className="w-full py-4 bg-white text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:bg-brand-teal transition-all disabled:opacity-50"
-                >
-                  Update Password
-                </button>
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Secure Phone</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Date of Birth</label>
+                  <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none [&::-webkit-calendar-picker-indicator]:invert" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">City</label>
+                  <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Country</label>
+                  <input type="text" name="country" value={formData.country} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Fitness Data */}
+        <div className="space-y-8">
+          <div className="card-gradient p-8 space-y-8 rounded-[3rem]">
+            <div className="flex items-center gap-4 border-b border-white/5 pb-4">
+              <Activity size={20} className="text-brand-coral" />
+              <h3 className="text-sm font-black uppercase tracking-widest">Kinetic Markers</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Height</label>
+                  <input type="text" name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 5'10" className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm text-center focus:border-brand-coral transition-all outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Weight</label>
+                  <input type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 175 lbs" className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm text-center focus:border-brand-coral transition-all outline-none" />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Fitness Level</label>
+                    <div className="relative">
+                        <select name="fitness_level" value={formData.fitness_level} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none appearance-none cursor-pointer">
+                            <option value="Beginner" className="bg-brand-black">Beginner</option>
+                            <option value="Intermediate" className="bg-brand-black">Intermediate</option>
+                            <option value="Advanced" className="bg-brand-black">Advanced</option>
+                        </select>
+                        <ArrowRight size={14} className="absolute right-4 top-1/2 -translate-y-1/2 rotate-90 text-white/20 pointer-events-none" />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Workout Focus</label>
+                    <input type="text" name="workout_style" value={formData.workout_style} onChange={handleChange} placeholder="Strength, HIIT, etc" className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none" />
+                </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Primary Intent</label>
+              <textarea name="training_goals" value={formData.training_goals} onChange={handleChange} rows={1} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none resize-none" placeholder="Target objectives..." />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[8px] uppercase tracking-widest text-brand-coral flex items-center gap-2 font-black ml-2">
+                <AlertCircle size={10} /> Limitations / Physical Restrictions
+              </label>
+              <textarea name="limitations_or_injuries" value={formData.limitations_or_injuries} onChange={handleChange} rows={2} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none resize-none" placeholder="Describe any current injuries..." />
+            </div>
+          </div>
+        </div>
+
+        {/* ACCOUNT SECURITY - MOVED TO BOTTOM / SIMPLIFIED */}
+        <div className="lg:col-span-2 mt-8">
+            <div className="card-gradient p-8 rounded-[3rem] border border-white/5">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+                    <div className="space-y-2 md:w-1/3">
+                        <div className="flex items-center gap-4 text-brand-teal">
+                            <Shield size={20} />
+                            <h3 className="text-sm font-black uppercase tracking-widest">Security Buffer</h3>
+                        </div>
+                        <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Synchronize your authorization credentials.</p>
+                    </div>
+
+                    <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                        <div className="relative">
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                name="newPassword"
+                                value={securityData.newPassword}
+                                onChange={handleSecurityChange}
+                                placeholder="New Password" 
+                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-5 text-sm focus:border-brand-teal transition-all outline-none pr-12" 
+                            />
+                            <button 
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white"
+                            >
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                        </div>
+                        <div className="relative">
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                name="confirmPassword"
+                                value={securityData.confirmPassword}
+                                onChange={handleSecurityChange}
+                                placeholder="Confirm Update" 
+                                className={`w-full bg-black/40 border rounded-2xl px-6 py-5 text-sm focus:border-brand-teal transition-all outline-none ${
+                                    securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword ? 'border-brand-coral' : 'border-white/10'
+                                }`} 
+                            />
+                        </div>
+                    </div>
+
+                    <button 
+                        type="button"
+                        disabled={!securityData.newPassword || securityData.newPassword !== securityData.confirmPassword}
+                        onClick={handleUpdatePassword}
+                        className="w-full md:w-auto px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-brand-teal hover:scale-105 transition-all disabled:opacity-30"
+                    >
+                        Reset Password
+                    </button>
+                </div>
+            </div>
+        </div>
       </form>
 
-      {/* Email Change Modal */}
+      {/* 1-ON-1 TRAINING REQUEST MODAL */}
       <AnimatePresence>
-        {showEmailModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
+        {trainingRequest.showModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="card-gradient w-full max-w-lg p-12 space-y-10 rounded-[3rem] border border-brand-coral/20 shadow-2xl relative"
+              className="card-gradient w-full max-w-xl p-10 space-y-8 rounded-[4rem] border border-brand-teal/20 relative shadow-[0_0_100px_rgba(45,212,191,0.1)]"
             >
-              <button 
-                onClick={() => setShowEmailModal(false)}
-                className="absolute top-8 right-8 text-white/20 hover:text-white"
-              >
-                <X size={24} />
-              </button>
-              <div className="space-y-4">
-                <div className="w-16 h-16 bg-brand-coral/10 rounded-2xl flex items-center justify-center text-brand-coral mx-auto">
-                  <Mail size={32} />
+                <div className="flex justify-between items-center">
+                    <div className="w-16 h-16 bg-brand-teal/20 rounded-2xl flex items-center justify-center text-brand-teal">
+                        <Send size={32} />
+                    </div>
+                    <button onClick={() => setTrainingRequest(prev => ({ ...prev, showModal: false }))} className="p-2 text-white/20 hover:text-white transition-colors">
+                        <X size={32} />
+                    </button>
                 </div>
-                <h3 className="text-3xl font-black uppercase tracking-tighter text-center">Change <span className="text-brand-coral">Email</span></h3>
-                <p className="text-center text-[10px] uppercase tracking-widest text-white/40 font-bold">Initiate an email update request.</p>
-              </div>
 
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40 font-black">New Email Address</label>
-                  <input 
-                    type="email"
-                    name="newEmail"
-                    value={securityData.newEmail}
-                    onChange={handleSecurityChange}
-                    placeholder="Enter new email address"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm focus:border-brand-coral outline-none transition-colors text-white"
-                  />
+                <div className="text-center space-y-2">
+                    <h3 className="text-4xl font-black uppercase tracking-tighter">Request <span className="text-brand-teal">1-on-1 Protocol</span></h3>
+                    <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold italic">Miami Beach HQ • Direct Elite Training Access</p>
                 </div>
-              </div>
 
-              <div className="flex gap-4">
-                <button 
-                  type="button"
-                  onClick={() => {
-                    handleUpdateSecurity('email');
-                    setShowEmailModal(false);
-                  }}
-                  className="flex-1 py-5 bg-brand-coral text-black text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:scale-105 transition-all shadow-glow-coral"
-                >
-                  Confirm Change
-                </button>
-                <button 
-                  type="button"
-                  onClick={() => setShowEmailModal(false)}
-                  className="flex-1 py-5 border border-white/10 text-white/40 text-[11px] uppercase tracking-[0.4em] font-black rounded-2xl hover:text-white hover:bg-white/5 transition-all"
-                >
-                  Cancel
-                </button>
-              </div>
+                <form onSubmit={handleTrainingRequest} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-4">Full Name</label>
+                            <input disabled value={user.full_name} className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm opacity-50 cursor-not-allowed" />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-4">Authorized Email</label>
+                            <input disabled value={user.email} className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-4 text-sm opacity-50 cursor-not-allowed" />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-4">Secure Phone Contact</label>
+                            <input 
+                                required 
+                                type="tel" 
+                                value={trainingRequest.phone} 
+                                onChange={(e) => setTrainingRequest(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder="Enter secure line..."
+                                className="w-full bg-black/40 border border-brand-teal/30 focus:border-brand-teal rounded-2xl px-6 py-4 text-sm outline-none transition-all" 
+                            />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <label className="text-[8px] uppercase tracking-widest text-white/40 font-black ml-4">Motivation / Objective</label>
+                            <textarea 
+                                required 
+                                value={trainingRequest.message}
+                                onChange={(e) => setTrainingRequest(prev => ({ ...prev, message: e.target.value }))}
+                                rows={4}
+                                placeholder="Why do you require elite 1-on-1 training?"
+                                className="w-full bg-black/40 border border-brand-teal/30 focus:border-brand-teal rounded-2xl px-6 py-4 text-sm outline-none transition-all resize-none" 
+                            />
+                        </div>
+                    </div>
+
+                    <button 
+                        disabled={trainingRequest.isSubmitting}
+                        className="w-full py-6 bg-brand-teal text-black text-[12px] uppercase tracking-[0.5em] font-black rounded-3xl shadow-glow-teal hover:scale-[1.02] transition-all disabled:opacity-50"
+                    >
+                        {trainingRequest.isSubmitting ? 'Transmitting...' : 'Dispatch Request'}
+                    </button>
+                    <p className="text-[8px] uppercase text-center text-white/20 tracking-widest font-bold">Admin response typically requires 24-48 hours lead time.</p>
+                </form>
             </motion.div>
           </div>
         )}

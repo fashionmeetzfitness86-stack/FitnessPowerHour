@@ -861,7 +861,7 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const hasActiveMembership = user?.tier === 'Basic' || user?.tier === 'Elite' || user?.role === 'admin' || user?.role === 'super_admin';
+  const hasActiveMembership = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
 
   const navLinks = user ? [
     { name: 'Home', path: '/profile' },
@@ -4232,7 +4232,7 @@ const Mission = () => (
           <p className="text-[10px] uppercase tracking-widest text-white/40">Community Members</p>
         </div>
         <div className="text-center space-y-4">
-          <div className="text-4xl font-bold text-brand-teal">Elite</div>
+          <div className="text-4xl font-bold text-brand-teal">Premium</div>
           <p className="text-[10px] uppercase tracking-widest text-white/40">Training Standards</p>
         </div>
       </div>
@@ -4309,7 +4309,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
 
   // Close modal and go to profile when user logs in (must have active membership to prevent infinite FreeAccessGate loop)
   useEffect(() => {
-    if (user && (user.tier === 'Basic' || user.tier === 'Elite' || user.role === 'admin' || user.role === 'super_admin')) {
+    if (user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin')) {
       setIsRegistering(false);
       navigate('/profile');
     }

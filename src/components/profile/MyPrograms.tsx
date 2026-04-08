@@ -1,179 +1,217 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { PlaySquare, CheckCircle, ArrowRight, Play, Calendar, FileText, CheckCircle2, MessageSquare, Award } from 'lucide-react';
-import { UserProfile, UserProgramAssignment, ProgramTemplate, ProgramTemplateVideo } from '../../types';
+import { 
+  PlaySquare, CheckCircle, ArrowRight, Play, Heart, HeartOff, 
+  Video as VideoIcon, Plus, Trash2, Search, Filter, Loader2, Info, ChevronRight, Bookmark, BookmarkPlus, BookmarkX, Clock
+} from 'lucide-react';
+import { UserProfile, Video } from '../../types';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
 
 export const MyPrograms = ({ user }: { user: UserProfile }) => {
-  const [assignments, setAssignments] = useState<(UserProgramAssignment & { program_template: ProgramTemplate })[]>([]);
+  const { updateProfile } = useAuth();
+  const [allVideos, setAllVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [playingAssignmentId, setPlayingAssignmentId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState('all');
 
-  const fetchAssignments = async () => {
+  const fetchVideos = async () => {
     try {
-      const { data, error } = await supabase
-        .from('user_program_assignments')
-        .select(`
-          *,
-          program_template:program_templates(*)
-        `)
-        .eq('user_id', user.id);
-
+      setLoading(true);
+      const { data, error } = await supabase.from('videos').select('*');
       if (error) throw error;
-      setAssignments(data as any || []);
+      setAllVideos(data || []);
     } catch (err) {
-      console.error('Error fetching assignments:', err);
+      console.error('Error fetching videos:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const completeAssignment = async (id: string, currentPercent: number) => {
+  useEffect(() => {
+    fetchVideos();
+  }, []);
+
+  const toggleLike = async (videoId: string) => {
     try {
-      // Simulate simple increment progress logic
-      const newPercent = Math.min(currentPercent + 10, 100);
-      const newStatus = newPercent === 100 ? 'completed' : 'active';
+      const currentFavorites = user.favorites || [];
+      const isLiked = currentFavorites.includes(videoId);
+      let newFavorites;
       
-      await supabase
-        .from('user_program_assignments')
-        .update({ completion_percent: newPercent, status: newStatus })
-        .eq('id', id);
-        
-      setPlayingAssignmentId(null);
-      fetchAssignments();
+      if (isLiked) {
+        newFavorites = currentFavorites.filter(id => id !== videoId);
+      } else {
+        newFavorites = [...currentFavorites, videoId];
+      }
+
+      await updateProfile({ favorites: newFavorites });
     } catch (err) {
-      console.error('Error completing session:', err);
+      console.error('Error toggling favorite:', err);
     }
   };
 
-  useEffect(() => {
-    fetchAssignments();
-  }, [user.id]);
+  const likedVideos = allVideos.filter(v => user.favorites?.includes(v.id));
+  const availableVideos = allVideos.filter(v => !user.favorites?.includes(v.id));
 
-  const activePrograms = assignments.filter(a => a.status === 'active' || a.status === 'assigned');
-  const completedPrograms = assignments.filter(a => a.status === 'completed');
+  const filteredLiked = likedVideos.filter(v => 
+    v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredAvailable = availableVideos.filter(v => 
+    v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
-         <div className="w-16 h-16 border-4 border-brand-teal border-t-transparent rounded-full animate-spin shadow-[0_0_30px_rgba(45,212,191,0.2)]" />
-         <div className="text-[12px] uppercase tracking-[0.4em] text-white/60 font-black animate-pulse">Syncing Matrix...</div>
+         <div className="w-16 h-16 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
+         <div className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-black">Syncing Program Matrix...</div>
        </div>
     );
   }
 
   return (
     <div className="space-y-12 fade-in">
-      <header className="flex justify-between items-end gap-6 mb-8 border-b border-white/5 pb-8">
-        <div className="space-y-4">
-          <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
-            My <span className="text-brand-teal">Programs</span>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 border-b border-white/5 pb-8">
+        <div>
+          <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter">
+            My <span className="text-brand-teal">Program</span>
           </h2>
-          <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">
-            Execute your required protocols. Track your progress. Never break discipline.
+          <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold mt-2">
+            Curated protocols authorized for your kinetic target.
           </p>
+        </div>
+        <div className="relative w-full md:w-80 group">
+            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-brand-teal transition-colors" />
+            <input 
+                type="text" 
+                placeholder="Search matrix..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-[10px] uppercase tracking-widest text-white focus:border-brand-teal outline-none transition-all"
+            />
         </div>
       </header>
 
-      {/* ACTIVE PROGRAMS */}
-      <div className="space-y-6">
-        <div className="flex items-center gap-4 border-b border-white/5 pb-4">
-          <PlaySquare size={20} className="text-brand-teal" />
-          <h3 className="text-xl font-bold uppercase tracking-tight">Active Deployments</h3>
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-12">
+        {/* Main Program Section (Liked Videos) */}
+        <div className="xl:col-span-3 space-y-8">
+            <div className="flex items-center gap-4 border-b border-white/5 pb-4">
+                <Bookmark size={20} className="text-brand-teal" />
+                <h3 className="text-xl font-bold uppercase tracking-tight">Active Deployment</h3>
+                <span className="ml-auto text-[10px] uppercase tracking-widest font-black text-brand-teal">{likedVideos.length} Modules</span>
+            </div>
+
+            {likedVideos.length === 0 ? (
+                <div className="py-32 text-center card-gradient border-2 border-dashed border-white/5 rounded-[3rem] space-y-6">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/10">
+                        <PlaySquare size={32} />
+                    </div>
+                    <div className="space-y-2">
+                        <h4 className="text-xl font-black uppercase tracking-tighter text-white/40">No Protocols Anchored</h4>
+                        <p className="text-[10px] tracking-widest uppercase font-bold text-white/20 max-w-xs mx-auto leading-relaxed">
+                            Your personal program is empty. Initialize modules from the directory below.
+                        </p>
+                    </div>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <AnimatePresence mode="popLayout">
+                        {filteredLiked.map((video) => (
+                            <motion.div 
+                                key={video.id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="card-gradient group border border-white/5 hover:border-brand-teal/30 transition-all rounded-[2.5rem] flex flex-col shadow-2xl overflow-hidden"
+                            >
+                                <div className="aspect-video relative overflow-hidden bg-white/5">
+                                    <div className="absolute inset-0 bg-brand-black opacity-0 group-hover:opacity-40 transition-opacity z-10" />
+                                    <img src={video.thumbnail_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={video.title} />
+                                    <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-all">
+                                        <div className="p-4 bg-brand-teal text-black rounded-full shadow-glow-teal transform scale-90 group-hover:scale-100 transition-all">
+                                            <Play size={24} fill="black" className="translate-x-1" />
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); toggleLike(video.id); }}
+                                        className="absolute top-4 right-4 z-30 p-2 bg-black/60 backdrop-blur-md rounded-xl text-brand-coral hover:bg-brand-coral/10 transition-all"
+                                    >
+                                        <BookmarkX size={16} />
+                                    </button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div>
+                                        <span className="text-[8px] uppercase tracking-widest text-brand-teal font-black">{video.category || 'Focus'}</span>
+                                        <h4 className="text-sm font-black uppercase tracking-tight mt-1 group-hover:text-brand-teal transition-colors line-clamp-1">{video.title}</h4>
+                                    </div>
+                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                        <div className="flex items-center gap-2 text-white/30 text-[9px] font-bold uppercase tracking-widest">
+                                            <Clock size={10} /> {video.duration || '15:00'}
+                                        </div>
+                                        <button className="text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-teal transition-all flex items-center gap-2">
+                                            Execute <ChevronRight size={12} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+            )}
         </div>
 
-        {activePrograms.length === 0 ? (
-          <div className="py-24 text-center card-gradient border-2 border-dashed border-white/5 rounded-3xl space-y-4">
-            <Calendar size={48} className="mx-auto text-white/10" />
-            <h4 className="text-xl font-black uppercase tracking-tighter text-white/40">No Systems Active</h4>
-            <p className="text-[10px] tracking-widest uppercase font-bold text-white/20">Your training matrix is currently clear. Await coach deployment.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {activePrograms.map(assignment => (
-              <div key={assignment.id} className="card-gradient group relative overflow-hidden flex flex-col border border-white/10 hover:border-brand-teal/30 transition-all rounded-3xl p-8">
-                {/* Visual Background Accent based on Phase */}
-                <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl -mr-16 -mt-16 pointer-events-none transition-all duration-700 ${assignment.program_template?.phase === 'Phase 1' ? 'bg-amber-500/10' : assignment.program_template?.phase === 'Phase 2' ? 'bg-brand-teal/10' : 'bg-brand-coral/10'}`} />
-                
-                <div className="flex justify-between items-start mb-6">
-                   <div>
-                     <span className={`text-[8px] px-2 py-0.5 rounded font-black uppercase tracking-widest border mb-2 inline-block ${assignment.program_template?.phase === 'Phase 1' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : assignment.program_template?.phase === 'Phase 2' ? 'bg-brand-teal/10 text-brand-teal border-brand-teal/20' : 'bg-brand-coral/10 text-brand-coral border-brand-coral/20'}`}>
-                        {assignment.program_template?.phase}
-                     </span>
-                     <h3 className="text-2xl font-black uppercase tracking-tight leading-none group-hover:text-brand-teal transition-colors">
-                       {assignment.program_template?.title}
-                     </h3>
-                     <p className="text-[9px] uppercase tracking-widest text-white/40 font-bold mt-2">Assigned by: Coach {assignment.assigned_by_role === 'super_admin' ? 'SysAdmin' : 'Athlete'}</p>
-                   </div>
-                </div>
+        {/* Sidebar: Available Modules (NOT liked yet) */}
+        <div className="space-y-8">
+            <div className="flex items-center gap-4 border-b border-white/5 pb-4">
+                <Plus size={20} className="text-white/20" />
+                <h3 className="text-sm font-black uppercase tracking-widest text-white/40">Available</h3>
+            </div>
 
-                <div className="flex-grow space-y-4">
-                   <p className="text-xs text-white/50 leading-relaxed italic line-clamp-2">"{assignment.program_template?.description}"</p>
-                   {assignment.custom_notes && (
-                      <div className="bg-brand-teal/5 border-l-2 border-brand-teal p-3 rounded-r-xl">
-                         <div className="flex items-center gap-2 mb-1">
-                            <MessageSquare size={12} className="text-brand-teal" />
-                            <span className="text-[9px] uppercase tracking-widest font-black text-brand-teal">Coach Note</span>
-                         </div>
-                         <p className="text-[10px] text-white/60 leading-relaxed">"{assignment.custom_notes}"</p>
-                      </div>
-                   )}
+            <div className="space-y-4 max-h-[1000px] overflow-y-auto pr-2 no-scrollbar">
+                {filteredAvailable.length === 0 ? (
+                    <div className="p-8 text-center bg-white/[0.02] rounded-3xl border border-dashed border-white/5 opacity-40">
+                        <p className="text-[10px] uppercase font-bold tracking-widest">Matrix Unified</p>
+                    </div>
+                ) : (
+                    filteredAvailable.map(video => (
+                        <div key={video.id} className="card-gradient p-4 flex gap-4 items-center group hover:border-brand-teal/30 transition-all rounded-2xl">
+                            <div className="w-20 aspect-video bg-white/5 rounded-lg overflow-hidden flex-shrink-0 relative">
+                                <img src={video.thumbnail_url} className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt={video.title} />
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                    <BookmarkPlus size={16} className="text-brand-teal" />
+                                </div>
+                            </div>
+                            <div className="flex-grow min-w-0">
+                                <h4 className="text-[10px] font-black uppercase tracking-tight text-white/80 line-clamp-1">{video.title}</h4>
+                                <p className="text-[8px] uppercase tracking-widest text-white/30 font-bold mt-1">{video.category || 'Protocol'}</p>
+                            </div>
+                            <button 
+                                onClick={() => toggleLike(video.id)}
+                                className="p-2 border border-white/10 text-white/20 hover:border-brand-teal hover:text-brand-teal rounded-lg transition-all"
+                                title="Add to Program"
+                            >
+                                <Plus size={14} />
+                            </button>
+                        </div>
+                    ))
+                )}
+            </div>
 
-                   <div className="pt-4 border-t border-white/5">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-[10px] uppercase font-bold tracking-widest text-white/40">Completion Matrix</span>
-                        <span className="text-[10px] uppercase font-black tracking-widest text-brand-teal">{assignment.completion_percent}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                         <div className="h-full bg-brand-teal transition-all duration-1000" style={{ width: `${assignment.completion_percent}%` }} />
-                      </div>
-                   </div>
+            <div className="p-6 bg-brand-teal/5 border border-brand-teal/20 rounded-[2rem] space-y-4">
+                <div className="flex items-center gap-3 text-brand-teal">
+                    <Info size={16} />
+                    <h4 className="text-[10px] font-black uppercase tracking-widest">Protocol Logic</h4>
                 </div>
-
-                <div className="pt-6 mt-6 flex gap-3">
-                   {playingAssignmentId === assignment.id ? (
-                      <div className="flex w-full gap-3 animate-in slide-in-from-bottom">
-                         <button onClick={() => completeAssignment(assignment.id, assignment.completion_percent)} className="flex-1 py-4 bg-emerald-500/20 text-emerald-400 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-emerald-500/30 transition-all border border-emerald-500/30 flex items-center justify-center gap-2">
-                            <CheckCircle2 size={16} /> Mark Complete
-                         </button>
-                         <button onClick={() => setPlayingAssignmentId(null)} className="py-4 px-6 bg-white/5 text-white/40 hover:text-white rounded-xl text-[10px] font-black uppercase transition-all">Cancel</button>
-                      </div>
-                   ) : (
-                      <button onClick={() => setPlayingAssignmentId(assignment.id)} className="w-full py-4 bg-white/5 group-hover:bg-brand-teal group-hover:text-black text-white/60 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-xl flex items-center justify-center gap-2">
-                         <Play size={14} /> Start Next Session
-                      </button>
-                   )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                <p className="text-[9px] text-white/60 leading-relaxed italic uppercase tracking-wider font-bold">
+                    Adding modules to "My Program" anchors them to your active deployment dashboard for direct access.
+                </p>
+            </div>
+        </div>
       </div>
-
-      {/* COMPLETED PROGRAMS */}
-      {completedPrograms.length > 0 && (
-         <div className="space-y-6 pt-12 border-t border-white/5">
-            <div className="flex items-center gap-4 pb-4">
-              <Award size={20} className="text-white/40" />
-              <h3 className="text-xl font-bold uppercase tracking-tight text-white/60">Completed Systems</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {completedPrograms.map(assignment => (
-                  <div key={assignment.id} className="card-gradient rounded-3xl p-6 border border-white/5 opacity-60 hover:opacity-100 transition-opacity">
-                     <div className="flex justify-between items-center mb-4">
-                        <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-500 flex items-center gap-2 bg-emerald-500/10 px-2 py-1 rounded">
-                           <CheckCircle2 size={12} /> Mastered
-                        </span>
-                     </div>
-                     <h4 className="text-lg font-black uppercase tracking-tight">{assignment.program_template?.title}</h4>
-                     <p className="text-[9px] uppercase tracking-widest text-white/40 mt-1">{assignment.program_template?.phase}</p>
-                  </div>
-               ))}
-            </div>
-         </div>
-      )}
     </div>
   );
 };
