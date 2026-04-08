@@ -103,7 +103,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     }
 
     switch (activeTab) {
-      case 'overview': return <Overview user={user} setShowOnboarding={setShowOnboarding} />;
+      case 'overview': return <Overview user={user} showToast={showToast} onTabChange={setActiveTab} />;
       case 'progress': return <Progress user={user} showToast={showToast} />;
       case 'calendar': return <CalendarTab user={user} showToast={showToast} />;
       case 'programs': return <MyPrograms user={user} />;
@@ -114,7 +114,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
       case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
-      default: return <Overview user={user} setShowOnboarding={setShowOnboarding} />;
+      default: return <Overview user={user} showToast={showToast} onTabChange={setActiveTab} />;
     }
   };
 

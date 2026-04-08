@@ -77,9 +77,9 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
   }, [user.id]);
 
   // Scaffold dummy history for visual alignment until full Stripe sync
-  const history: BillingHistory[] = [
-    { id: 'inv_12345', user_id: user.id, amount: 19.99, status: 'paid', date: '2026-07-24', description: 'Basic Membership - Monthly' },
-  ];
+  const history: BillingHistory[] = membership?.status === 'active' ? [
+    { id: 'inv_12345', user_id: user.id, amount: 19.99, status: 'paid', date: new Date().toISOString(), description: 'Basic Membership - Monthly' },
+  ] : [];
 
   return (
     <div className="space-y-12 fade-in">
@@ -174,13 +174,22 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
             <span className="px-2 py-1 bg-white/10 text-white text-[8px] uppercase tracking-widest font-bold rounded">Default</span>
           </div>
 
-          <button 
-            className="w-full py-5 bg-white text-black hover:bg-brand-teal transition-all text-xs uppercase font-black tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)]"
-            onClick={handleManageSubscription}
-            disabled={loading}
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Manage Subscription'}
-          </button>
+          {membership?.status === 'active' ? (
+            <button 
+              className="w-full py-5 bg-white text-black hover:bg-brand-teal transition-all text-xs uppercase font-black tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:shadow-[0_0_30px_rgba(45,212,191,0.4)]"
+              onClick={handleManageSubscription}
+              disabled={loading}
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : 'Manage Subscription'}
+            </button>
+          ) : (
+            <button 
+              className="w-full py-5 bg-brand-teal text-black hover:shadow-glow-teal transition-all text-xs uppercase font-black tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3"
+              onClick={() => window.location.hash = '#/membership'}
+            >
+              Initialize Basic Protocol <ArrowRight size={16} />
+            </button>
+          )}
         </div>
       </div>
 

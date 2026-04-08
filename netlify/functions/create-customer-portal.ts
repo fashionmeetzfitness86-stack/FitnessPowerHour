@@ -40,7 +40,14 @@ export default async (req: Request) => {
     });
 
     if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ error: 'No active Stripe subscription found for this email. Contact support.' }), { status: 404 });
+      return new Response(JSON.stringify({ 
+        error: 'No active Stripe subscription found.', 
+        code: 'CUSTOMER_NOT_FOUND',
+        message: 'You must have an active protocol subscription to access the Billing Portal.' 
+      }), { 
+        status: 404,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
     }
 
     const customer = customers.data[0];
