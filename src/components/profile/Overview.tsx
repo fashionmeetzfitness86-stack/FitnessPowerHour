@@ -117,82 +117,100 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
             </div>
 
 
-            <div className="relative z-10 flex flex-col items-center text-center gap-8">
-              <div className="space-y-4">
-                <div className="flex items-center justify-center gap-2">
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${hasCheckedIn ? 'bg-emerald-400' : 'bg-brand-coral'}`} />
-                  <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Today</span>
-                </div>
-
-                {hasCheckedIn ? (
-                  <>
-                    <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-emerald-400 leading-none">
-                      Workout Completed
-                    </h2>
-                    <p className="text-white/40 text-sm font-bold uppercase tracking-widest mt-2 flex items-center justify-center gap-2">
-                      <Flame size={14} className="text-brand-coral" /> Keep your streak alive. {streakCount} Days.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">
-                      You haven't <span className="text-brand-coral">trained today</span>
-                    </h2>
-                    {missedYesterday ? (
-                      <p className="text-brand-coral/80 text-sm font-bold uppercase tracking-widest mt-2 flex items-center justify-center gap-2">
-                        <AlertCircle size={14} /> You missed yesterday. Let's get back on track.
-                      </p>
-                    ) : (
-                      <p className="text-amber-400 text-sm font-bold uppercase tracking-widest mt-2 flex items-center justify-center gap-2">
-                        <Flame size={14} /> Keep your streak alive
-                      </p>
-                    )}
-                  </>
-                )}
+            <div className="relative z-10 flex flex-col items-center text-center gap-6">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className={`w-2 h-2 rounded-full animate-pulse ${hasCheckedIn ? 'bg-emerald-400' : 'bg-brand-coral'}`} />
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Today</span>
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row justify-center gap-4 w-full md:w-auto mt-4">
-                {!hasCheckedIn ? (
-                  <>
-                    <button
-                      onClick={handleCheckIn}
-                      className="px-10 py-5 bg-brand-coral text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-lg"
-                    >
-                      <Play size={16} /> Start Workout
-                    </button>
-                    <button
-                      onClick={() => navigate('programs')}
-                      className="px-10 py-5 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
-                    >
-                      <VideoIcon size={16} /> Continue Program
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => {
-                        setShowReward(true); // they can view reward again
-                      }}
-                      className="px-10 py-5 bg-emerald-500 text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-3"
-                    >
-                      <BarChart3 size={16} /> View Progress
-                    </button>
+              {hasCheckedIn ? (
+                /* STATE 4 — COMPLETED TODAY */
+                <div className="space-y-6 w-full max-w-md mx-auto">
+                  <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-emerald-400 leading-none">
+                    Workout Completed
+                  </h2>
+                  <p className="text-emerald-400/50 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                    <CheckCircle size={14} /> Great work today.
+                  </p>
+                  <div className="flex flex-col gap-3 pt-6">
                     <button
                       onClick={() => navigate('calendar')}
-                      className="px-10 py-5 bg-brand-teal text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-3"
-                    >
-                      <CalendarIcon size={16} /> Edit Day
-                    </button>
-                    <button
-                      onClick={() => navigate('programs')}
-                      className="px-10 py-5 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
+                      className="w-full py-5 bg-[#111] border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
                     >
                       <Plus size={16} /> Add Another Workout
                     </button>
-                  </>
-                )}
-              </div>
+                    <button
+                      onClick={() => setShowReward(true)}
+                      className="w-full py-5 bg-transparent text-white/40 hover:text-white font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3"
+                    >
+                      View Progress
+                    </button>
+                  </div>
+                </div>
+              ) : missedYesterday ? (
+                /* STATE 2 — MISSED YESTERDAY */
+                <div className="space-y-6 w-full max-w-md mx-auto">
+                  <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white">
+                    You missed <span className="text-brand-coral">yesterday</span>
+                  </h2>
+                  <p className="text-brand-coral text-sm font-bold uppercase tracking-widest mt-2">
+                    Let's get back on track
+                  </p>
+                  <div className="flex flex-col gap-3 pt-6">
+                    <button
+                      onClick={handleCheckIn}
+                      className="w-full py-6 bg-brand-coral text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(232,116,97,0.3)]"
+                    >
+                      <Play size={18} fill="currentColor" /> Start Workout
+                    </button>
+                  </div>
+                </div>
+              ) : streakCount > 0 ? (
+                /* STATE 3 — ACTIVE STREAK */
+                <div className="space-y-6 w-full max-w-md mx-auto">
+                  <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white flex items-center justify-center gap-3">
+                    <Flame className="text-brand-coral" size={40} /> {streakCount} Day Streak
+                  </h2>
+                  <p className="text-white/40 text-sm font-bold uppercase tracking-widest mt-2">
+                    Keep it alive today
+                  </p>
+                  <div className="flex flex-col gap-3 pt-6">
+                    <button
+                      onClick={handleCheckIn}
+                      className="w-full py-6 bg-brand-coral text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(232,116,97,0.3)]"
+                    >
+                      <Play size={18} fill="currentColor" /> Start Workout
+                    </button>
+                    <button
+                      onClick={() => navigate('programs')}
+                      className="w-full py-5 bg-transparent border border-transparent text-white/50 font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white/5 hover:text-white transition-all flex items-center justify-center gap-3"
+                    >
+                      <VideoIcon size={16} /> Continue Program
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* STATE 1 — DID NOTHING TODAY (0 STREAK) */
+                <div className="space-y-6 w-full max-w-md mx-auto">
+                  <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white">
+                    You haven't <span className="text-brand-coral">trained today</span>
+                  </h2>
+                  <div className="flex flex-col gap-3 pt-8">
+                    <button
+                      onClick={handleCheckIn}
+                      className="w-full py-6 bg-brand-coral text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(232,116,97,0.3)]"
+                    >
+                      <Play size={18} fill="currentColor" /> Start Workout
+                    </button>
+                    <button
+                      onClick={() => navigate('programs')}
+                      className="w-full py-5 bg-transparent text-white/40 hover:text-white font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3"
+                    >
+                      Continue Program
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
