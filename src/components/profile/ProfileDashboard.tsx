@@ -75,6 +75,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     { id: 'progress', label: 'Progress Tracking', icon: LineChart },
     { id: 'calendar', label: 'Workout Calendar', icon: Calendar },
     { id: 'programs', label: 'My Programs', icon: PlaySquare },
+    { id: 'videos-out', label: 'Video Library', icon: Video },
     { id: 'membership', label: 'Membership', icon: Shield },
     { id: 'billing', label: 'Billing', icon: CreditCard },
     { id: 'retreats', label: 'Retreats', icon: Map },
@@ -87,8 +88,8 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   const renderContent = () => {
     const isMemberLocal = isMember;
-    const lockedTabs = ['progress', 'calendar', 'internal-feed', 'retreats'];
-    
+    const lockedTabs = ['progress', 'calendar', 'internal-feed', 'retreats', 'programs'];
+
     if (!isMemberLocal && lockedTabs.includes(activeTab)) {
       return (
         <div className="flex flex-col items-center justify-center p-16 text-center card-gradient rounded-[3rem] border border-brand-teal/20 shadow-2xl space-y-6 relative overflow-hidden">
@@ -183,7 +184,13 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                      if (item.id === 'videos-out') {
+                          window.location.hash = '#/videos';
+                      } else {
+                          setActiveTab(item.id);
+                      }
+                  }}
                   className={`flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${
                     activeTab === item.id
                       ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
@@ -203,7 +210,13 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                      if (item.id === 'videos-out') {
+                          window.location.hash = '#/videos';
+                      } else {
+                          setActiveTab(item.id);
+                      }
+                  }}
                   className={`flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl transition-all flex-shrink-0 ${
                     activeTab === item.id
                       ? 'bg-brand-teal text-black shadow-lg shadow-brand-teal/20'
