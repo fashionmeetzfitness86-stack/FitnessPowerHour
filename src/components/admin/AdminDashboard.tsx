@@ -27,7 +27,7 @@ import { UsersManager } from './UsersManager';
 import { VideoManager } from './VideoManager';
 import { CommunityManager } from './CommunityManager';
 import { OrderManager } from './OrderManager';
-import { ServiceManager } from './ServiceManager';
+import { RequestsManager } from './RequestsManager';
 import { RetreatManager } from './RetreatManager';
 import { AthletesManager } from './AthletesManager';
 
@@ -52,8 +52,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   
   // Calendar & Services System
   const [calendarSessions, setCalendarSessions] = useState<CalendarSession[]>([]);
-  const [bookingRequests, setBookingRequests] = useState<any[]>([]);
-  const [trainerRequests, setTrainerRequests] = useState<any[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<any[]>([]);
 
   const [communities, setCommunities] = useState<Community[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -121,15 +120,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              })));
            }
            if (pRes.data) setPosts(pRes.data);
-        } else if (activeTab === 'bookings' && bookingRequests.length === 0) {
-           const [bRes, csRes, tRes] = await Promise.all([
-             supabase.from('bookings').select('*').order('date', { ascending: false }).limit(50),
-             supabase.from('calendar_sessions').select('*').order('session_date', { ascending: false }).limit(50),
-             supabase.from('trainer_requests').select('*, athlete:users!athlete_id(full_name), user:users!user_id(full_name)').order('created_at', { ascending: false }).limit(50)
-           ]);
-           if (bRes.data) setBookingRequests(bRes.data);
-           if (csRes.data) setCalendarSessions(csRes.data);
-           if (tRes.data) setTrainerRequests(tRes.data);
+        } else if (activeTab === 'requests' && serviceRequests.length === 0) {
+           const { data } = await supabase.from('service_requests').select('*').order('created_at', { ascending: false }).limit(50);
+           if (data) setServiceRequests(data);
          } else if (activeTab === 'retreats' && retreats.length === 0) {
            const [rtRes, raRes] = await Promise.all([
              supabase.from('retreats').select('*').limit(50),
@@ -340,44 +333,56 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     }
   };
 
-  const handleUpdateBookingStatus = async (id: string, status: 'approved' | 'rejected') => {
+  const handleUpdateRequestStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
+      const { error } = await supabase.from('service_requests').update({ status }).eq('id', id);
       if (error) throw error;
-      setBookingRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-      showToast(`Booking ${status}`, 'success');
-      
-      const req = bookingRequests.find(r => r.id === id);
-      if (status === 'approved' && req) {
-         await supabase.from('calendar_sessions').insert({
-            user_id: req.user_id,
-            title: `Session: ${req.service_type}`,
-            session_date: req.date || req.requested_date,
-            session_time: req.time_slot || req.requested_time,
-            status: 'scheduled'
-         });
-         showToast('Added to calendar', 'success');
-      }
+      setServiceRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      showToast(`Request marked as ${status}`, 'success');
     } catch (err) {
-      showToast('Failed to update booking status', 'error');
+      showToast('Failed to update request', 'error');
     }
   };
 
-  const handleUpdateTrainerRequestStatus = async (id: string, status: 'approved' | 'rejected') => {
+  const handleScheduleRequest = async (req: any) => {
     try {
-      const { error } = await supabase.from('trainer_requests').update({ status }).eq('id', id);
+      // Create Calendar Session
+      const { data, error } = await supabase.from('calendar_sessions').insert({
+        user_id: req.user_id,
+        source_type: 'service',
+        related_service_request_id: req.id,
+        title: req.service_subtype === 'recovery' ? 'Flex Mob 305 Session' : '1-on-1 Training Session',
+        session_date: req.requested_date || new Date().toISOString().split('T')[0],
+        session_time: req.requested_time || '12:00:00',
+        status: 'approved',
+        duration_minutes: 60
+      }).select().single();
+      
       if (error) throw error;
-      setTrainerRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-      showToast(`Trainer request ${status}`, 'success');
+
+      // Update Service Request status
+      await handleUpdateRequestStatus(req.id, 'scheduled');
+      
+      // Auto-dispatch notification for the user to see in their Dashboard
+      await supabase.from('notifications').insert({
+         user_id: req.user_id,
+         type: 'service',
+         title: 'Session Scheduled',
+         message: `Your ${req.service_subtype === 'recovery' ? 'Flex Mob' : 'Training'} session is confirmed for ${req.requested_date}. Check your Schedule.`,
+         metadata: { route: '#/profile' }
+      });
+
+      showToast('Session scheduled & synced to user dashboard', 'success');
     } catch (err) {
-      showToast('Failed to update trainer request', 'error');
+      console.error(err);
+      showToast('Failed to schedule session', 'error');
     }
   };
 
   const sidebarItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'requests', label: 'Requests', icon: Calendar },
     { id: 'content', label: 'Content', icon: PlayCircle },
-    { id: 'bookings', label: 'Bookings', icon: Calendar },
     { id: 'retreats', label: 'Retreats', icon: MapPin },
     { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'athletes', label: 'Athletes', icon: Trophy },
@@ -422,12 +427,11 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onDelete={handleDeleteVideo} 
         />
       );
-      case 'bookings': return (
-        <ServiceManager 
-          bookings={bookingRequests} 
-          trainerRequests={trainerRequests}
-          onUpdateStatus={handleUpdateBookingStatus} 
-          onUpdateTrainerRequestStatus={handleUpdateTrainerRequestStatus}
+      case 'requests': return (
+        <RequestsManager 
+          requests={serviceRequests} 
+          onUpdateStatus={handleUpdateRequestStatus} 
+          onSchedule={handleScheduleRequest}
           showToast={showToast} 
         />
       );
