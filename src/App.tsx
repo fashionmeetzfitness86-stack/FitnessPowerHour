@@ -4900,11 +4900,13 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
       </div>
       <h2 className="text-3xl font-black uppercase tracking-tight text-white">Congrats <span className="text-brand-teal">You're In</span></h2>
       <p className="text-white/50 text-sm leading-relaxed">
-        {tier
-          ? <>Your <span className="text-brand-teal font-bold">{tier}</span> membership is live. Time to build your streak and unlock your full potential.</>
-          : <>You're all set. Time to build your streak and unlock your full potential.</>
-        }
-        <span className="block mt-3 text-brand-teal font-black text-xs uppercase tracking-[0.3em]">Own Your Power</span>
+        Your payment went through successfully.
+      </p>
+      <p className="text-white/70 text-sm leading-relaxed">
+        Time to build your streak and unlock your full potential.
+      </p>
+      <p className="mt-2">
+        <span className="text-brand-teal font-black text-xs uppercase tracking-[0.3em]">Own Your Power</span>
       </p>
       <button
         onClick={onClose}
