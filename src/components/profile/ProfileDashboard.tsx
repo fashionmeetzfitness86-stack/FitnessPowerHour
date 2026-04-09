@@ -18,8 +18,8 @@ import { Billing } from './Billing';
 import { RetreatsTab } from './RetreatsTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
+import { CommunityAccessTab } from './CommunityAccessTab';
 
-import { InternalFeed } from '../InternalFeed';
 import { OnboardingFlow } from './OnboardingFlow';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
@@ -71,7 +71,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     ...(user?.role === 'athlete' ? [{ id: 'athlete', label: 'Athlete Intel', icon: Shield }] : []),
-    ...(user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'athlete' ? [{ id: 'internal-feed', label: 'Internal Feed', icon: MessageSquare }] : []),
+    { id: 'community', label: 'Tribe Community', icon: MessageSquare },
     { id: 'progress', label: 'Progress Tracking', icon: LineChart },
     { id: 'calendar', label: 'Workout Calendar', icon: Calendar },
     { id: 'programs', label: 'My Programs', icon: PlaySquare },
@@ -88,7 +88,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   const renderContent = () => {
     const isMemberLocal = isMember;
-    const lockedTabs = ['progress', 'calendar', 'internal-feed', 'retreats', 'programs'];
+    const lockedTabs = ['progress', 'calendar', 'community', 'retreats', 'programs'];
 
     if (!isMemberLocal && lockedTabs.includes(activeTab)) {
       return (
@@ -114,7 +114,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'retreats': return <RetreatsTab user={user} showToast={showToast} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
-      case 'internal-feed': return <InternalFeed user={user} showToast={showToast} />;
+      case 'community': return <CommunityAccessTab user={user} showToast={showToast} />;
       default: return <Overview user={user} showToast={showToast} onTabChange={setActiveTab} />;
     }
   };

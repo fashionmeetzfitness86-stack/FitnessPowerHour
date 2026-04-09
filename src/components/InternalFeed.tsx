@@ -61,13 +61,13 @@ export const InternalFeed = ({ user, showToast }: { user: UserProfile, showToast
         const filePath = `internal-feed/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
-          .from('media')
+          .from('fmf-media')
           .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
-          .from('media')
+          .from('fmf-media')
           .getPublicUrl(filePath);
         
         imageUrl = publicUrl;

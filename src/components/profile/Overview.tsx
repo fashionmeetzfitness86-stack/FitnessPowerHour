@@ -219,10 +219,10 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
       {/* =================== QUICK STATS =================== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Sessions Done', value: stats.sessionsThisWeek, icon: Activity, color: 'text-brand-teal', bg: 'bg-brand-teal/5', action: () => navigate('calendar') },
-          { label: 'Current Streak', value: `${streakCount}d`, icon: Flame, color: 'text-brand-coral', bg: 'bg-brand-coral/5', action: () => {} },
-          { label: 'Time Trained', value: stats.trainingTime, icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/5', action: () => navigate('progress') },
-          { label: 'Saved Workouts', value: stats.likedVideos, icon: VideoIcon, color: 'text-blue-400', bg: 'bg-blue-500/5', action: () => navigate('programs') },
+          { label: 'Completed', value: stats.sessionsThisWeek, icon: CheckCircle, color: 'text-brand-teal', bg: 'bg-brand-teal/5', action: () => navigate('calendar') },
+          { label: 'Scheduled', value: pendingRequests.length, icon: Calendar, color: 'text-brand-teal', bg: 'bg-white/5', action: () => navigate('calendar') },
+          { label: 'Current Streak', value: `${streakCount}d`, icon: Flame, color: 'text-brand-coral', bg: 'bg-brand-coral/5', action: () => showToast('Streak matrix mapping incoming.', 'info') },
+          { label: 'Rank', value: user.role === 'admin' ? 'Elite' : 'Athlete', icon: Zap, color: 'text-brand-teal', bg: 'bg-brand-teal/5', action: () => navigate('membership') }
         ].map((s, idx) => (
           <motion.button
             key={idx}

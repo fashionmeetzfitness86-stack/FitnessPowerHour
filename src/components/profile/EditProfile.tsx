@@ -196,8 +196,8 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                     {(formData.profile_images?.length || 0) < 10 && (
                         <div className="col-span-2 md:col-span-2 xl:col-span-2 aspect-video min-h-[160px] border border-dashed border-white/20 rounded-[2rem] p-4 flex flex-col items-center justify-center hover:border-brand-teal/50 transition-colors bg-white/[0.02]">
                             <MediaCapture 
-                                bucket="avatars"
-                                folder={`profiles/${user.id}`}
+                                bucket="fmf-media"
+                                folder={`avatars/profiles/${user.id}`}
                                 isAvatar={false}
                                 onUploadSuccess={(url) => {
                                     setFormData(prev => ({ 

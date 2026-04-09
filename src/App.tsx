@@ -4886,7 +4886,7 @@ const Profile = () => {
   const { user, logout, updateTier } = useAuth();
   const navigate = useNavigate();
   const [waited, setWaited] = useState(false);
-  const { showToast } = (window as any).fmfToast || { showToast: () => {} };
+  const { showToast } = (window as any).fmfToast || { showToast: (msg: string) => alert(`[FMF System] ${msg}`) };
 
   // Handle payment success redirect from Stripe
   useEffect(() => {

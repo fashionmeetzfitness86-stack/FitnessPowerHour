@@ -453,7 +453,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           setRoleFilter={setRoleFilter} 
           statusFilter={statusFilter} 
           setStatusFilter={setStatusFilter} 
-          onEdit={() => {}} 
+          onEdit={() => showToast('Advanced edit matrix restricted.', 'info')} 
           onUpdateUser={handleUpdateUser}
           currentUser={user}
         />
@@ -481,7 +481,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <RetreatManager
           retreats={retreats}
           applications={retreatApplications}
-          onAdd={() => {}}
+          onAdd={() => showToast('New retreat genesis coming soon.', 'info')}
           onReview={handleReviewRetreatApp}
           onDelete={handleDeleteRetreat}
         />
@@ -522,7 +522,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           communities={communities} 
           posts={posts} 
           users={users} 
-          onAdd={() => {}} 
+          onAdd={() => showToast('Community genesis locked until milestone.', 'info')} 
           onDeleteCommunity={handleDeleteCommunity} 
           onDeletePost={handleDeletePost} 
         />
@@ -536,7 +536,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as any } : o));
              showToast('Updated', 'success');
           }} 
-          onViewDetails={() => {}} 
+          onViewDetails={() => showToast('Order details schema in development.', 'info')} 
         />
       );
       case 'notifications': return (
