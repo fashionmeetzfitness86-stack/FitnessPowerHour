@@ -27,6 +27,7 @@ import { UsersManager } from './UsersManager';
 import { VideoManager } from './VideoManager';
 import { CommunityManager } from './CommunityManager';
 import { OrderManager } from './OrderManager';
+import { NotificationManager } from './NotificationManager';
 import { RequestsManager } from './RequestsManager';
 import { RetreatManager } from './RetreatManager';
 import { AthletesManager } from './AthletesManager';
@@ -121,9 +122,13 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              })));
            }
            if (pRes.data) setPosts(pRes.data);
-        } else if (activeTab === 'requests' && serviceRequests.length === 0) {
-           const { data } = await supabase.from('service_requests').select('*').order('created_at', { ascending: false }).limit(50);
-           if (data) setServiceRequests(data);
+        } else if (activeTab === 'requests' && (serviceRequests.length === 0 || users.length === 0)) {
+           const [reqRes, uRes] = await Promise.all([
+             supabase.from('service_requests').select('*').order('created_at', { ascending: false }).limit(50),
+             supabase.from('profiles').select('*').limit(100)
+           ]);
+           if (reqRes.data) setServiceRequests(reqRes.data);
+           if (uRes.data) setUsers(uRes.data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
          } else if (activeTab === 'retreats' && retreats.length === 0) {
            const [rtRes, raRes] = await Promise.all([
              supabase.from('retreats').select('*').limit(50),
@@ -345,6 +350,38 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     }
   };
 
+  const handleSaveRequest = async (req: any) => {
+    try {
+      if (req.id) {
+         const { error } = await supabase.from('service_requests').update({
+           service_type: req.service_type,
+           requested_date: req.requested_date || null,
+           requested_time: req.requested_time || null,
+           status: req.status || 'pending',
+           notes: req.notes || ''
+         }).eq('id', req.id);
+         if (error) throw error;
+         setServiceRequests(prev => prev.map(r => r.id === req.id ? {...r, ...req} : r));
+         showToast('Request updated successfully', 'success');
+      } else {
+         const { data, error } = await supabase.from('service_requests').insert({
+            user_id: req.user_id,
+            service_type: req.service_type,
+            service_subtype: 'Manual Booking',
+            requested_date: req.requested_date || new Date().toISOString().split('T')[0],
+            requested_time: req.requested_time || '12:00:00',
+            status: req.status || 'confirmed',
+            notes: req.notes || 'Admin generated appointment'
+         }).select().single();
+         if (error) throw error;
+         setServiceRequests(prev => [data, ...prev]);
+         showToast('Manual booking created', 'success');
+      }
+    } catch(err) {
+      showToast('Failed to save service request', 'error');
+    }
+  };
+
   const handleScheduleRequest = async (req: any) => {
     try {
       // Create Calendar Session
@@ -390,6 +427,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'shop', label: 'Shop', icon: ShoppingBag },
     { id: 'orders', label: 'Orders', icon: PackageIcon },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'notifications', label: 'Broadcast', icon: Send },
   ];
 
   const renderContent = () => {
@@ -432,8 +470,10 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       case 'requests': return (
         <RequestsManager 
           requests={serviceRequests} 
+          users={users}
           onUpdateStatus={handleUpdateRequestStatus} 
           onSchedule={handleScheduleRequest}
+          onSaveRequest={handleSaveRequest}
           showToast={showToast} 
         />
       );
@@ -497,6 +537,13 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              showToast('Updated', 'success');
           }} 
           onViewDetails={() => {}} 
+        />
+      );
+      case 'notifications': return (
+        <NotificationManager 
+          users={users}
+          groups={communities}
+          showToast={showToast}
         />
       );
       default: return (

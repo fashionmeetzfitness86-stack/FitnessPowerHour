@@ -79,12 +79,20 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
     if (!selectedDay) return;
     setIsSubmitting(true);
     try {
+      const getFormattedTime = (timeSlot: string) => {
+        const map: Record<string, string> = {
+          '9:00 AM': '09:00:00', '11:00 AM': '11:00:00', '1:00 PM': '13:00:00',
+          '3:00 PM': '15:00:00', '5:00 PM': '17:00:00', '7:00 PM': '19:00:00'
+        };
+        return map[timeSlot] || '12:00:00';
+      };
+
       const { data, error } = await supabase.from('service_requests').insert({
         user_id: user.id,
         service_type: serviceType,
         service_subtype: '1-on-1 Session',
         requested_date: selectedDay,
-        requested_time: selectedTime || 'Flexible',
+        requested_time: getFormattedTime(selectedTime),
         status: 'pending',
         notes: `Message: ${serviceMessage}`
       }).select().single();
@@ -333,12 +341,17 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                               </span>
                             </div>
                             <div className="flex gap-2">
-                              {s.status !== 'completed' && (
+                              {s.status !== 'completed' ? (
                                 <button onClick={() => handleMarkComplete(s.id)} className="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-1.5">
                                   <CheckCircle2 size={12} /> Mark Done
                                 </button>
+                              ) : (
+                                <div className="w-full flex gap-2">
+                                  <button onClick={() => setSelectedDay(null)} className="flex-1 py-2 bg-brand-teal text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(45,212,191,0.2)]">Check Out</button>
+                                  <button onClick={() => setPanelMode('workout')} className="flex-1 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Add Another</button>
+                                </div>
                               )}
-                              <button onClick={() => handleDeleteSession(s.id)} className="p-2 bg-white/5 border border-white/10 text-white/30 hover:text-brand-coral hover:border-brand-coral/30 rounded-lg transition-all">
+                              <button onClick={() => handleDeleteSession(s.id)} className="p-2 bg-white/5 border border-white/10 text-white/30 hover:text-brand-coral hover:border-brand-coral/30 rounded-lg transition-all flex-shrink-0">
                                 <Trash2 size={12} />
                               </button>
                             </div>
@@ -444,14 +457,14 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                             <option value="Nutrition Consultation">Nutrition Consultation</option>
                         </select>
                       </div>
-                      <div>
-                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Preferred Time</label>
-                        <div className="grid grid-cols-4 gap-2">
-                          {['Morning', 'Midday', 'Evening', 'Flexible'].map(t => (
-                            <button key={t} onClick={() => setSelectedTime(t)} className={`py-3 rounded-xl text-[9px] font-bold border transition-all ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
-                          ))}
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Fixed Time Slot</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM', '7:00 PM'].map(t => (
+                              <button key={t} onClick={() => setSelectedTime(t)} className={`py-3 rounded-xl text-[9px] font-bold border transition-all ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
                       <div>
                         <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Notes for Coach (Optional)</label>
                         <textarea rows={2} placeholder="Any specific focus for this session?" value={serviceMessage} onChange={e => setServiceMessage(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:border-brand-teal outline-none transition-all placeholder-white/20 resize-none -mb-2" />
