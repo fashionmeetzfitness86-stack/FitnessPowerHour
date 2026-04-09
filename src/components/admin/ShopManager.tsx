@@ -14,7 +14,11 @@ export interface ShopProduct {
     external_link?: string;
     is_recommended: boolean;
     is_active: boolean;
-    visibility: 'general' | 'members'; // We assume this exists or standardizes on the UI
+    visibility: 'general' | 'members';
+    // New fields
+    sizes?: string[];              // e.g. ['XS','S','M','L','XL','XXL']
+    quantity?: number;             // stock quantity
+    gender?: 'Men' | 'Women' | 'Both' | '';
 }
 
 interface ShopManagerProps {
@@ -83,7 +87,7 @@ export const ShopManager = ({ products, onEdit, onDelete, memberDiscountValue = 
                         className="w-full lg:w-64 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-coral text-white"
                     />
                     <button 
-                        onClick={() => setEditingProduct({ name: '', price: 0, category: 'Apparel', images: [], is_active: true, is_recommended: false, visibility: 'general' })}
+                        onClick={() => setEditingProduct({ name: '', price: 0, category: 'Apparel', images: [], is_active: true, is_recommended: false, visibility: 'general', sizes: [], quantity: 0, gender: '' })}
                         className="w-full md:w-auto px-8 py-3 bg-brand-coral text-black font-black rounded-xl text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:scale-105 transition-all shadow-md"
                     >
                         <Plus size={16} /> Add Product
@@ -219,10 +223,81 @@ export const ShopManager = ({ products, onEdit, onDelete, memberDiscountValue = 
                                 </div>
                             </div>
 
+                            {/* ── SIZES ─────────────────────────────────── */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Sizes Available</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['XS','S','M','L','XL','XXL','XXXL','One Size'].map(size => {
+                                        const selected = (editingProduct.sizes || []).includes(size);
+                                        return (
+                                            <button
+                                                key={size}
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = editingProduct.sizes || [];
+                                                    const updated = selected
+                                                        ? current.filter(s => s !== size)
+                                                        : [...current, size];
+                                                    setEditingProduct({ ...editingProduct, sizes: updated });
+                                                }}
+                                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                                    selected
+                                                        ? 'bg-brand-coral text-black border-brand-coral shadow-md'
+                                                        : 'bg-white/5 text-white/40 border-white/10 hover:border-brand-coral/50 hover:text-white'
+                                                }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {(editingProduct.sizes || []).length > 0 && (
+                                    <p className="text-[9px] uppercase tracking-widest text-brand-coral/60 font-bold">
+                                        Selected: {(editingProduct.sizes || []).join(' · ')}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* ── QUANTITY + GENDER ─────────────────────── */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Stock Quantity</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={editingProduct.quantity ?? 0}
+                                        onChange={e => setEditingProduct({ ...editingProduct, quantity: parseInt(e.target.value) || 0 })}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-coral text-white font-bold"
+                                        placeholder="0"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Gender</label>
+                                    <div className="flex gap-2 h-[46px]">
+                                        {(['Men', 'Women', 'Both'] as const).map(g => (
+                                            <button
+                                                key={g}
+                                                type="button"
+                                                onClick={() => setEditingProduct({ ...editingProduct, gender: editingProduct.gender === g ? '' : g })}
+                                                className={`flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                                                    editingProduct.gender === g
+                                                        ? 'bg-brand-coral text-black border-brand-coral'
+                                                        : 'bg-white/5 text-white/40 border-white/10 hover:border-brand-coral/50 hover:text-white'
+                                                }`}
+                                            >
+                                                {g}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── DESCRIPTION ───────────────────────────── */}
                             <div className="space-y-2">
                                 <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description</label>
                                 <textarea rows={3} value={editingProduct.description || ''} onChange={e => setEditingProduct({ ...editingProduct, description: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-coral text-white resize-none" />
                             </div>
+
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
