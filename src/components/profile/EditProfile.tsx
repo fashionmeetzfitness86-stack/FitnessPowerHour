@@ -107,7 +107,9 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
           user_id: user.id,
           service_type: 'personal_training',
           service_subtype: 'training_session',
-          notes: `1-ON-1 REQUEST: ${trainingRequest.message}\nPhone: ${trainingRequest.phone}\nLocation: Miami Beach`,
+          requested_date: new Date().toISOString().split('T')[0],
+          requested_time: '12:00:00',
+          notes: `Name: ${user.full_name || 'Unknown'} | Email: ${user.email} | Phone: ${trainingRequest.phone} | Msg: ${trainingRequest.message} (VIP Intake)`,
           status: 'pending'
       });
 
