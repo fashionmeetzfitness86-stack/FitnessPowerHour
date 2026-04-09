@@ -9,7 +9,7 @@ import {
   Edit2, Eye, Ban, Trash2, Check, X, Printer,
   Filter, Activity, TrendingUp, DollarSign, Clock,
   CheckCircle, Video as VideoIcon, UserPlus, Star, 
-  Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck, Calendar
+  Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck, Calendar, Send
 } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
