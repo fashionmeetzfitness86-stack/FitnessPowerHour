@@ -657,8 +657,11 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
+      // Strip keys that do not belong in the 'profiles' SQL table schema
+      const { email, ...cleanProfileUpdate } = profileUpdate;
+
       const { error } = await supabase.from('profiles').update({
-        ...profileUpdate
+        ...cleanProfileUpdate
       }).eq('id', session.user.id);
 
       if (error) throw error;
