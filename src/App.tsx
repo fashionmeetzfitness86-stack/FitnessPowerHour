@@ -4898,18 +4898,18 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-3xl font-black uppercase tracking-tight text-white">Payment <span className="text-brand-teal">Confirmed</span></h2>
+      <h2 className="text-3xl font-black uppercase tracking-tight text-white">Congrats <span className="text-brand-teal">You're In</span></h2>
       <p className="text-white/50 text-sm leading-relaxed">
         {tier
-          ? <>Your <span className="text-brand-teal font-bold">{tier}</span> membership is now active. A confirmation email has been sent to your inbox.</>
-          : <>Your payment was processed successfully. A confirmation email has been sent to your inbox.</>
+          ? <>Your <span className="text-brand-teal font-bold">{tier}</span> membership is live. Time to build your streak and unlock your full potential.</>
+          : <>You're all set. Time to build your streak and unlock your full potential.</>
         }
       </p>
       <button
         onClick={onClose}
         className="w-full py-4 bg-brand-teal text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 transition-all"
       >
-        Continue
+        Start Your Streak
       </button>
     </motion.div>
   </div>
