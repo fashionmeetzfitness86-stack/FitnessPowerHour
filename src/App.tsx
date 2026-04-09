@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ProfileDashboard } from './components/profile/ProfileDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -4885,6 +4885,26 @@ const OrderHistory = () => {
   );
 };
 
+const ProfileGuard = () => {
+  const navigate = useNavigate();
+  const [waited, setWaited] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setWaited(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (waited) navigate('/membership?mode=login', { replace: true });
+  }, [waited]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-brand-black">
+      <div className="w-12 h-12 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+};
+
 const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: () => void }) => (
   <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/85 backdrop-blur-md">
     <motion.div
@@ -4898,12 +4918,15 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-3xl font-black uppercase tracking-tight text-white">Payment <span className="text-brand-teal">Confirmed</span></h2>
+      <h2 className="text-3xl font-black uppercase tracking-tight text-white">Congrats <span className="text-brand-teal">You're In</span></h2>
       <p className="text-white/50 text-sm leading-relaxed">
-        {tier
-          ? <>Your <span className="text-brand-teal font-bold">{tier}</span> membership is now active. A confirmation email has been sent to your inbox.</>
-          : <>Your payment was processed successfully. A confirmation email has been sent to your inbox.</>
-        }
+        Your payment went through successfully.
+      </p>
+      <p className="text-white/70 text-sm leading-relaxed">
+        Time to build your streak and unlock your full potential.
+      </p>
+      <p className="mt-2">
+        <span className="text-brand-teal font-black text-xs uppercase tracking-[0.3em]">Own Your Power</span>
       </p>
       <button
         onClick={onClose}
@@ -4916,16 +4939,22 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
 );
 
 const Profile = ({ user, logout, updateTier, showToast }: { user: UserProfile; logout: () => void; updateTier: (tier: string) => void; showToast: (msg: string, type?: 'success' | 'error') => void }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>({ show: false, tier: null });
+  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>(() => {
+    // HashRouter: hash is "#/profile?payment=success&tier=Basic"
+    const hash = window.location.hash || '';
+    const queryString = hash.split('?')[1] || '';
+    const params = new URLSearchParams(queryString);
+    if (params.get('payment') === 'success') {
+      return { show: true, tier: params.get('tier') };
+    }
+    return { show: false, tier: null };
+  });
 
   useEffect(() => {
-    if (searchParams.get('payment') === 'success') {
-      const tier = searchParams.get('tier');
-      setPaymentSuccess({ show: true, tier });
-      if (tier) updateTier(tier);
-      // Clean params from URL
-      setSearchParams({}, { replace: true });
+    if (paymentSuccess.show) {
+      if (paymentSuccess.tier) updateTier(paymentSuccess.tier);
+      // Clean URL without triggering React Router re-render
+      window.history.replaceState(null, '', window.location.pathname + '#/profile');
     }
   }, []);
 
@@ -6046,7 +6075,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
                 user ? (
                   <Profile user={user} logout={logout} updateTier={updateTier} showToast={showToast} />
                 ) : (
-                  <Navigate to="/membership?mode=login" replace />
+                  <ProfileGuard />
                 )
               } />
               <Route path="/order-history" element={<OrderHistory />} />

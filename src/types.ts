@@ -315,7 +315,7 @@ export interface NotificationPreference {
 export interface UserMembership {
   id: string;
   user_id: string;
-  package_id: string;
+  package_id?: string;
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'unpaid';
   started_at: string;
   renews_at: string;
@@ -324,6 +324,13 @@ export interface UserMembership {
   payment_method_id?: string;
   last_changed_at?: string;
   next_package_id?: string;
+  // Stripe-sourced billing data
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  payment_method_brand?: string;   // e.g. "visa"
+  payment_method_last4?: string;   // e.g. "4242"
+  payment_method_exp_month?: number;
+  payment_method_exp_year?: number;
   created_at: string;
   updated_at: string;
 }
@@ -359,9 +366,12 @@ export interface UserProfile {
   updated_at: string;
   onboarding_completed?: boolean;
   profile_images?: string[]; // Up to 10 images
-  is_auto_pay?: boolean;
-  payment_method_id?: string;
-  last_billing_update?: string;
+  // Stripe billing fields (synced via webhook)
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  payment_method_brand?: string;   // e.g. "visa"
+  payment_method_last4?: string;   // e.g. "4242"
+  membership_status?: 'active' | 'inactive' | 'past_due' | 'canceling';
 
   favorites?: string[];
   streak_count?: number;

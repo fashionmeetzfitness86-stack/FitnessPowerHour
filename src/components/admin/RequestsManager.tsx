@@ -56,7 +56,26 @@ export const RequestsManager = ({
   const filteredRequests = filter === 'All' ? sortedRequests : sortedRequests.filter(r => r.status?.toLowerCase() === filter.toLowerCase());
 
   const handleSaveEdit = () => {
-    onSaveRequest(editingRequest);
+    // Build a structured notes string embedding contact details so they persist
+    const contactPrefix = [
+      editingRequest.client_name ? `Name: ${editingRequest.client_name}` : null,
+      editingRequest.client_email ? `Email: ${editingRequest.client_email}` : null,
+      editingRequest.client_phone ? `Phone: ${editingRequest.client_phone}` : null,
+    ].filter(Boolean).join(' | ');
+
+    const existingMsg = (() => {
+      try {
+        const raw = editingRequest.notes || '';
+        const msgMatch = raw.match(/Message:\s(.+)/)?.[1];
+        return msgMatch || raw;
+      } catch { return ''; }
+    })();
+
+    const newNotes = contactPrefix
+      ? `${contactPrefix} | Message: ${editingRequest.admin_notes || existingMsg || ''}`
+      : (editingRequest.admin_notes || editingRequest.notes || '');
+
+    onSaveRequest({ ...editingRequest, notes: newNotes });
     setEditingRequest(null);
   };
 
@@ -212,6 +231,45 @@ export const RequestsManager = ({
                </h3>
 
                <div className="space-y-6">
+                  {/* ── CLIENT DETAILS ── */}
+                  <div className="p-5 bg-white/[0.03] border border-white/10 rounded-2xl space-y-4">
+                    <p className="text-[9px] uppercase tracking-widest font-black text-brand-teal">Client Details</p>
+
+                    <div>
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. John Smith"
+                        value={editingRequest.client_name ?? parseNotes(editingRequest.notes).name}
+                        onChange={e => setEditingRequest({...editingRequest, client_name: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors placeholder-white/20"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Phone Number</label>
+                        <input
+                          type="tel"
+                          placeholder="+1 (305) 000-0000"
+                          value={editingRequest.client_phone ?? parseNotes(editingRequest.notes).phone}
+                          onChange={e => setEditingRequest({...editingRequest, client_phone: e.target.value})}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors placeholder-white/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Email</label>
+                        <input
+                          type="email"
+                          placeholder="email@example.com"
+                          value={editingRequest.client_email ?? parseNotes(editingRequest.notes).email}
+                          onChange={e => setEditingRequest({...editingRequest, client_email: e.target.value})}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors placeholder-white/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {!editingRequest.id && (
                      <div>
                         <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Select User</label>
@@ -256,12 +314,12 @@ export const RequestsManager = ({
 
                   <div className="grid grid-cols-2 gap-4">
                      <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Target Date</label>
-                        <input type="date" value={editingRequest.requested_date || ''} onChange={e => setEditingRequest({...editingRequest, requested_date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none" />
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Date</label>
+                        <input type="date" value={editingRequest.requested_date || ''} onChange={e => setEditingRequest({...editingRequest, requested_date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors" />
                      </div>
                      <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Fixed Time</label>
-                        <select value={editingRequest.requested_time || '12:00:00'} onChange={e => setEditingRequest({...editingRequest, requested_time: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none">
+                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Time</label>
+                        <select value={editingRequest.requested_time || '12:00:00'} onChange={e => setEditingRequest({...editingRequest, requested_time: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors">
                            <option value="09:00:00">9:00 AM</option>
                            <option value="11:00:00">11:00 AM</option>
                            <option value="13:00:00">1:00 PM</option>
@@ -273,9 +331,19 @@ export const RequestsManager = ({
                   </div>
 
                   <div>
-                     <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Admin Notes / Overrides</label>
-                     <textarea rows={3} value={editingRequest.notes || ''} onChange={e => setEditingRequest({...editingRequest, notes: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none" />
+                     <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Admin Notes / Message</label>
+                     <textarea
+                       rows={3}
+                       placeholder="Any specific notes for this session..."
+                       value={editingRequest.admin_notes ?? (() => {
+                         const raw = editingRequest.notes || '';
+                         return raw.match(/Message:\s(.+)/)?.[1] ?? raw;
+                       })()}
+                       onChange={e => setEditingRequest({...editingRequest, admin_notes: e.target.value})}
+                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-brand-teal transition-colors placeholder-white/20"
+                     />
                   </div>
+
 
                   <button 
                      onClick={handleSaveEdit}
