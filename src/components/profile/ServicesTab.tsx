@@ -10,12 +10,16 @@ export const ServicesTab = ({ user, showToast }: { user: UserProfile, showToast?
   const [availability, setAvailability] = useState<ServiceAvailability[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State
-  const [showModal, setShowModal] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
-  const [selectedOption, setSelectedOption] = useState<'workout' | 'recovery' | 'training' | null>(null);
-  const [selectedTime, setSelectedTime] = useState('');
+  const [formData, setFormData] = useState({
+    fullName: user.full_name || '',
+    email: user.email || '',
+    phone: '',
+    preferredDate: '',
+    preferredTime: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const fetchCalendarData = async () => {
     try {
@@ -51,38 +55,51 @@ export const ServicesTab = ({ user, showToast }: { user: UserProfile, showToast?
   }, [user.id]);
 
   const handleConfirm = async () => {
-    if (!selectedTime || !selectedOption) return;
-
-    try {
-      if (selectedOption === 'workout') {
-          return;
-      } else {
-         const serviceName = selectedOption === 'recovery' ? 'Flex Mob 305 Session' : '1-on-1 Training';
-         const priceAmount = selectedOption === 'recovery' ? 120 : 150;
-         
-         const res = await fetch('/.netlify/functions/create-checkout', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({
-             type: 'service',
-             serviceName,
-             priceAmount,
-             selectedDate,
-             selectedTime,
-             userId: user.id,
-             userEmail: user.email
-           })
-         });
-         const checkoutData = await res.json();
-         if (checkoutData.url) {
-            window.location.href = checkoutData.url;
-         } else {
-            console.error('Failed to init payment', checkoutData);
-         }
-      }
-    } catch (err) {
-      console.error(err);
+    if (!formData.message) {
+      if (showToast) showToast('Message is required', 'error');
+      return;
     }
+
+    setIsSubmitting(true);
+    try {
+      // Fallbacks to meet legacy DB constraints if they exist
+      const reqDate = formData.preferredDate || new Date().toISOString().split('T')[0];
+      const reqTime = formData.preferredTime ? (formData.preferredTime + ':00') : '12:00:00';
+
+      const serviceType = selectedOption === 'recovery' ? 'flex_mob' : 'personal_training';
+      const serviceSubtype = selectedOption === 'recovery' ? 'recovery' : 'training_session';
+
+      const { error } = await supabase.from('service_requests').insert({
+        user_id: user.id,
+        service_type: serviceType,
+        service_subtype: serviceSubtype,
+        requested_date: reqDate,
+        requested_time: reqTime,
+        status: 'pending',
+        notes: `Name: ${formData.fullName} | Email: ${formData.email} | Phone: ${formData.phone} | Msg: ${formData.message}`
+      });
+
+      if (error) throw error;
+      
+      setIsSuccess(true);
+      if (showToast) showToast('Request Sent Successfully', 'success');
+      fetchCalendarData();
+    } catch (err: any) {
+      console.error(err);
+      if (showToast) showToast(err.message || 'Failed to send request', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const closeAndReset = () => {
+    setShowModal(false);
+    setTimeout(() => {
+      setActiveStep(1);
+      setSelectedOption(null);
+      setIsSuccess(false);
+      setFormData(prev => ({ ...prev, message: '', phone: '', preferredDate: '', preferredTime: '' }));
+    }, 300);
   };
 
   if (loading) {
@@ -134,11 +151,11 @@ export const ServicesTab = ({ user, showToast }: { user: UserProfile, showToast?
          
          {/* ADD BUTTON CARD */}
          <button 
-           onClick={() => { setSelectedDate(new Date().toISOString().split('T')[0]); setActiveStep(1); setShowModal(true); }}
+           onClick={() => { setActiveStep(1); setIsSuccess(false); setShowModal(true); }}
            className="h-40 border-2 border-dashed border-white/10 hover:border-brand-teal/50 rounded-3xl flex flex-col items-center justify-center gap-3 transition-colors text-white/40 hover:text-white"
          >
             <Plus size={32} />
-            <span className="text-[10px] uppercase tracking-widest font-bold">New Booking</span>
+            <span className="text-[10px] uppercase tracking-widest font-bold">Request Training</span>
          </button>
 
          {/* BOOKINGS */}
@@ -182,28 +199,33 @@ export const ServicesTab = ({ user, showToast }: { user: UserProfile, showToast?
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
                <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#111] border border-white/10 rounded-[2rem] w-full max-w-md overflow-hidden relative shadow-2xl">
                   
-                  <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 text-white/40 hover:text-white z-20 bg-black/50 p-2 rounded-full backdrop-blur-md"><X size={18} /></button>
+                  <button onClick={closeAndReset} className="absolute top-6 right-6 text-white/40 hover:text-white z-20 bg-black/50 p-2 rounded-full backdrop-blur-md"><X size={18} /></button>
 
                   <div className="p-8 pb-4 relative overflow-hidden">
-                     <span className="text-[10px] font-black uppercase tracking-widest text-brand-teal">
-                        Step {activeStep} of 3
-                     </span>
+                     {!isSuccess && (
+                       <span className="text-[10px] font-black uppercase tracking-widest text-brand-teal">
+                          Step {activeStep} of 2
+                       </span>
+                     )}
                      <h3 className="text-2xl font-black mt-2">
-                        {activeStep === 1 ? 'Select Date' : activeStep === 2 ? 'What do you need?' : 'Pick a time'}
+                        {isSuccess ? 'Request Sent' : activeStep === 1 ? 'What do you need?' : `Request ${selectedOption === 'recovery' ? 'Recovery' : '1-on-1 Training'}`}
                      </h3>
                   </div>
 
                   <div className="p-8 pt-4 space-y-6">
                      
-                     {activeStep === 1 && (
-                        <div className="space-y-4">
-                           <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-lg font-mono text-white outline-none focus:border-brand-teal transition-colors" />
-                           <button onClick={() => setActiveStep(2)} className="w-full py-5 bg-white text-black font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-gray-200 transition-colors mt-6">Continue</button>
+                     {isSuccess ? (
+                        <div className="text-center space-y-4 py-8">
+                           <div className="w-16 h-16 bg-brand-teal/10 text-brand-teal rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-teal/20">
+                             <CheckCircle2 size={32} />
+                           </div>
+                           <h4 className="text-lg font-black uppercase tracking-tight text-white/80">We will contact you within 24 hours</h4>
+                           <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-6">Humans handle the scheduling. Your request is in our system.</p>
+                           <button onClick={closeAndReset} className="w-full py-5 bg-white text-black font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-gray-200 transition-colors mt-6">Continue</button>
                         </div>
-                     )}
-
-                     {activeStep === 2 && (
-                        <div className="space-y-3">                           <button onClick={() => { setSelectedOption('recovery'); setActiveStep(3); }} className="w-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-brand-coral/30 p-5 rounded-2xl flex items-center gap-4 transition-all text-left group">
+                     ) : activeStep === 1 ? (
+                        <div className="space-y-3">
+                           <button onClick={() => { setSelectedOption('recovery'); setActiveStep(2); }} className="w-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-brand-coral/30 p-5 rounded-2xl flex items-center gap-4 transition-all text-left group">
                               <div className="p-3 bg-brand-coral/10 text-brand-coral rounded-xl group-hover:bg-brand-coral group-hover:text-black transition-colors"><Activity size={20} /></div>
                               <div>
                                  <p className="font-bold group-hover:text-brand-coral transition-colors">Request Recovery</p>
@@ -211,56 +233,53 @@ export const ServicesTab = ({ user, showToast }: { user: UserProfile, showToast?
                               </div>
                            </button>
 
-                           <button onClick={() => { setSelectedOption('training'); setActiveStep(3); }} className="w-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-brand-teal/30 p-5 rounded-2xl flex items-center gap-4 transition-all text-left group">
+                           <button onClick={() => { setSelectedOption('training'); setActiveStep(2); }} className="w-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-brand-teal/30 p-5 rounded-2xl flex items-center gap-4 transition-all text-left group">
                               <div className="p-3 bg-brand-teal/10 text-brand-teal rounded-xl group-hover:bg-brand-teal group-hover:text-black transition-colors"><UserPlus size={20} /></div>
                               <div>
-                                 <p className="font-bold group-hover:text-brand-teal transition-colors">Request Training</p>
-                                 <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">1-on-1 Protocol Access</p>
+                                 <p className="font-bold group-hover:text-brand-teal transition-colors">Request 1-on-1 Training</p>
+                                 <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1">Private Protocol Access</p>
                               </div>
                            </button>
-                           
-                           <button onClick={() => setActiveStep(1)} className="w-full text-[10px] font-bold uppercase tracking-widest text-white/40 p-4 hover:text-white">Back</button>
                         </div>
-                     )}
-
-                     {activeStep === 3 && (
+                     ) : (
                         <div className="space-y-4">
+                           <p className="text-[10px] text-white/40 uppercase tracking-widest font-black mb-4">Tell us when you'd like to train</p>
+                           
                            <div className="grid grid-cols-2 gap-3">
-                              {(() => {
-                                let availableSlots = ['06:00', '09:00', '12:00', '15:00', '18:00', '20:00'];
-                                if (selectedOption !== 'workout') {
-                                  const dayAvail = availability.filter(a => a.available_date === selectedDate && (!a.status || a.status === 'open'));
-                                  if (dayAvail.length > 0) {
-                                    availableSlots = dayAvail.map(a => a.start_time.substring(0, 5));
-                                  } else {
-                                     availableSlots = [];
-                                  }
-                                }
-                                
-                                if (availableSlots.length === 0) {
-                                   return <p className="col-span-2 text-brand-coral text-xs text-center p-4">No slots available. Check another date.</p>;
-                                }
+                              <div>
+                                 <label className="text-[8px] uppercase tracking-widest font-black text-white/30 block mb-1">Preferred Date (Optional)</label>
+                                 <input type="date" value={formData.preferredDate} onChange={e => setFormData({...formData, preferredDate: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-brand-teal transition-colors" />
+                              </div>
+                              <div>
+                                 <label className="text-[8px] uppercase tracking-widest font-black text-white/30 block mb-1">Preferred Time (Optional)</label>
+                                 <input type="time" value={formData.preferredTime} onChange={e => setFormData({...formData, preferredTime: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-brand-teal transition-colors" />
+                              </div>
+                           </div>
 
-                                return availableSlots.map(t => (
-                                   <button 
-                                     key={t}
-                                     onClick={() => setSelectedTime(t)}
-                                     className={`p-4 rounded-xl text-sm font-mono border transition-colors ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white'}`}
-                                   >
-                                      {t}
-                                   </button>
-                                ));
-                              })()}
+                           <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                 <label className="text-[8px] uppercase tracking-widest font-black text-white/30 block mb-1">Name</label>
+                                 <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-brand-teal transition-colors" />
+                              </div>
+                              <div>
+                                 <label className="text-[8px] uppercase tracking-widest font-black text-white/30 block mb-1">Phone Number</label>
+                                 <input type="tel" placeholder="(Optional)" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-brand-teal transition-colors" />
+                              </div>
+                           </div>
+                           
+                           <div>
+                              <label className="text-[8px] uppercase tracking-widest font-black text-brand-teal block mb-1">Message (Required)</label>
+                              <textarea rows={3} placeholder="What are we focusing on? Any injuries?" value={formData.message} onChange={e => setFormData({...formData, message: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-brand-teal transition-colors resize-none" />
                            </div>
 
                            <button 
-                             disabled={!selectedTime}
+                             disabled={!formData.message || isSubmitting}
                              onClick={handleConfirm} 
-                             className={`w-full py-5 font-black uppercase text-xs tracking-widest rounded-2xl transition-all mt-4 ${!selectedTime ? 'bg-white/10 text-white/20 cursor-not-allowed' : 'bg-white text-black hover:bg-gray-200 shadow-xl'}`}
+                             className={`w-full py-5 font-black uppercase text-xs tracking-widest rounded-2xl transition-all mt-2 flex items-center justify-center gap-2 ${(!formData.message || isSubmitting) ? 'bg-white/10 text-white/20 cursor-not-allowed' : 'bg-brand-teal text-black shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:scale-[1.02]'}`}
                            >
-                              Confirm {selectedOption}
+                              {isSubmitting ? 'Sending Request...' : 'Send Request'}
                            </button>
-                           <button onClick={() => setActiveStep(2)} className="w-full text-[10px] font-bold uppercase tracking-widest text-white/40 p-4 hover:text-white">Back</button>
+                           <button onClick={() => setActiveStep(1)} className="w-full text-[10px] font-bold uppercase tracking-widest text-white/40 p-3 hover:text-white">Back to Options</button>
                         </div>
                      )}
 
