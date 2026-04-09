@@ -17,7 +17,7 @@ export default async (req: Request) => {
   }
 
   const MEMBERSHIP_PRICES: Record<string, { amount: number; name: string }> = {
-    Basic: { amount: 1999, name: 'Basic Membership' },
+    Basic: { amount: 100, name: 'Basic Membership' }, // TODO: TEMP $1 for testing — revert to 1999
   };
 
   try {
