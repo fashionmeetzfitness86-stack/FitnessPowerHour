@@ -13,6 +13,7 @@ export interface Video {
   allowed_packages: string[];
   level?: 'Beginner' | 'Intermediate' | 'Advanced';
   source_type?: 'upload' | 'vimeo' | 'youtube' | 'link';
+  tags?: string[];
   created_by: string;
   created_at: string;
   updated_at: string;

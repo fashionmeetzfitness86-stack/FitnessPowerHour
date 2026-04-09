@@ -14,7 +14,7 @@ interface VideoManagerProps {
 export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoManagerProps) => {
   const [editingVideo, setEditingVideo] = useState<Partial<Video> | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [uploadMode, setUploadMode] = useState<'upload' | 'link'>('upload');
+  const [uploadMode, setUploadMode] = useState<'upload' | 'link' | 'youtube'>('youtube');
   
   // New Control Center State
   const [searchQuery, setSearchQuery] = useState('');
@@ -312,40 +312,61 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
                 {/* Sidebar Scroll Content */}
                 <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
                     
-                    {/* Media Preview */}
-                    <div className="aspect-video bg-black rounded-2xl overflow-hidden relative border border-white/10 group">
-                        {editingVideo.video_url ? (
-                            <>
-                                <video src={editingVideo.video_url} className="w-full h-full object-cover opacity-80" poster={editingVideo.thumbnail_url} />
-                                <button className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/60 transition-all text-transparent hover:text-brand-teal">
-                                    <Edit2 size={32} />
-                                </button>
-                            </>
-                        ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/20">
-                                <Upload size={32} className="mb-2" />
+                    {/* Form Fields matching the strict UI layout */}
+                    <div className="space-y-6">
+                        
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Tags (Comma Separated)</label>
+                            <input 
+                                type="text" 
+                                placeholder="mobility, morning, beginner"
+                                value={(editingVideo.tags || []).join(', ')} 
+                                onChange={e => setEditingVideo({ ...editingVideo, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-brand-teal text-white transition-all placeholder:text-white/20"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description</label>
+                            <textarea 
+                                rows={4}
+                                placeholder="Describe the workout..."
+                                value={editingVideo.description || ''} 
+                                onChange={e => setEditingVideo({ ...editingVideo, description: e.target.value })}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white resize-none placeholder:text-white/20"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Source Type</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                <button onClick={() => { setUploadMode('youtube'); setEditingVideo({ ...editingVideo, source_type: 'youtube' }); }} className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${uploadMode === 'youtube' ? 'bg-brand-teal text-black' : 'bg-white/5 border border-white/10 text-white/40 hover:text-white'}`}>YouTube</button>
+                                <button onClick={() => { setUploadMode('upload'); setEditingVideo({ ...editingVideo, source_type: 'upload' }); }} className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${uploadMode === 'upload' ? 'bg-brand-teal text-black' : 'bg-white/5 border border-white/10 text-white/40 hover:text-white'}`}>Upload</button>
+                                <button onClick={() => { setUploadMode('link'); setEditingVideo({ ...editingVideo, source_type: 'link' }); }} className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${uploadMode === 'link' ? 'bg-brand-teal text-black' : 'bg-white/5 border border-white/10 text-white/40 hover:text-white'}`}>Link</button>
+                            </div>
+                        </div>
+
+                        {uploadMode === 'youtube' && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">YouTube URL</label>
+                                <input type="url" placeholder="https://youtube.com/watch?v=..." value={editingVideo.video_url || ''} onChange={e => setEditingVideo({ ...editingVideo, video_url: e.target.value, thumbnail_url: editingVideo.thumbnail_url || e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white transition-all"/>
                             </div>
                         )}
-                        
-                        <div className="absolute bottom-4 left-4 right-4 bg-black/80 backdrop-blur-md p-3 rounded-xl border border-white/10 opacity-0 group-hover:opacity-100 transition-all flex justify-between items-center z-20">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-white/60">Change Asset</span>
-                            <div className="flex gap-2">
-                                <button onClick={() => setUploadMode('upload')} className={`text-[10px] px-2 py-1 rounded ${uploadMode==='upload' ? 'bg-brand-teal text-black' : 'text-white'}`}>File</button>
-                                <button onClick={() => setUploadMode('link')} className={`text-[10px] px-2 py-1 rounded ${uploadMode==='link' ? 'bg-brand-teal text-black' : 'text-white'}`}>URL</button>
+                        {uploadMode === 'link' && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">External Link URL</label>
+                                <input type="url" placeholder="https://vimeo.com/..." value={editingVideo.video_url || ''} onChange={e => setEditingVideo({ ...editingVideo, video_url: e.target.value, thumbnail_url: editingVideo.thumbnail_url || e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white transition-all"/>
                             </div>
-                        </div>
-                    </div>
+                        )}
+                        {uploadMode === 'upload' && (
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Direct Upload</label>
+                                <div className="p-1 bg-white/5 rounded-xl border border-white/10">
+                                    <MediaCapture bucket="fmf-media" folder="videos" accept="video/*" onUploadSuccess={(url) => setEditingVideo({ ...editingVideo, video_url: url, thumbnail_url: url })} />
+                                </div>
+                            </div>
+                        )}
 
-                    {uploadMode === 'upload' ? (
-                        <div className="px-4 py-3 bg-white/5 rounded-xl border border-white/10">
-                            <MediaCapture bucket="fmf-media" folder="videos" accept="video/*" onUploadSuccess={(url) => setEditingVideo({ ...editingVideo, video_url: url, thumbnail_url: url })} />
-                        </div>
-                    ) : (
-                        <input type="url" placeholder="Paste Video URL..." value={editingVideo.video_url || ''} onChange={e => setEditingVideo({ ...editingVideo, video_url: e.target.value, thumbnail_url: editingVideo.thumbnail_url || e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white transition-all"/>
-                    )}
-
-                    {/* Fast Fields */}
-                    <div className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">Video Title</label>
                             <input 
@@ -412,15 +433,6 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Description / Notes</label>
-                            <textarea 
-                                rows={4}
-                                value={editingVideo.description || ''} 
-                                onChange={e => setEditingVideo({ ...editingVideo, description: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white resize-none"
-                            />
-                        </div>
                     </div>
                 </div>
 
