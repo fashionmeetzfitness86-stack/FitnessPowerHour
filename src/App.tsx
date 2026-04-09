@@ -4885,6 +4885,26 @@ const OrderHistory = () => {
   );
 };
 
+const ProfileGuard = () => {
+  const navigate = useNavigate();
+  const [waited, setWaited] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setWaited(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (waited) navigate('/membership?mode=login', { replace: true });
+  }, [waited]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-brand-black">
+      <div className="w-12 h-12 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+};
+
 const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: () => void }) => (
   <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/85 backdrop-blur-md">
     <motion.div
@@ -6055,7 +6075,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
                 user ? (
                   <Profile user={user} logout={logout} updateTier={updateTier} showToast={showToast} />
                 ) : (
-                  <Navigate to="/membership?mode=login" replace />
+                  <ProfileGuard />
                 )
               } />
               <Route path="/order-history" element={<OrderHistory />} />
