@@ -4885,10 +4885,41 @@ const OrderHistory = () => {
   );
 };
 
+const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: () => void }) => (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/85 backdrop-blur-md">
+    <motion.div
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.8, opacity: 0 }}
+      className="w-full max-w-md p-10 rounded-[2rem] border border-brand-teal/30 bg-gradient-to-b from-[#0d0d0d] to-[#111] shadow-[0_0_60px_rgba(45,212,191,0.15)] text-center space-y-6"
+    >
+      <div className="mx-auto w-20 h-20 rounded-full bg-brand-teal/10 flex items-center justify-center">
+        <svg className="w-10 h-10 text-brand-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h2 className="text-3xl font-black uppercase tracking-tight text-white">Payment <span className="text-brand-teal">Confirmed</span></h2>
+      <p className="text-white/50 text-sm leading-relaxed">
+        {tier
+          ? <>Your <span className="text-brand-teal font-bold">{tier}</span> membership is now active. A confirmation email has been sent to your inbox.</>
+          : <>Your payment was processed successfully. A confirmation email has been sent to your inbox.</>
+        }
+      </p>
+      <button
+        onClick={onClose}
+        className="w-full py-4 bg-brand-teal text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 transition-all"
+      >
+        Continue
+      </button>
+    </motion.div>
+  </div>
+);
+
 const Profile = () => {
   const { user, logout, updateTier } = useAuth();
   const navigate = useNavigate();
   const [waited, setWaited] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>({ show: false, tier: null });
   const { showToast } = (window as any).fmfToast || { showToast: (msg: string) => alert(`[FMF System] ${msg}`) };
 
   // Handle payment success redirect from Stripe
@@ -4899,7 +4930,7 @@ const Profile = () => {
       if (tier && user) {
         updateTier(tier);
       }
-      if (showToast) showToast('Payment successful! Welcome to your new plan.', 'success');
+      setPaymentSuccess({ show: true, tier: tier });
       // Clean URL
       window.history.replaceState(null, '', window.location.pathname + '#/profile');
     }
@@ -4924,12 +4955,22 @@ const Profile = () => {
   }
 
   return (
-    <ProfileDashboard 
-      user={user} 
-      logout={logout} 
-      updateTier={updateTier} 
-      showToast={showToast} 
-    />
+    <>
+      <AnimatePresence>
+        {paymentSuccess.show && (
+          <PaymentSuccessModal
+            tier={paymentSuccess.tier}
+            onClose={() => setPaymentSuccess({ show: false, tier: null })}
+          />
+        )}
+      </AnimatePresence>
+      <ProfileDashboard
+        user={user}
+        logout={logout}
+        updateTier={updateTier}
+        showToast={showToast}
+      />
+    </>
   );
 };
 
