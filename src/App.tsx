@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -896,10 +896,24 @@ const ScrollToTop = () => {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [athletesPopup, setAthletesPopup] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const hasActiveMembership = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
+  // Auto-close Athletes popup after 3 seconds
+  useEffect(() => {
+    if (!athletesPopup) return;
+    const t = setTimeout(() => setAthletesPopup(false), 3000);
+    return () => clearTimeout(t);
+  }, [athletesPopup]);
+
+  const hasActiveMembership = !!(user && (
+    user.tier === 'Basic' ||
+    user.membership_status === 'active' ||
+    user.role === 'admin' ||
+    user.role === 'super_admin' ||
+    user.role === 'athlete'
+  ));
 
   const navLinks = user ? [
     { name: 'Home', path: '/profile' },
@@ -912,7 +926,7 @@ const Navbar = () => {
   ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
-    { name: 'Athletes', path: '/athletes' },
+    { name: 'Athletes', path: '/athletes', comingSoon: true },
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },
@@ -929,9 +943,20 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden lg:flex space-x-8">
-          {navLinks.map((link) => {
+          {navLinks.map((link: any) => {
             const isMembership = link.name === 'Membership';
             const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
+            if (link.comingSoon) {
+              return (
+                <button
+                  key={link.name}
+                  onClick={() => setAthletesPopup(true)}
+                  className="text-xs uppercase tracking-widest transition-colors text-white/60 hover:text-white"
+                >
+                  {link.name}
+                </button>
+              );
+            }
             return (
               <Link
                 key={link.name}
@@ -990,9 +1015,20 @@ const Navbar = () => {
             className="lg:hidden bg-brand-black border-b border-white/10 overflow-hidden"
           >
             <div className="flex flex-col p-8 space-y-6">
-              {navLinks.map((link) => {
+              {navLinks.map((link: any) => {
                 const isMembership = link.name === 'Membership';
                 const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
+                if (link.comingSoon) {
+                  return (
+                    <button
+                      key={link.name}
+                      onClick={() => { setAthletesPopup(true); setIsOpen(false); }}
+                      className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors text-left"
+                    >
+                      {link.name}
+                    </button>
+                  );
+                }
                 return (
                 <Link
                   key={link.name}
@@ -1047,6 +1083,50 @@ const Navbar = () => {
                 )}
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Athletes Coming Soon Popup */}
+      <AnimatePresence>
+        {athletesPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setAthletesPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#0a0a0a] border border-brand-teal/20 rounded-3xl p-10 w-full max-w-sm text-center shadow-2xl relative"
+            >
+              <button
+                onClick={() => setAthletesPopup(false)}
+                className="absolute top-4 right-4 p-2 text-white/20 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-teal/20">
+                <Users size={28} className="text-brand-teal" />
+              </div>
+              <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Athletes</h2>
+              <p className="text-[11px] uppercase tracking-[0.3em] font-black text-brand-teal mb-3">Coming Soon</p>
+              <p className="text-white/40 text-xs leading-relaxed">
+                Our athlete roster is in final preparation. Check back soon for the full directory of FMF elite trainers.
+              </p>
+              <div className="mt-6 h-0.5 w-16 bg-brand-teal/30 mx-auto rounded-full">
+                <motion.div
+                  className="h-full bg-brand-teal rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 3, ease: 'linear' }}
+                />
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
