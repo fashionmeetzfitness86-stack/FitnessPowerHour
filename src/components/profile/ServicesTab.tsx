@@ -20,6 +20,9 @@ export const ServicesTab = ({ user, showToast }: { user: UserProfile, showToast?
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [activeStep, setActiveStep] = useState(1);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   const fetchCalendarData = async () => {
     try {
