@@ -2024,17 +2024,7 @@ const VideoLibrary = () => {
 
   const filteredVideos = useMemo(() => {
     return localVideos.filter(v => {
-      // Visibility check
-      const userTier = user?.tier || 'everyone';
-      const visibility = v.visibility || 'everyone';
-      
-      let hasAccess = false;
-      if (user?.role === 'admin' || user?.role === 'super_admin') hasAccess = true;
-      else if (visibility === 'everyone') hasAccess = true;
-      else if (userTier === 'Basic' || userTier === 'Admin' || userTier === 'super_admin') hasAccess = true;
-
-      if (!hasAccess) return false;
-
+      // Always allow visualization of published content (drafts are excluded in fetch)
       const matchesCategory = activeCategory === 'All' || v.category === activeCategory;
       const matchesLevel = activeLevel === 'All' || v.level === activeLevel;
       const matchesSearch = v.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -2130,27 +2120,38 @@ const VideoLibrary = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className={`card-gradient overflow-hidden group cursor-pointer ${video.isPremium && (!user || user.tier === 'Basic') ? 'opacity-80' : ''}`}
-                onClick={() => navigate(`/video/${video.id}`)}
+                className={`card-gradient overflow-hidden group cursor-pointer ${video.is_premium && (!user?.tier || user.tier === 'None') ? 'opacity-90 grayscale-[0.2]' : ''}`}
+                onClick={() => {
+                   if (video.is_premium && (!user?.tier || user.tier === 'None') && user?.role !== 'admin' && user?.role !== 'super_admin') {
+                       window.location.hash = '#/profile#membership';
+                   } else {
+                       navigate(`/video/${video.id}`);
+                   }
+                }}
               >
                 <div className="relative aspect-video">
                   <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
-                  {video.isPremium && (
-                    <div className="absolute top-4 left-4 bg-brand-coral text-white text-[8px] font-bold uppercase tracking-[0.2em] px-2 py-1 rounded flex items-center gap-1 shadow-lg z-10">
-                      <Zap size={10} fill="white" />
-                      Premium
+                  
+                  {video.is_premium ? (
+                    <div className="absolute top-4 left-4 bg-brand-coral border border-brand-coral/50 text-white text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded shadow-lg z-10">
+                      Members Only
+                    </div>
+                  ) : (
+                    <div className="absolute top-4 left-4 bg-brand-teal border border-brand-teal/50 text-black text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded shadow-lg z-10">
+                      Free Access
                     </div>
                   )}
+
                   <div className="absolute inset-0 flex items-center justify-center">
-                    {video.isPremium && (!user || user.tier === 'Basic') ? (
+                    {video.is_premium && (!user?.tier || user.tier === 'None') && user?.role !== 'admin' && user?.role !== 'super_admin' ? (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 bg-brand-black/80 rounded-full flex items-center justify-center shadow-2xl border border-brand-coral/50">
+                        <div className="w-12 h-12 bg-black/80 rounded-full flex items-center justify-center shadow-2xl border border-brand-coral/50">
                           <Zap size={20} className="text-brand-coral" />
                         </div>
-                        <span className="text-[8px] uppercase tracking-widest text-brand-coral font-bold bg-brand-black/80 px-2 py-1 rounded">Unlock with Membership</span>
+                        <span className="text-[8px] uppercase tracking-widest text-brand-coral font-bold bg-black/80 px-2 py-1 rounded">Unlock to Watch</span>
                       </div>
                     ) : (
-                      <div className="w-12 h-12 bg-brand-teal/80 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-2xl">
+                      <div className="w-12 h-12 bg-brand-teal/80 rounded-full flex items-center justify-center scale-0 group-hover:scale-100 transition-transform shadow-2xl backdrop-blur-sm">
                         <Play fill="white" size={20} className="translate-x-0.5" />
                       </div>
                     )}

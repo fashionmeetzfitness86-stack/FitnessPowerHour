@@ -79,14 +79,22 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
     if (!selectedDay) return;
     setIsSubmitting(true);
     try {
+      const getFormattedTime = (timeSlot: string) => {
+        const map: Record<string, string> = {
+          '9:00 AM': '09:00:00', '11:00 AM': '11:00:00', '1:00 PM': '13:00:00',
+          '3:00 PM': '15:00:00', '5:00 PM': '17:00:00', '7:00 PM': '19:00:00'
+        };
+        return map[timeSlot] || '12:00:00';
+      };
+
       const { data, error } = await supabase.from('service_requests').insert({
         user_id: user.id,
         service_type: serviceType,
         service_subtype: '1-on-1 Session',
         requested_date: selectedDay,
-        requested_time: selectedTime === 'Morning' ? '08:00:00' : selectedTime === 'Evening' ? '17:00:00' : '12:00:00',
+        requested_time: getFormattedTime(selectedTime),
         status: 'pending',
-        notes: `Preferred Window: ${selectedTime || 'Flexible'} | Message: ${serviceMessage}`
+        notes: `Message: ${serviceMessage}`
       }).select().single();
 
       if (error) throw error;
@@ -444,14 +452,14 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                             <option value="Nutrition Consultation">Nutrition Consultation</option>
                         </select>
                       </div>
-                      <div>
-                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Preferred Time</label>
-                        <div className="grid grid-cols-4 gap-2">
-                          {['Morning', 'Midday', 'Evening', 'Flexible'].map(t => (
-                            <button key={t} onClick={() => setSelectedTime(t)} className={`py-3 rounded-xl text-[9px] font-bold border transition-all ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
-                          ))}
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Fixed Time Slot</label>
+                          <div className="grid grid-cols-3 gap-2">
+                            {['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM', '7:00 PM'].map(t => (
+                              <button key={t} onClick={() => setSelectedTime(t)} className={`py-3 rounded-xl text-[9px] font-bold border transition-all ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
+                            ))}
+                          </div>
                         </div>
-                      </div>
                       <div>
                         <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Notes for Coach (Optional)</label>
                         <textarea rows={2} placeholder="Any specific focus for this session?" value={serviceMessage} onChange={e => setServiceMessage(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:border-brand-teal outline-none transition-all placeholder-white/20 resize-none -mb-2" />
