@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ProfileDashboard } from './components/profile/ProfileDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -4919,16 +4919,22 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
 );
 
 const Profile = ({ user, logout, updateTier, showToast }: { user: UserProfile; logout: () => void; updateTier: (tier: string) => void; showToast: (msg: string, type?: 'success' | 'error') => void }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>({ show: false, tier: null });
+  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>(() => {
+    // HashRouter: hash is "#/profile?payment=success&tier=Basic"
+    const hash = window.location.hash || '';
+    const queryString = hash.split('?')[1] || '';
+    const params = new URLSearchParams(queryString);
+    if (params.get('payment') === 'success') {
+      return { show: true, tier: params.get('tier') };
+    }
+    return { show: false, tier: null };
+  });
 
   useEffect(() => {
-    if (searchParams.get('payment') === 'success') {
-      const tier = searchParams.get('tier');
-      setPaymentSuccess({ show: true, tier });
-      if (tier) updateTier(tier);
-      // Clean params from URL
-      setSearchParams({}, { replace: true });
+    if (paymentSuccess.show) {
+      if (paymentSuccess.tier) updateTier(paymentSuccess.tier);
+      // Clean URL without triggering React Router re-render
+      window.history.replaceState(null, '', window.location.pathname + '#/profile');
     }
   }, []);
 
