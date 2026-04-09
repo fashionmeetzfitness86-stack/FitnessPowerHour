@@ -84,7 +84,16 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
-  const isMember = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
+  // isMember: true when user has active paid tier, active membership status, or privileged role
+  const isMember = !!(user && (
+    user.tier === 'Basic' ||
+    user.membership_status === 'active' ||
+    user.role === 'admin' ||
+    user.role === 'super_admin' ||
+    user.role === 'athlete' ||
+    user.role === 'flex_mob_admin'
+  ));
+
 
   const renderContent = () => {
     const isMemberLocal = isMember;

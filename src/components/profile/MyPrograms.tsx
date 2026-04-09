@@ -2,17 +2,213 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   PlaySquare, Play, Plus, BookmarkX, BookmarkPlus, 
-  Video as VideoIcon, Loader2, ChevronRight, Clock, Search, Shuffle
+  Video as VideoIcon, Loader2, ChevronRight, Clock, Search, Shuffle,
+  CheckCircle, Star, X, Camera, MessageSquare, AlertTriangle
 } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
 
+// ── Workout Confirmation Dialog ──────────────────────────────────────────────
+const WorkoutConfirmDialog = ({
+  video,
+  onConfirm,
+  onCancel
+}: {
+  video: any;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+  >
+    <motion.div
+      initial={{ scale: 0.9, y: 20 }}
+      animate={{ scale: 1, y: 0 }}
+      exit={{ scale: 0.9, y: 20 }}
+      className="bg-[#0a0a0a] border border-brand-teal/20 rounded-3xl p-8 w-full max-w-md shadow-2xl"
+    >
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-12 h-12 bg-brand-teal/10 rounded-2xl flex items-center justify-center border border-brand-teal/20">
+          <Play size={20} className="text-brand-teal translate-x-0.5" fill="currentColor" />
+        </div>
+        <div>
+          <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black">Start Workout</p>
+          <h3 className="text-lg font-black uppercase tracking-tight text-white mt-0.5">Ready to go?</h3>
+        </div>
+      </div>
+
+      <div className="p-5 bg-white/5 border border-white/10 rounded-2xl mb-6">
+        <p className="text-[10px] uppercase tracking-widest text-white/40 font-black mb-1">Session</p>
+        <p className="text-sm font-black text-white">{video?.title || 'Workout'}</p>
+        {video?.duration && (
+          <div className="flex items-center gap-1.5 mt-2 text-white/30">
+            <Clock size={11} />
+            <span className="text-[9px] uppercase tracking-widest font-bold">{video.duration}</span>
+          </div>
+        )}
+      </div>
+
+      <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-6 leading-relaxed">
+        This will count toward your daily streak. You can start multiple workouts, but only <span className="text-brand-teal">1 counts per day</span>.
+      </p>
+
+      <div className="flex gap-3">
+        <button
+          onClick={onCancel}
+          className="flex-1 py-4 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-white/10 transition-all"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onConfirm}
+          className="flex-1 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2"
+        >
+          <Play size={14} fill="black" /> Confirm Start
+        </button>
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
+// ── Post-Workout Check-in Dialog ─────────────────────────────────────────────
+const CheckInDialog = ({
+  onSubmit,
+  onSkip
+}: {
+  onSubmit: (data: { rating: number; comment: string; imageFile?: File }) => void;
+  onSkip: () => void;
+}) => {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const imageRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setImageFile(f);
+      setPreview(URL.createObjectURL(f));
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        className="bg-[#0a0a0a] border border-brand-teal/20 rounded-3xl p-8 w-full max-w-md shadow-2xl"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-brand-coral/10 rounded-2xl flex items-center justify-center border border-brand-coral/20">
+              <CheckCircle size={20} className="text-brand-coral" />
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-widest text-brand-coral font-black">Post-Workout</p>
+              <h3 className="text-lg font-black uppercase tracking-tight text-white">How was it?</h3>
+            </div>
+          </div>
+          <button onClick={onSkip} className="p-2 text-white/20 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Star Rating */}
+        <div className="mb-6">
+          <p className="text-[9px] uppercase tracking-widest text-white/40 font-black mb-3">Rate your session</p>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map(n => (
+              <button
+                key={n}
+                onClick={() => setRating(n)}
+                className="flex-1 py-2 transition-all"
+              >
+                <Star
+                  size={24}
+                  className={`mx-auto transition-colors ${n <= rating ? 'text-amber-400' : 'text-white/10'}`}
+                  fill={n <= rating ? 'currentColor' : 'none'}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Comment */}
+        <div className="mb-5">
+          <p className="text-[9px] uppercase tracking-widest text-white/40 font-black mb-2">Leave a comment (optional)</p>
+          <textarea
+            rows={2}
+            placeholder="How did you feel? Any notes..."
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-brand-teal transition-colors placeholder-white/20"
+          />
+        </div>
+
+        {/* Photo */}
+        <div className="mb-6">
+          <p className="text-[9px] uppercase tracking-widest text-white/40 font-black mb-2">Upload a photo (optional)</p>
+          {preview ? (
+            <div className="relative">
+              <img src={preview} alt="preview" className="w-full h-24 object-cover rounded-xl" />
+              <button onClick={() => { setImageFile(null); setPreview(null); }} className="absolute top-2 right-2 p-1 bg-black/60 rounded-lg text-white/60 hover:text-white">
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => imageRef.current?.click()}
+              className="w-full py-3 border border-dashed border-white/10 rounded-xl text-[9px] uppercase tracking-widest text-white/30 font-black hover:border-brand-teal/40 hover:text-brand-teal transition-all flex items-center justify-center gap-2"
+            >
+              <Camera size={14} /> Add Photo
+            </button>
+          )}
+          <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onSkip}
+            className="flex-1 py-4 bg-white/5 border border-white/10 text-white/40 font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-white/10 transition-all"
+          >
+            Skip
+          </button>
+          <button
+            onClick={() => onSubmit({ rating, comment, imageFile: imageFile || undefined })}
+            disabled={rating === 0}
+            className="flex-1 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+          >
+            <CheckCircle size={14} /> Save Check-in
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// ── Main Component ───────────────────────────────────────────────────────────
 export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?: any }) => {
   const { updateProfile } = useAuth();
   const [allVideos, setAllVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Workout flow state
+  const [confirmVideo, setConfirmVideo] = useState<any | null>(null);
+  const [showCheckIn, setShowCheckIn] = useState(false);
+  const [workoutStartTime, setWorkoutStartTime] = useState<number | null>(null);
+  const [savingCheckIn, setSavingCheckIn] = useState(false);
 
   useEffect(() => {
     supabase.from('videos').select('*').order('created_at', { ascending: false }).then(({ data }) => {
@@ -20,6 +216,16 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
       setLoading(false);
     });
   }, []);
+
+  // After 1 hour from workout start, prompt check-in
+  useEffect(() => {
+    if (!workoutStartTime) return;
+    const delay = 60 * 60 * 1000; // 1 hour in ms — change to 5000 ms for testing
+    const timer = setTimeout(() => {
+      setShowCheckIn(true);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [workoutStartTime]);
 
   const toggleLike = async (videoId: string) => {
     const current = user.favorites || [];
@@ -30,6 +236,73 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
       if (showToast) showToast(isLiked ? 'Removed from program.' : 'Added to your program! ✅', 'success');
     } catch (err) {
       if (showToast) showToast('Failed to update program.', 'error');
+    }
+  };
+
+  const handleStartWorkout = (video: any) => {
+    setConfirmVideo(video);
+  };
+
+  const handleConfirmWorkout = () => {
+    const now = Date.now();
+    setWorkoutStartTime(now);
+    setConfirmVideo(null);
+
+    // Record check-in for streak (only counts once per day)
+    const todayKey = new Date().toISOString().split('T')[0];
+    const lastCheckin = user.last_checkin?.split('T')[0];
+    if (lastCheckin !== todayKey) {
+      supabase
+        .from('profiles')
+        .update({
+          last_checkin: new Date().toISOString(),
+          streak_count: (user.streak_count || 0) + 1
+        })
+        .eq('id', user.id)
+        .then(({ error }) => {
+          if (!error && showToast) {
+            showToast(`🔥 Streak: ${(user.streak_count || 0) + 1} days! Workout started.`, 'success');
+          }
+        });
+    } else {
+      if (showToast) showToast('Workout started! Good luck 💪', 'success');
+    }
+
+    // Open video
+    if (confirmVideo?.video_url) window.open(confirmVideo.video_url, '_blank');
+  };
+
+  const handleCheckInSubmit = async ({ rating, comment, imageFile }: { rating: number; comment: string; imageFile?: File }) => {
+    setSavingCheckIn(true);
+    try {
+      let imageUrl: string | null = null;
+
+      if (imageFile) {
+        const ext = imageFile.name.split('.').pop();
+        const path = `checkins/${user.id}-${Date.now()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from('fmf-media').upload(path, imageFile);
+        if (!uploadErr) {
+          const { data: { publicUrl } } = supabase.storage.from('fmf-media').getPublicUrl(path);
+          imageUrl = publicUrl;
+        }
+      }
+
+      await supabase.from('workout_logs').insert({
+        user_id: user.id,
+        logged_at: new Date().toISOString(),
+        rating,
+        notes: comment || null,
+        media_url: imageUrl,
+        source: 'my_program'
+      });
+
+      setShowCheckIn(false);
+      setWorkoutStartTime(null);
+      if (showToast) showToast('Check-in saved! Great work 🏆', 'success');
+    } catch (err) {
+      if (showToast) showToast('Failed to save check-in.', 'error');
+    } finally {
+      setSavingCheckIn(false);
     }
   };
 
@@ -44,16 +317,12 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
   const filteredAvailable = availableVideos.filter(v =>
     v.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     v.category?.toLowerCase().includes(searchQuery.toLowerCase())
-  ).slice(0, 6); // Show 6 suggestions max
+  ).slice(0, 6);
 
   const shuffleAndStart = () => {
     if (likedVideos.length === 0) return;
     const random = likedVideos[Math.floor(Math.random() * likedVideos.length)];
-    if (random?.video_url) {
-      window.open(random.video_url, '_blank');
-    } else if (showToast) {
-      showToast(`Starting: ${random.title}`, 'success');
-    }
+    handleStartWorkout(random);
   };
 
   if (loading) return (
@@ -66,6 +335,50 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
   return (
     <div className="space-y-10 fade-in">
 
+      {/* Workout Confirm Dialog */}
+      <AnimatePresence>
+        {confirmVideo && (
+          <WorkoutConfirmDialog
+            video={confirmVideo}
+            onConfirm={handleConfirmWorkout}
+            onCancel={() => setConfirmVideo(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Check-in Dialog */}
+      <AnimatePresence>
+        {showCheckIn && (
+          <CheckInDialog
+            onSubmit={handleCheckInSubmit}
+            onSkip={() => { setShowCheckIn(false); setWorkoutStartTime(null); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Active workout banner */}
+      <AnimatePresence>
+        {workoutStartTime && !showCheckIn && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="p-4 bg-brand-teal/10 border border-brand-teal/30 rounded-2xl flex items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-brand-teal animate-pulse" />
+              <span className="text-[10px] uppercase tracking-widest font-black text-brand-teal">Workout In Progress</span>
+            </div>
+            <button
+              onClick={() => setShowCheckIn(true)}
+              className="text-[9px] uppercase tracking-widest font-black text-white/40 hover:text-brand-teal transition-colors flex items-center gap-1.5"
+            >
+              <MessageSquare size={11} /> Log Check-in
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="border-b border-white/5 pb-8">
         <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter">
@@ -76,7 +389,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
         </p>
       </header>
 
-      {/* QUICK START CARD — only shows if user has liked videos */}
+      {/* QUICK START CARD */}
       {likedVideos.length > 0 && (
         <div className="relative">
           <div className="absolute -inset-px rounded-[2.5rem] bg-brand-teal opacity-10 blur" />
@@ -186,9 +499,10 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                         <VideoIcon size={40} className="text-white/10" />
                       </div>
                     )}
+                    {/* Play button overlay */}
                     <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-all">
                       <button
-                        onClick={() => video.video_url && window.open(video.video_url, '_blank')}
+                        onClick={() => handleStartWorkout(video)}
                         className="p-4 bg-brand-teal text-black rounded-full shadow-glow-teal hover:scale-110 transition-transform"
                       >
                         <Play size={20} fill="black" className="translate-x-0.5" />
@@ -212,7 +526,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                         <Clock size={10} /> {video.duration || '—'}
                       </div>
                       <button
-                        onClick={() => video.video_url && window.open(video.video_url, '_blank')}
+                        onClick={() => handleStartWorkout(video)}
                         className="text-[9px] uppercase tracking-widest text-white/30 hover:text-brand-teal transition-all flex items-center gap-1.5 font-black"
                       >
                         Start <ChevronRight size={11} />
@@ -226,7 +540,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
         )}
       </div>
 
-      {/* SUGGESTED VIDEOS (to add) */}
+      {/* SUGGESTED VIDEOS */}
       {filteredAvailable.length > 0 && (
         <div className="space-y-5">
           <div className="flex items-center gap-3">

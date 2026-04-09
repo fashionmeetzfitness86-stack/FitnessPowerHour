@@ -159,7 +159,7 @@ const VIDEOS: Video[] = [
   },
 ];
 
-// Branded placeholder generator â€” replace with real product photos later
+// Branded placeholder generator Ã¢â‚¬â€ replace with real product photos later
 const placeholder = (label: string, color: string = '2dd4a8') =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect fill="#0a0a0a" width="600" height="800"/><rect fill="#${color}" opacity="0.15" width="600" height="800"/><text x="300" y="370" text-anchor="middle" fill="#${color}" font-family="sans-serif" font-size="20" font-weight="bold" letter-spacing="4">${label.toUpperCase()}</text><text x="300" y="410" text-anchor="middle" fill="#ffffff" opacity="0.3" font-family="sans-serif" font-size="12" letter-spacing="6">COMING SOON</text></svg>`)}`;
 
@@ -203,7 +203,7 @@ const PRODUCTS: Product[] = [
     id: 'p3', 
     brand_id: 'cle-paris',
     category_id: 'fragrance',
-    name: "CLÉ PARIS L'EAU",
+    name: "CLÃ‰ PARIS L'EAU",
     slug: 'cle-paris-leau',
     description: 'A fresh, sophisticated fragrance for the modern athlete.',
     price: 120,
@@ -211,8 +211,8 @@ const PRODUCTS: Product[] = [
     sku: 'FRG-001',
     inventory_count: 30,
     status: 'active',
-    featured_image: placeholder('Clé Paris', 'c4a265'),
-    images: [placeholder('Clé Paris', 'c4a265')],
+    featured_image: placeholder('ClÃ© Paris', 'c4a265'),
+    images: [placeholder('ClÃ© Paris', 'c4a265')],
     ingredients: ['Bergamot', 'Sandalwood', 'Marine Accord'],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -268,10 +268,10 @@ const COLLABORATIONS: CollaborationBrand[] = [
   },
   { 
     id: 'c4', 
-    name: 'CLÉ PARIS', 
+    name: 'CLÃ‰ PARIS', 
     category: 'Luxury Fragrance & Lifestyle', 
     description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
-    image: placeholder('Clé Paris', 'c4a265'),
+    image: placeholder('ClÃ© Paris', 'c4a265'),
     link: 'https://cle-paris.com',
     buttonText: 'Explore Brand'
   },
@@ -484,13 +484,36 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let realtimeChannel: any = null;
+
+    const initAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        fetchUser(session.user.id);
+        await fetchUser(session.user.id);
         fetchNotifications(session.user.id);
+
+        // â”€â”€ Realtime: Re-fetch profile whenever the webhook updates tier/membership_status â”€â”€
+        realtimeChannel = supabase
+          .channel(`profile-sync-${session.user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${session.user.id}`
+            },
+            (_payload) => {
+              console.log('[Realtime] Profile updated â€” refreshing user state');
+              fetchUser(session.user.id);
+            }
+          )
+          .subscribe();
       }
       setLoading(false);
-    });
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
@@ -499,10 +522,17 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setNotifications([]);
+        if (realtimeChannel) {
+          supabase.removeChannel(realtimeChannel);
+          realtimeChannel = null;
+        }
       }
     });
 
-    return () => { subscription.unsubscribe(); };
+    return () => {
+      subscription.unsubscribe();
+      if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -563,7 +593,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         await supabase.from('profiles').insert(dbRow);
       }
 
-      // Sign out immediately — user must confirm email before accessing the app
+      // Sign out immediately â€” user must confirm email before accessing the app
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Signup error:', error);
@@ -866,10 +896,24 @@ const ScrollToTop = () => {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [athletesPopup, setAthletesPopup] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const hasActiveMembership = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
+  // Auto-close Athletes popup after 3 seconds
+  useEffect(() => {
+    if (!athletesPopup) return;
+    const t = setTimeout(() => setAthletesPopup(false), 3000);
+    return () => clearTimeout(t);
+  }, [athletesPopup]);
+
+  const hasActiveMembership = !!(user && (
+    user.tier === 'Basic' ||
+    user.membership_status === 'active' ||
+    user.role === 'admin' ||
+    user.role === 'super_admin' ||
+    user.role === 'athlete'
+  ));
 
   const navLinks = user ? [
     { name: 'Home', path: '/profile' },
@@ -882,7 +926,7 @@ const Navbar = () => {
   ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
-    { name: 'Athletes', path: '/athletes' },
+    { name: 'Athletes', path: '/athletes', comingSoon: true },
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },
@@ -899,9 +943,20 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden lg:flex space-x-8">
-          {navLinks.map((link) => {
+          {navLinks.map((link: any) => {
             const isMembership = link.name === 'Membership';
             const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
+            if (link.comingSoon) {
+              return (
+                <button
+                  key={link.name}
+                  onClick={() => setAthletesPopup(true)}
+                  className="text-xs uppercase tracking-widest transition-colors text-white/60 hover:text-white"
+                >
+                  {link.name}
+                </button>
+              );
+            }
             return (
               <Link
                 key={link.name}
@@ -960,9 +1015,20 @@ const Navbar = () => {
             className="lg:hidden bg-brand-black border-b border-white/10 overflow-hidden"
           >
             <div className="flex flex-col p-8 space-y-6">
-              {navLinks.map((link) => {
+              {navLinks.map((link: any) => {
                 const isMembership = link.name === 'Membership';
                 const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
+                if (link.comingSoon) {
+                  return (
+                    <button
+                      key={link.name}
+                      onClick={() => { setAthletesPopup(true); setIsOpen(false); }}
+                      className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors text-left"
+                    >
+                      {link.name}
+                    </button>
+                  );
+                }
                 return (
                 <Link
                   key={link.name}
@@ -1017,6 +1083,50 @@ const Navbar = () => {
                 )}
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Athletes Coming Soon Popup */}
+      <AnimatePresence>
+        {athletesPopup && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setAthletesPopup(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#0a0a0a] border border-brand-teal/20 rounded-3xl p-10 w-full max-w-sm text-center shadow-2xl relative"
+            >
+              <button
+                onClick={() => setAthletesPopup(false)}
+                className="absolute top-4 right-4 p-2 text-white/20 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-teal/20">
+                <Users size={28} className="text-brand-teal" />
+              </div>
+              <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Athletes</h2>
+              <p className="text-[11px] uppercase tracking-[0.3em] font-black text-brand-teal mb-3">Coming Soon</p>
+              <p className="text-white/40 text-xs leading-relaxed">
+                Our athlete roster is in final preparation. Check back soon for the full directory of FMF elite trainers.
+              </p>
+              <div className="mt-6 h-0.5 w-16 bg-brand-teal/30 mx-auto rounded-full">
+                <motion.div
+                  className="h-full bg-brand-teal rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 3, ease: 'linear' }}
+                />
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1090,7 +1200,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
       </div>
     </div>
     <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 text-[10px] uppercase tracking-[0.3em] text-white/20 flex flex-col md:flex-row justify-between items-center gap-4">
-      <span>Â© 2026 Fitness Power Hour. All Rights Reserved.</span>
+      <span>Ã‚Â© 2026 Fitness Power Hour. All Rights Reserved.</span>
       <span>Miami Beach</span>
     </div>
   </footer>
@@ -1422,7 +1532,7 @@ const PhilosophySection = () => {
             </h2>
             <div className="space-y-6 text-white/60 text-lg font-light leading-relaxed">
               <p>
-                Fitness Power Hour is not just a workout program â€” it is a lifestyle built around discipline, movement, and personal strength.
+                Fitness Power Hour is not just a workout program Ã¢â‚¬â€ it is a lifestyle built around discipline, movement, and personal strength.
               </p>
               <p>
                 We believe that training is a daily ritual that strengthens both the body and the mind. It is the ultimate expression of self-respect and the foundation of a high-performance life.
@@ -1523,9 +1633,9 @@ const TrainerSection = () => {
             <div className="pt-8 border-t border-white/10">
               <Quote className="text-brand-coral mb-4 opacity-40" size={32} />
               <p className="text-2xl italic font-light text-white/80 leading-tight">
-                â€œYour body is the first tool you were given. Learning how to use it changes everything.â€
+                Ã¢â‚¬Å“Your body is the first tool you were given. Learning how to use it changes everything.Ã¢â‚¬Â
               </p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">â€” Michael Leggett</p>
+              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">Ã¢â‚¬â€ Michael Leggett</p>
             </div>
           </motion.div>
         </div>
@@ -1538,7 +1648,7 @@ const SystemSection = () => {
   const phases = [
     {
       title: 'Foundation',
-      weeks: 'Weeks 1â€“4',
+      weeks: 'Weeks 1Ã¢â‚¬â€œ4',
       focus: ['Mobility', 'Core Stability', 'Body Control'],
       exercises: ['Push-ups', 'Squats', 'Planks', 'Lunges'],
       goal: 'Prepare the body for more advanced training.',
@@ -1546,7 +1656,7 @@ const SystemSection = () => {
     },
     {
       title: 'Power',
-      weeks: 'Weeks 5â€“8',
+      weeks: 'Weeks 5Ã¢â‚¬â€œ8',
       focus: ['Explosive Strength', 'Endurance', 'Conditioning'],
       exercises: ['Jump Squats', 'Pull-ups', 'Burpees', 'Core Circuits'],
       goal: 'Build athletic performance.',
@@ -1554,7 +1664,7 @@ const SystemSection = () => {
     },
     {
       title: 'Mastery',
-      weeks: 'Weeks 9â€“12',
+      weeks: 'Weeks 9Ã¢â‚¬â€œ12',
       focus: ['Full-body Strength', 'Advanced Calisthenics', 'Mental Discipline'],
       exercises: ['Muscle-ups', 'Pistol Squats', 'Handstand Work', 'Advanced Core Training'],
       goal: 'Develop total body strength and control.',
@@ -1651,7 +1761,7 @@ const SystemSection = () => {
         <div className="mt-24 p-12 rounded-3xl border border-white/5 bg-gradient-to-r from-brand-teal/10 to-transparent flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-4">
             <h3 className="text-2xl font-bold uppercase tracking-tighter">Session Structure</h3>
-            <p className="text-white/40 text-sm uppercase tracking-widest">45â€“60 Minutes of Focused Discipline</p>
+            <p className="text-white/40 text-sm uppercase tracking-widest">45Ã¢â‚¬â€œ60 Minutes of Focused Discipline</p>
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             {['Warm-up', 'Strength', 'Conditioning', 'Cool Down'].map((step, i) => (
@@ -2640,7 +2750,7 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
 const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { cart, removeFromCart, updateQuantity, totalPrice, totalItems, clearCart } = useCart();
   const { user } = useAuth();
-  const isMember = user && user.tier !== 'Basic';
+  const isMember = !!(user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete'));
   const discount = 0.2;
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -2849,11 +2959,11 @@ const Store = () => {
     addToRecentlyViewed(product);
   };
 
-  const isMember = user && user.tier !== 'Basic';
+  const isMember = !!(user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete'));
   const discount = 0.2; // 20% discount for members
 
   const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle', 'Nutrition'];
-  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection', 'Mike Water Fitness'];
+  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÃ‰ Paris Collection', 'Mike Water Fitness'];
 
   const filteredProducts = useMemo(() => {
     let filtered = PRODUCTS;
@@ -3258,17 +3368,17 @@ const Store = () => {
               <div className="relative z-10 max-w-xl space-y-8">
                 <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
                 <h2 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
-                  CLÉ <span className="text-brand-teal italic">Paris</span>
+                  CLÃ‰ <span className="text-brand-teal italic">Paris</span>
                 </h2>
                 <p className="text-white/60 text-lg font-light leading-relaxed italic">
                   "Train with discipline. Move with strength. Carry yourself with elegance."
                 </p>
                 <div className="space-y-4 text-sm text-white/40 leading-relaxed">
                   <p>
-                    CLÉ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
+                    CLÃ‰ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
                   </p>
                 </div>
-                <button className="btn-primary">Explore CLÉ Paris</button>
+                <button className="btn-primary">Explore CLÃ‰ Paris</button>
               </div>
             </div>
           </div>
@@ -4568,7 +4678,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                 <p className="text-white text-sm font-light italic leading-relaxed">
                   "Being a Fitness Power Hour member isn't just about the workouts; it's about the standard you set for your life. The privileges are just a reflection of that commitment."
                 </p>
-                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">â€” Michael L, Founder</p>
+                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">Ã¢â‚¬â€ Michael L, Founder</p>
               </div>
             </div>
           </div>
@@ -4624,7 +4734,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                   )}
                 </div>
               ) : showUnverified ? (
-                /* ── Email Not Verified Panel ── */
+                /* â”€â”€ Email Not Verified Panel â”€â”€ */
                 <div className="text-center space-y-6 py-8">
                   <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto border border-amber-500/30">
                     <Send size={36} className="text-amber-500" />
@@ -4702,7 +4812,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                        placeholder="••••••••"
+                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       />
                     </div>
                     {!isLogin && (
@@ -4714,7 +4824,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                           value={formData.confirmPassword}
                           onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                           className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors"
-                          placeholder="••••••••"
+                          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         />
                       </div>
                     )}
@@ -5055,7 +5165,7 @@ const Philosophy = () => {
               <p className="text-2xl italic font-light text-white/80 leading-tight">
                 "We don't just build muscles. We build the character required to use them with purpose."
               </p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">â€” Michael Leggett</p>
+              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">Ã¢â‚¬â€ Michael Leggett</p>
             </div>
           </div>
           <div className="relative aspect-square rounded-3xl overflow-hidden">
@@ -6147,5 +6257,6 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+
 
 

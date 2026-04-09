@@ -298,25 +298,53 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     } catch (err) { showToast('Decommissioning failed', 'error'); }
   };
 
-  const handleSaveProduct = async (data: Partial<Product>) => {
+  const handleSaveProduct = async (data: Partial<any>) => {
     try {
+      // Map ShopProduct fields → DB column names
+      const dbRow: Record<string, any> = {
+        name:             data.name,
+        description:      data.description || null,
+        price:            data.price || 0,
+        // category is stored as category_id in the DB
+        category_id:      data.category || data.category_id || null,
+        // featured_image is the primary image
+        featured_image:   data.images?.[0] || data.featured_image || null,
+        images:           data.images || [],
+        video_url:        data.video_url || null,
+        external_link:    data.external_link || null,
+        is_recommended:   data.is_recommended ?? false,
+        // status maps to is_active boolean
+        status:           data.is_active !== false ? 'active' : 'draft',
+        visibility:       data.visibility || 'general',
+        // New fields
+        sizes:            data.sizes || [],
+        inventory_count:  data.quantity ?? data.inventory_count ?? 0,
+        gender:           data.gender || null,
+        updated_at:       new Date().toISOString(),
+      };
+
       if (data.id) {
-        const { error } = await supabase.from('products').update(data).eq('id', data.id);
-        if (error) throw error;
+        const { error } = await supabase.from('products').update(dbRow).eq('id', data.id);
+        if (error) { console.error('[Product sync error]', error); throw error; }
         setProducts(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Product : p));
-        logActivity('UPDATE_PRODUCT', 'product', data.id, data);
-        showToast('Product metadata synchronized', 'success');
+        logActivity('UPDATE_PRODUCT', 'product', data.id, dbRow);
+        showToast('Product updated ✅', 'success');
       } else {
-        const { data: newP, error } = await supabase.from('products').insert(data).select().single();
-        if (error) throw error;
+        dbRow.created_at = new Date().toISOString();
+        const { data: newP, error } = await supabase.from('products').insert(dbRow).select().single();
+        if (error) { console.error('[Product sync error]', error); throw error; }
         if (newP) {
           setProducts(prev => [newP, ...prev]);
-          logActivity('CREATE_PRODUCT', 'product', newP.id, newP);
+          logActivity('CREATE_PRODUCT', 'product', newP.id, dbRow);
         }
-        showToast('New product initialized', 'success');
+        showToast('Product published ✅', 'success');
       }
-    } catch (err) { showToast('Product sync failed', 'error'); }
+    } catch (err: any) {
+      const msg = err?.message || err?.details || 'Product sync failed';
+      showToast(`Sync failed: ${msg}`, 'error');
+    }
   };
+
 
   const handleDeleteProduct = async (id: string) => {
     try {
@@ -446,18 +474,12 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     switch (activeTab) {
       case 'overview': return <AdminOverview stats={stats} />;
       case 'users': return (
-        <UsersManager 
-          users={users} 
-          packages={packages} 
-          searchQuery={searchQuery} 
-          setSearchQuery={setSearchQuery} 
-          roleFilter={roleFilter} 
-          setRoleFilter={setRoleFilter} 
-          statusFilter={statusFilter} 
-          setStatusFilter={setStatusFilter} 
-          onEdit={() => showToast('Advanced edit matrix restricted.', 'info')} 
+        <UsersManager
+          users={users}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
           onUpdateUser={handleUpdateUser}
-          currentUser={user}
+          showToast={showToast}
         />
       );
       case 'content': return (
@@ -483,9 +505,37 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <RetreatManager
           retreats={retreats}
           applications={retreatApplications}
-          onAdd={() => showToast('New retreat genesis coming soon.', 'info')}
+          onAdd={() => {}}
+          onSave={async (retreat: any) => {
+            const row = {
+              title:              retreat.title,
+              description:        retreat.description || null,
+              location:           retreat.location,
+              price:              retreat.price || 0,
+              capacity:           retreat.capacity || 10,
+              visibility_status:  retreat.visibility_status || 'draft',
+              is_sold_out:        retreat.is_sold_out || false,
+              cover_image:        retreat.cover_image || null,
+              requirements:       retreat.requirements || null,
+              start_date:         retreat.start_date || null,
+              end_date:           retreat.end_date || null,
+              updated_at:         new Date().toISOString(),
+            };
+            if (retreat.id) {
+              const { error } = await supabase.from('retreats').update(row).eq('id', retreat.id);
+              if (error) throw error;
+              setRetreats(prev => prev.map(r => r.id === retreat.id ? { ...r, ...row } as any : r));
+              logActivity('UPDATE_RETREAT', 'retreat', retreat.id, row);
+            } else {
+              const { data: newR, error } = await supabase.from('retreats').insert({ ...row, created_at: new Date().toISOString() }).select().single();
+              if (error) throw error;
+              if (newR) { setRetreats(prev => [newR, ...prev]); logActivity('CREATE_RETREAT', 'retreat', newR.id, row); }
+            }
+            showToast('Retreat saved ✅', 'success');
+          }}
           onReview={handleReviewRetreatApp}
           onDelete={handleDeleteRetreat}
+          showToast={showToast}
         />
       );
       case 'athletes': return (

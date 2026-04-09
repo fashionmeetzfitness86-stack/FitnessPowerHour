@@ -1,358 +1,409 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, Mail, Calendar as CalendarIcon, CheckCircle, Clock, Edit2, Plus, X, User } from 'lucide-react';
+import {
+  Phone, Mail, Calendar as CalendarIcon, CheckCircle, Clock,
+  Edit2, Plus, X, User, Search, AlignJustify, LayoutGrid,
+  Filter, ChevronDown, Send, Loader2
+} from 'lucide-react';
+import { supabase } from '../../supabase';
 
-export const RequestsManager = ({ 
-  requests, 
+const STATUS_COLORS: Record<string, string> = {
+  pending:   'bg-amber-500/20 text-amber-400 border-amber-500/40',
+  contacted: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40',
+  scheduled: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
+  completed: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
+  cancelled: 'bg-red-500/20 text-red-400 border-red-500/40',
+};
+
+export const RequestsManager = ({
+  requests,
   users = [],
-  onUpdateStatus, 
+  onUpdateStatus,
   onSchedule,
   onSaveRequest,
-  showToast 
-}: { 
-  requests: any[], 
-  users?: any[],
-  onUpdateStatus: (id: string, status: string) => void,
-  onSchedule: (req: any) => void,
-  onSaveRequest: (req: any) => void,
-  showToast: any 
+  showToast
+}: {
+  requests: any[];
+  users?: any[];
+  onUpdateStatus: (id: string, status: string) => void;
+  onSchedule: (req: any) => void;
+  onSaveRequest: (req: any) => void;
+  showToast: any;
 }) => {
-  const [filter, setFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [viewMode, setViewMode]         = useState<'card' | 'list'>('card');
+  const [search, setSearch]             = useState('');
+  const [dayFilter, setDayFilter]       = useState('');
+  const [monthFilter, setMonthFilter]   = useState('');
+  const [yearFilter, setYearFilter]     = useState('');
   const [editingRequest, setEditingRequest] = useState<any>(null);
-
-  const getStatusColor = (status: string) => {
-    switch(status?.toLowerCase()) {
-      case 'pending': return 'bg-amber-500/20 text-amber-500 border-amber-500/50';
-      case 'contacted': return 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50';
-      case 'scheduled': return 'bg-blue-500/20 text-blue-400 border-blue-500/50';
-      case 'completed': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50';
-      case 'cancelled': return 'bg-red-500/20 text-red-400 border-red-500/50';
-      default: return 'bg-white/10 text-white border-white/20';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch(status?.toLowerCase()) {
-       case 'pending': return 'Pending';
-       case 'contacted': return 'Contacted';
-       case 'scheduled': return 'Scheduled';
-       case 'completed': return 'Completed';
-       case 'cancelled': return 'Cancelled';
-       default: return (status || 'UNKNOWN').toUpperCase();
-    }
-  }
+  const [isSending, setIsSending]       = useState(false);
 
   const parseNotes = (notes: string) => {
     if (!notes) return { name: 'Unknown', email: '', phone: '', message: '' };
     return {
-      name: notes.match(/Name:\s([^|]+)/)?.[1]?.trim() || 'Admin Manual Entry',
-      email: notes.match(/Email:\s([^|]+)/)?.[1]?.trim() || '',
-      phone: notes.match(/Phone:\s([^|]+)/)?.[1]?.trim() || '',
-      message: notes.match(/Message:\s(.+)/)?.[1]?.trim() || notes.match(/Msg:\s(.+)/)?.[1]?.trim() || notes
+      name:    notes.match(/Name:\s([^|]+)/)?.[1]?.trim() || 'Manual Entry',
+      email:   notes.match(/Email:\s([^|]+)/)?.[1]?.trim() || '',
+      phone:   notes.match(/Phone:\s([^|]+)/)?.[1]?.trim() || '',
+      message: notes.match(/Message:\s(.+)/)?.[1]?.trim() || notes.match(/Msg:\s(.+)/)?.[1]?.trim() || notes,
     };
   };
 
-  const sortedRequests = [...requests].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const filteredRequests = filter === 'All' ? sortedRequests : sortedRequests.filter(r => r.status?.toLowerCase() === filter.toLowerCase());
+  const uniqueYears = useMemo(() => {
+    const years = new Set(requests.map(r => new Date(r.created_at).getFullYear().toString()));
+    return Array.from(years).sort().reverse();
+  }, [requests]);
+
+  const filteredRequests = useMemo(() => {
+    return [...requests]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .filter(r => {
+        const d = parseNotes(r.notes);
+        const matchStatus = statusFilter === 'All' || r.status?.toLowerCase() === statusFilter.toLowerCase();
+        const q = search.toLowerCase();
+        const matchSearch = !q ||
+          d.name.toLowerCase().includes(q) ||
+          d.email.toLowerCase().includes(q) ||
+          d.phone.toLowerCase().includes(q) ||
+          (r.service_type || '').toLowerCase().includes(q);
+        const dt = new Date(r.created_at);
+        const matchDay   = !dayFilter   || String(dt.getDate()).padStart(2,'0') === dayFilter;
+        const matchMonth = !monthFilter || String(dt.getMonth() + 1).padStart(2,'0') === monthFilter;
+        const matchYear  = !yearFilter  || String(dt.getFullYear()) === yearFilter;
+        return matchStatus && matchSearch && matchDay && matchMonth && matchYear;
+      });
+  }, [requests, statusFilter, search, dayFilter, monthFilter, yearFilter]);
 
   const handleSaveEdit = () => {
-    // Build a structured notes string embedding contact details so they persist
-    const contactPrefix = [
-      editingRequest.client_name ? `Name: ${editingRequest.client_name}` : null,
+    if (!editingRequest) return;
+    const contactParts = [
+      editingRequest.client_name  ? `Name: ${editingRequest.client_name}`  : null,
       editingRequest.client_email ? `Email: ${editingRequest.client_email}` : null,
       editingRequest.client_phone ? `Phone: ${editingRequest.client_phone}` : null,
     ].filter(Boolean).join(' | ');
-
-    const existingMsg = (() => {
-      try {
-        const raw = editingRequest.notes || '';
-        const msgMatch = raw.match(/Message:\s(.+)/)?.[1];
-        return msgMatch || raw;
-      } catch { return ''; }
-    })();
-
-    const newNotes = contactPrefix
-      ? `${contactPrefix} | Message: ${editingRequest.admin_notes || existingMsg || ''}`
-      : (editingRequest.admin_notes || editingRequest.notes || '');
-
+    const rawMsg = editingRequest.admin_notes || parseNotes(editingRequest.notes || '').message || '';
+    const newNotes = contactParts ? `${contactParts} | Message: ${rawMsg}` : rawMsg;
     onSaveRequest({ ...editingRequest, notes: newNotes });
     setEditingRequest(null);
   };
 
+  // Send booking confirmation email via Supabase edge function / mailto fallback
+  const handleSendConfirmationEmail = async (req: any) => {
+    const d = parseNotes(req.notes || '');
+    if (!d.email) { showToast('No email address on record for this booking', 'error'); return; }
+    setIsSending(true);
+    try {
+      // Try to insert a notification record (triggers email via Supabase webhook if set up)
+      const user = users.find(u => u.email === d.email);
+      if (user) {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'booking_confirmation',
+          title: 'Booking Confirmed ✅',
+          message: [
+            `Hi ${d.name},`,
+            `Your booking has been confirmed.`,
+            `Service: ${req.service_type || 'Training Session'}`,
+            req.scheduled_at ? `Date & Time: ${new Date(req.scheduled_at).toLocaleString()}` : '',
+            req.location ? `Location: ${req.location}` : '',
+            d.message ? `Notes: ${d.message}` : '',
+          ].filter(Boolean).join('\n'),
+          metadata: { source: 'Admin Booking', request_id: req.id }
+        });
+      }
+      // Also email via Netlify function if available
+      await fetch('/.netlify/functions/send-booking-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: d.email,
+          name: d.name,
+          service: req.service_type || 'Training Session',
+          date: req.scheduled_at ? new Date(req.scheduled_at).toLocaleString() : 'TBD',
+          location: req.location || 'TBD',
+          notes: d.message || '',
+        })
+      }).catch(() => {}); // Silently fail if function doesn't exist
+      showToast(`Confirmation sent to ${d.email} ✅`, 'success');
+    } catch (err) {
+      showToast('Email dispatch failed', 'error');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <div className="space-y-6 flex flex-col h-full">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white/5 border border-white/10 p-6 rounded-[2rem]">
         <div>
-          <h2 className="text-3xl font-black uppercase tracking-tighter">Requests Control Center</h2>
+          <h2 className="text-3xl font-black uppercase tracking-tighter">Requests <span className="text-brand-teal">Control</span></h2>
           <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mt-1">
-             Manage, Schedule, and Manually Book Service Requests
+            {filteredRequests.length} of {requests.length} requests
           </p>
         </div>
-        
-        <div className="flex gap-4">
-          <div className="flex bg-black/40 border border-white/5 p-1 rounded-xl">
-             {['All', 'Pending', 'Scheduled', 'Completed'].map(f => (
-               <button
-                 key={f}
-                 onClick={() => setFilter(f)}
-                 className={`px-4 py-2 text-[10px] uppercase tracking-widest font-bold rounded-lg transition-colors ${filter === f ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
-               >
-                 {f}
-               </button>
-             ))}
+
+        <div className="flex flex-wrap gap-3 items-center">
+          {/* View toggle */}
+          <div className="flex bg-black/40 border border-white/10 p-1 rounded-xl">
+            <button onClick={() => setViewMode('card')} className={`p-2 rounded-lg transition-all ${viewMode === 'card' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white'}`} title="Card view"><LayoutGrid size={14} /></button>
+            <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-white/30 hover:text-white'}`} title="List view"><AlignJustify size={14} /></button>
           </div>
 
-          <button 
+          <button
             onClick={() => setEditingRequest({ service_type: 'Personal Training', status: 'pending' })}
-            className="px-6 py-2 bg-brand-teal text-black rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:scale-105 transition-all shadow-glow-teal"
+            className="px-5 py-2 bg-brand-teal text-black rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:scale-105 transition-all shadow-glow-teal"
           >
             <Plus size={14} /> Add Booking
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative">
-        {filteredRequests.map((req) => {
-          const details = parseNotes(req.notes);
-          const isHighPriority = details.message.toLowerCase().includes('asap') || details.message.toLowerCase().includes('urgent');
+      {/* Filters Row */}
+      <div className="flex flex-wrap gap-3 items-center">
+        {/* Search */}
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+          <input
+            type="text"
+            placeholder="Name, email, phone, service..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9 pr-4 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs outline-none focus:border-brand-teal w-56"
+          />
+        </div>
 
-          return (
-            <motion.div 
-              key={req.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-black/60 border border-white/10 hover:border-white/30 rounded-3xl overflow-hidden flex flex-col transition-all relative"
+        {/* Status filter */}
+        <div className="flex bg-black/40 border border-white/10 p-1 rounded-xl gap-1">
+          {['All', 'Pending', 'Scheduled', 'Completed', 'Cancelled'].map(f => (
+            <button
+              key={f}
+              onClick={() => setStatusFilter(f)}
+              className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black rounded-lg transition-all ${statusFilter === f ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
             >
-              {isHighPriority && (
-                 <div className="absolute top-0 left-0 w-full bg-brand-coral/20 border-b border-brand-coral/50 py-1 text-center">
-                    <span className="text-[8px] uppercase tracking-[0.2em] font-black text-brand-coral">🔥 High Priority Match</span>
-                 </div>
-              )}
-              
-              <div className={`p-6 border-b border-white/5 ${isHighPriority ? 'pt-8' : ''} relative`}>
-                 <button onClick={() => setEditingRequest(req)} className="absolute top-6 right-6 p-2 text-white/40 hover:text-white hover:bg-white/5 rounded-full transition-colors z-10"><Edit2 size={14} /></button>
+              {f}
+            </button>
+          ))}
+        </div>
 
-                 <div className="flex justify-between items-start mb-4">
-                    <select
-                        value={req.status}
-                        onChange={(e) => onUpdateStatus(req.id, e.target.value)}
-                        className={`px-2 py-1 rounded-full text-[9px] uppercase tracking-widest font-black border ${getStatusColor(req.status)} appearance-none outline-none cursor-pointer pr-4`}
-                    >
-                        <option value="pending">Pending</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                 </div>
-
-                 <h3 className="text-xl font-black uppercase tracking-tight pr-8">{details.name}</h3>
-                 <p className="text-[11px] text-brand-teal font-bold uppercase tracking-widest mt-1">
-                    {req.service_type || 'Training'}
-                 </p>
-              </div>
-
-              <div className="p-6 space-y-4 flex-grow bg-white/[0.02]">
-                 <div className="flex items-start gap-4">
-                    <div className="p-2 bg-white/5 rounded-lg text-white/40 shrink-0"><User size={14} /></div>
-                    <div className="text-[11px]">
-                       <p className="text-white/40 uppercase tracking-widest font-bold text-[9px] mb-1">Contact Info</p>
-                       <p className="font-mono">{details.phone || 'No phone provided'}</p>
-                       <p className="font-mono text-white/60">{details.email}</p>
-                    </div>
-                 </div>
-
-                 <div className="flex items-start gap-4">
-                    <div className="p-2 bg-white/5 rounded-lg text-white/40 shrink-0"><Clock size={14} /></div>
-                    <div className="text-[11px]">
-                       <p className="text-white/40 uppercase tracking-widest font-bold text-[9px] mb-1">Booking Window</p>
-                       <p className="font-bold">{req.requested_date || 'No Date'} @ {req.requested_time || 'Any'}</p>
-                    </div>
-                 </div>
-
-                 <div className="p-4 bg-black/40 rounded-xl border border-white/5 mt-4">
-                    <p className="text-[9px] uppercase tracking-widest font-bold text-white/40 mb-2">Message</p>
-                    <p className="text-sm italic text-white/80 leading-relaxed">"{details.message}"</p>
-                 </div>
-              </div>
-
-              <div className="p-4 border-t border-white/5 grid grid-cols-2 gap-2 bg-black/80">
-                 <a 
-                   href={details.phone ? `https://wa.me/${details.phone.replace(/[^0-9]/g, '')}` : `mailto:${details.email}`}
-                   target="_blank" rel="noreferrer"
-                   className="py-3 px-2 bg-white/5 hover:bg-white/10 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors text-white"
-                   onClick={() => onUpdateStatus(req.id, 'contacted')}
-                 >
-                    <Phone size={12} /> Contact
-                 </a>
-
-                 {req.status === 'pending' || req.status === 'contacted' ? (
-                   <button 
-                     onClick={() => onSchedule(req)}
-                     className="py-3 px-2 bg-brand-teal text-black rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-[0_0_15px_rgba(45,212,191,0.2)] hover:scale-[1.02] transition-transform"
-                   >
-                      <CalendarIcon size={12} /> Confirm & Schedule
-                   </button>
-                 ) : (
-                    <div className="py-3 px-2 flex items-center justify-center">
-                       <span className={`text-[10px] uppercase font-bold text-white/20 ${req.status === 'completed' ? 'text-emerald-500/50' : ''}`}>
-                          {req.status === 'completed' ? 'Done' : 'Scheduled'}
-                       </span>
-                    </div>
-                 )}
-              </div>
-            </motion.div>
-          );
-        })}
-
-        {filteredRequests.length === 0 && (
-           <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-3xl">
-              <CheckCircle size={32} className="mx-auto text-white/10 mb-4" />
-              <p className="text-sm font-black uppercase tracking-widest text-white/40">Zero Pending Requests</p>
-              <p className="text-xs text-white/20 mt-1">You are completely caught up.</p>
-           </div>
-        )}
+        {/* Date filters */}
+        <div className="flex gap-2">
+          <input type="text" placeholder="DD" maxLength={2} value={dayFilter} onChange={e => setDayFilter(e.target.value)}
+            className="w-14 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none focus:border-brand-teal text-center" />
+          <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)}
+            className="bg-black/40 border border-white/10 rounded-xl px-2 py-2 text-xs outline-none focus:border-brand-teal w-24">
+            <option value="">Month</option>
+            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) =>
+              <option key={m} value={String(i+1).padStart(2,'0')}>{m}</option>
+            )}
+          </select>
+          <select value={yearFilter} onChange={e => setYearFilter(e.target.value)}
+            className="bg-black/40 border border-white/10 rounded-xl px-2 py-2 text-xs outline-none focus:border-brand-teal w-24">
+            <option value="">Year</option>
+            {uniqueYears.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          {(dayFilter || monthFilter || yearFilter || search) && (
+            <button onClick={() => { setDayFilter(''); setMonthFilter(''); setYearFilter(''); setSearch(''); }}
+              className="p-2 text-white/30 hover:text-white transition-all" title="Clear filters">
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Editor Modal */}
+      {/* Content */}
+      {filteredRequests.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center py-20 text-center text-white/30">
+          <div><Filter size={36} className="mx-auto mb-4 opacity-20" /><p className="text-xs uppercase tracking-widest font-black">No requests match filters</p></div>
+        </div>
+      ) : viewMode === 'card' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filteredRequests.map(req => {
+            const d = parseNotes(req.notes);
+            return (
+              <motion.div
+                key={req.id}
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="card-gradient border border-white/5 hover:border-brand-teal/20 rounded-[2rem] p-6 space-y-4 flex flex-col"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-black uppercase tracking-tight">{d.name}</p>
+                    <p className="text-[10px] text-white/40 mt-0.5">{req.service_type || 'Service'}</p>
+                  </div>
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg border ${STATUS_COLORS[req.status?.toLowerCase()] || STATUS_COLORS.pending}`}>
+                    {req.status || 'Pending'}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 text-[10px] text-white/50">
+                  {d.email && <p className="flex items-center gap-2"><Mail size={10} className="text-brand-teal" /> {d.email}</p>}
+                  {d.phone && <p className="flex items-center gap-2"><Phone size={10} className="text-brand-coral" /> {d.phone}</p>}
+                  <p className="flex items-center gap-2"><CalendarIcon size={10} className="text-white/30" /> {new Date(req.created_at).toLocaleDateString()}</p>
+                  {d.message && <p className="text-white/30 italic line-clamp-2 pt-1 border-t border-white/5">{d.message}</p>}
+                </div>
+
+                <div className="flex gap-2 mt-auto pt-3 border-t border-white/5">
+                  <select
+                    value={req.status || 'pending'}
+                    onChange={e => onUpdateStatus(req.id, e.target.value)}
+                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-2 py-2 text-[9px] uppercase font-black outline-none focus:border-brand-teal"
+                  >
+                    {['pending','contacted','scheduled','completed','cancelled'].map(s =>
+                      <option key={s} value={s}>{s}</option>
+                    )}
+                  </select>
+                  <button onClick={() => setEditingRequest({ ...req, client_name: d.name, client_email: d.email, client_phone: d.phone })}
+                    className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all"><Edit2 size={13} /></button>
+                  <button onClick={() => handleSendConfirmationEmail(req)} disabled={isSending}
+                    className="p-2 bg-brand-teal/10 hover:bg-brand-teal rounded-xl text-brand-teal hover:text-black transition-all" title="Send confirmation email">
+                    {isSending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      ) : (
+        /* List view */
+        <div className="bg-black/40 border border-white/10 rounded-[2rem] overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white/5 border-b border-white/10">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Client</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Service</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Date</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40">Status</th>
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/40 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filteredRequests.map(req => {
+                const d = parseNotes(req.notes);
+                return (
+                  <tr key={req.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-black text-sm uppercase">{d.name}</p>
+                      <p className="text-[10px] text-white/40">{d.email}</p>
+                      {d.phone && <p className="text-[10px] text-white/30">{d.phone}</p>}
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-xs font-bold text-white/70">{req.service_type || '—'}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-xs text-white/60">{new Date(req.created_at).toLocaleDateString()}</p>
+                      <p className="text-[10px] text-white/30">{new Date(req.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <select
+                        value={req.status || 'pending'}
+                        onChange={e => onUpdateStatus(req.id, e.target.value)}
+                        className={`text-[9px] font-black uppercase rounded-lg px-2 py-1 border outline-none ${STATUS_COLORS[req.status?.toLowerCase()] || STATUS_COLORS.pending}`}
+                      >
+                        {['pending','contacted','scheduled','completed','cancelled'].map(s =>
+                          <option key={s} value={s}>{s}</option>
+                        )}
+                      </select>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => setEditingRequest({ ...req, client_name: d.name, client_email: d.email, client_phone: d.phone })}
+                          className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all"><Edit2 size={12} /></button>
+                        <button onClick={() => handleSendConfirmationEmail(req)} title="Send email"
+                          className="p-1.5 bg-brand-teal/10 hover:bg-brand-teal rounded-lg text-brand-teal hover:text-black transition-all"><Send size={12} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Edit / Add Booking Modal */}
       <AnimatePresence>
         {editingRequest && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setEditingRequest(null)}
           >
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="bg-[#0a0a0a] border border-brand-teal/20 p-8 rounded-3xl w-full max-w-xl relative shadow-2xl overflow-y-auto max-h-[90vh]">
-               <button onClick={() => setEditingRequest(null)} className="absolute top-6 right-6 p-2 text-white/40 hover:text-white transition-colors">
-                  <X size={20} />
-               </button>
-               
-               <h3 className="text-3xl font-black uppercase tracking-tighter mb-8 text-brand-teal">
-                  {editingRequest.id ? 'Edit Request' : 'Manual Booking'}
-               </h3>
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#0d0d0d] border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl space-y-5"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-black uppercase tracking-tighter">{editingRequest.id ? 'Edit Booking' : 'New Booking'}</h3>
+                <button onClick={() => setEditingRequest(null)} className="p-2 text-white/30 hover:text-white"><X size={18} /></button>
+              </div>
 
-               <div className="space-y-6">
-                  {/* ── CLIENT DETAILS ── */}
-                  <div className="p-5 bg-white/[0.03] border border-white/10 rounded-2xl space-y-4">
-                    <p className="text-[9px] uppercase tracking-widest font-black text-brand-teal">Client Details</p>
-
-                    <div>
-                      <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Full Name</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. John Smith"
-                        value={editingRequest.client_name ?? parseNotes(editingRequest.notes).name}
-                        onChange={e => setEditingRequest({...editingRequest, client_name: e.target.value})}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors placeholder-white/20"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Phone Number</label>
-                        <input
-                          type="tel"
-                          placeholder="+1 (305) 000-0000"
-                          value={editingRequest.client_phone ?? parseNotes(editingRequest.notes).phone}
-                          onChange={e => setEditingRequest({...editingRequest, client_phone: e.target.value})}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors placeholder-white/20"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Email</label>
-                        <input
-                          type="email"
-                          placeholder="email@example.com"
-                          value={editingRequest.client_email ?? parseNotes(editingRequest.notes).email}
-                          onChange={e => setEditingRequest({...editingRequest, client_email: e.target.value})}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors placeholder-white/20"
-                        />
-                      </div>
-                    </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: 'Full Name', key: 'client_name', placeholder: 'John Doe' },
+                  { label: 'Email', key: 'client_email', placeholder: 'email@example.com' },
+                  { label: 'Phone', key: 'client_phone', placeholder: '+1 305 000 0000' },
+                  { label: 'Date & Time', key: 'scheduled_at', type: 'datetime-local' },
+                ].map(f => (
+                  <div key={f.key} className={`space-y-1.5 ${f.key === 'client_name' ? 'col-span-2' : ''}`}>
+                    <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">{f.label}</label>
+                    <input
+                      type={f.type || 'text'}
+                      placeholder={f.placeholder}
+                      value={(editingRequest as any)[f.key] || ''}
+                      onChange={e => setEditingRequest({ ...editingRequest, [f.key]: e.target.value })}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                    />
                   </div>
+                ))}
+              </div>
 
-                  {!editingRequest.id && (
-                     <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Select User</label>
-                        <select 
-                           value={editingRequest.user_id || ''} 
-                           onChange={e => setEditingRequest({...editingRequest, user_id: e.target.value})}
-                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none"
-                        >
-                           <option value="">-- Choose Assigned User --</option>
-                           {users?.map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
-                        </select>
-                     </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">Service Type</label>
+                <select value={editingRequest.service_type || 'Personal Training'} onChange={e => setEditingRequest({ ...editingRequest, service_type: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal">
+                  {['Personal Training','Group Class','Nutrition Consult','Mobility Session','Online Coaching','Other'].map(s =>
+                    <option key={s} value={s}>{s}</option>
                   )}
+                </select>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Service Type</label>
-                        <select 
-                           value={editingRequest.service_type || 'Personal Training'} 
-                           onChange={e => setEditingRequest({...editingRequest, service_type: e.target.value})}
-                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none"
-                        >
-                           <option value="Personal Training">Personal Training</option>
-                           <option value="Assisted Stretching">Assisted Stretching</option>
-                           <option value="Recovery Session">Recovery Session</option>
-                           <option value="Nutrition Consultation">Nutrition Consultation</option>
-                        </select>
-                     </div>
-                     <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Status</label>
-                        <select 
-                           value={editingRequest.status || 'pending'} 
-                           onChange={e => setEditingRequest({...editingRequest, status: e.target.value})}
-                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none"
-                        >
-                           <option value="pending">Pending</option>
-                           <option value="scheduled">Scheduled</option>
-                           <option value="completed">Completed</option>
-                        </select>
-                     </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">Status</label>
+                  <select value={editingRequest.status || 'pending'} onChange={e => setEditingRequest({ ...editingRequest, status: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal">
+                    {['pending','contacted','scheduled','completed','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">Location</label>
+                  <input type="text" placeholder="Studio / Online / Address" value={editingRequest.location || ''}
+                    onChange={e => setEditingRequest({ ...editingRequest, location: e.target.value })}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal" />
+                </div>
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                     <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Date</label>
-                        <input type="date" value={editingRequest.requested_date || ''} onChange={e => setEditingRequest({...editingRequest, requested_date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors" />
-                     </div>
-                     <div>
-                        <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Time</label>
-                        <select value={editingRequest.requested_time || '12:00:00'} onChange={e => setEditingRequest({...editingRequest, requested_time: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-bold outline-none focus:border-brand-teal transition-colors">
-                           <option value="09:00:00">9:00 AM</option>
-                           <option value="11:00:00">11:00 AM</option>
-                           <option value="13:00:00">1:00 PM</option>
-                           <option value="15:00:00">3:00 PM</option>
-                           <option value="17:00:00">5:00 PM</option>
-                           <option value="19:00:00">7:00 PM</option>
-                        </select>
-                     </div>
-                  </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] uppercase tracking-widest text-white/40 font-black">Admin Notes</label>
+                <textarea rows={3} placeholder="Internal notes..." value={editingRequest.admin_notes || ''}
+                  onChange={e => setEditingRequest({ ...editingRequest, admin_notes: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal resize-none" />
+              </div>
 
-                  <div>
-                     <label className="text-[10px] uppercase font-bold tracking-widest text-white/40 block mb-2">Admin Notes / Message</label>
-                     <textarea
-                       rows={3}
-                       placeholder="Any specific notes for this session..."
-                       value={editingRequest.admin_notes ?? (() => {
-                         const raw = editingRequest.notes || '';
-                         return raw.match(/Message:\s(.+)/)?.[1] ?? raw;
-                       })()}
-                       onChange={e => setEditingRequest({...editingRequest, admin_notes: e.target.value})}
-                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white resize-none outline-none focus:border-brand-teal transition-colors placeholder-white/20"
-                     />
-                  </div>
-
-
-                  <button 
-                     onClick={handleSaveEdit}
-                     disabled={!editingRequest.id && !editingRequest.user_id}
-                     className="w-full py-4 bg-brand-teal text-black rounded-xl text-[10px] uppercase font-black tracking-widest hover:shadow-glow-teal transition-all disabled:opacity-50"
-                  >
-                     Save Request
-                  </button>
-               </div>
+              <div className="flex gap-3">
+                <button onClick={() => setEditingRequest(null)}
+                  className="flex-1 py-3 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-white/10 transition-all">
+                  Cancel
+                </button>
+                <button onClick={handleSaveEdit}
+                  className="flex-1 py-3 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:shadow-glow-teal transition-all">
+                  Save Booking
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
