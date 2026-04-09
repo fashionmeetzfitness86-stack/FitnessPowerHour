@@ -32,6 +32,7 @@ import { RequestsManager } from './RequestsManager';
 import { RetreatManager } from './RetreatManager';
 import { AthletesManager } from './AthletesManager';
 import { ShopManager } from './ShopManager';
+import { CheckInsManager } from './CheckInsManager';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -420,6 +421,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const sidebarItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'requests', label: 'Requests', icon: Calendar },
+    { id: 'check_ins', label: 'Check-Ins', icon: Zap },
     { id: 'content', label: 'Content', icon: PlayCircle },
     { id: 'retreats', label: 'Retreats', icon: MapPin },
     { id: 'community', label: 'Community', icon: MessageSquare },
@@ -516,6 +518,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onDelete={handleDeleteProduct} 
           memberDiscountValue={0.20}
         />
+      );
+      case 'check_ins': return (
+        <CheckInsManager />
       );
       case 'community': return (
         <CommunityManager 

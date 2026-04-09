@@ -46,11 +46,26 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
     setHasCheckedIn(true);
     setStreakCount(newStreak);
 
-    await supabase.from('profiles').update({
-      last_checkin: now,
-      streak_count: newStreak
-    }).eq('id', user.id);
+    try {
+        await supabase.from('profiles').update({
+          last_checkin: now,
+          streak_count: newStreak
+        }).eq('id', user.id);
 
+        // Explicitly map the check in to the calendar sessions database to allow global admin tracking
+        await supabase.from('calendar_sessions').insert({
+            user_id: user.id,
+            source_type: 'check_in',
+            title: 'Daily Protocol Check-In',
+            session_date: now.split('T')[0],
+            session_time: now.split('T')[1].split('.')[0],
+            duration_minutes: 0,
+            status: 'completed'
+        });
+    } catch(err) {
+        console.error("Check in synchronization failed", err);
+    }
+    
     setShowReward(true);
   };
 
