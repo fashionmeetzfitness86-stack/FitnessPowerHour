@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, X, Activity, UserPlus, ChevronLeft, ChevronRight, 
-  PlusCircle, CheckCircle2, Flame, Loader2, Dumbbell, Calendar as CalendarIcon, Trash2
+  PlusCircle, CheckCircle2, Flame, Loader2, Dumbbell, Calendar as CalendarIcon, Trash2, ArrowRight
 } from 'lucide-react';
 import { UserProfile, CalendarSession } from '../../types';
 import { supabase } from '../../supabase';
 
-type DayPanelMode = 'view' | 'add';
+type DayPanelMode = 'view' | 'add_workout' | 'add_service';
 
 export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: any }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -18,8 +18,15 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
   // Day panel state
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [panelMode, setPanelMode] = useState<DayPanelMode>('view');
+  
+  // Workout State
   const [workoutTitle, setWorkoutTitle] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  
+  // Service State
+  const [serviceType, setServiceType] = useState('Personal Training');
+  const [serviceMessage, setServiceMessage] = useState('');
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchCalendarData = async () => {
@@ -68,6 +75,34 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
     }
   };
 
+  const handleAddService = async () => {
+    if (!selectedDay) return;
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase.from('service_requests').insert({
+        user_id: user.id,
+        service_type: serviceType,
+        service_subtype: '1-on-1 Session',
+        requested_date: selectedDay,
+        requested_time: selectedTime || 'Flexible',
+        status: 'pending',
+        notes: `Message: ${serviceMessage}`
+      }).select().single();
+
+      if (error) throw error;
+      if (data) setRequests(prev => [...prev, data]);
+      if (showToast) showToast(`Service request sent. Awaiting admin confirmation.`, 'success');
+      setServiceType('Personal Training');
+      setServiceMessage('');
+      setSelectedTime('');
+      setPanelMode('view');
+    } catch (err: any) {
+      if (showToast) showToast(err.message || 'Failed to request service.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDeleteSession = async (sessionId: string) => {
     try {
       const { error } = await supabase.from('calendar_sessions').delete().eq('id', sessionId);
@@ -76,6 +111,17 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
       if (showToast) showToast('Workout removed.', 'success');
     } catch (err: any) {
       if (showToast) showToast('Failed to remove workout.', 'error');
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase.from('service_requests').delete().eq('id', requestId);
+      if (error) throw error;
+      setRequests(prev => prev.filter(r => r.id !== requestId));
+      if (showToast) showToast('Service request cancelled.', 'success');
+    } catch (err: any) {
+      if (showToast) showToast('Failed to cancel request.', 'error');
     }
   };
 
@@ -127,20 +173,18 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
 
   return (
     <div className="space-y-8 fade-in">
-      {/* Header */}
       <header className="border-b border-white/5 pb-8">
         <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter">
           My <span className="text-brand-teal">Schedule</span>
         </h2>
         <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold mt-2">
-          Click any day to view, add, or edit your workouts.
+          Click any day to view, add workouts, or request 1-on-1 services.
         </p>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* CALENDAR GRID */}
         <div className="xl:col-span-2 space-y-6">
-          {/* Month Navigation */}
           <div className="flex items-center justify-between">
             <button
               onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
@@ -157,7 +201,6 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
             </button>
           </div>
 
-          {/* Day Headers (Desktop only) */}
           <div className="hidden md:grid grid-cols-7 gap-2 mb-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
               <div key={d} className="py-3 text-center text-white/20 text-[9px] uppercase font-black tracking-widest border-b border-white/5">
@@ -166,7 +209,6 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
             ))}
           </div>
 
-          {/* Day Cells */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 md:gap-2 max-h-[60vh] md:max-h-none overflow-y-auto md:overflow-visible pr-2 md:pr-0">
             {days.map((date, idx) => {
               if (!date) return <div key={idx} className="hidden md:block h-20 md:h-28 rounded-xl" />;
@@ -178,8 +220,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
               const isToday = isSameDay(date, today);
               const isPast = date < today && !isToday;
               const isSelected = selectedDay === dayStr;
-              const isEmptyPast = isPast && daySessions.length === 0 && !hasCheckin;
-              const completedCount = daySessions.filter(s => s.status === 'completed').length;
+              const isEmptyPast = isPast && daySessions.length === 0 && dayRequests.length === 0 && !hasCheckin;
               const totalActivity = daySessions.length + dayRequests.length;
 
               return (
@@ -188,7 +229,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => { setSelectedDay(dayStr); setPanelMode('view'); }}
-                  className={`h-20 md:h-28 p-2 md:p-3 border rounded-xl flex flex-col cursor-pointer transition-all relative overflow-hidden ${
+                  className={`h-22 md:h-28 p-2 md:p-3 border rounded-xl flex flex-col cursor-pointer transition-all relative overflow-hidden ${
                     isSelected
                       ? 'bg-brand-teal/10 border-brand-teal shadow-[0_0_20px_rgba(45,212,191,0.15)]'
                       : isToday
@@ -208,17 +249,27 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                     {hasCheckin && <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-brand-coral rounded-full" />}
                   </div>
 
-                  <div className="mt-3 md:mt-auto space-y-1 md:space-y-0.5">
-                    {daySessions.slice(0, 3).map((s, i) => (
-                      <div key={i} className={`flex items-center gap-1.5 md:gap-1 px-2.5 py-1.5 md:px-1.5 md:py-0.5 rounded text-[10px] md:text-[7px] font-black uppercase tracking-tighter truncate ${
+                  <div className="mt-2 md:mt-auto space-y-1">
+                    {/* Render Sessions */}
+                    {daySessions.slice(0, 2).map((s, i) => (
+                      <div key={`s-${i}`} className={`flex items-center gap-1.5 md:gap-1 px-2.5 py-1 md:px-1.5 md:py-0.5 rounded text-[10px] md:text-[8px] font-black uppercase tracking-tighter truncate ${
                         s.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-brand-teal/20 text-brand-teal'
                       }`}>
                         <div className="w-1.5 h-1.5 md:w-1 md:h-1 rounded-full bg-current flex-shrink-0" />
                         <span className="truncate">{s.title}</span>
                       </div>
                     ))}
+                    {/* Render Requests */}
+                    {dayRequests.slice(0, 2 - Math.min(daySessions.length, 2)).map((r: any, i) => (
+                      <div key={`r-${i}`} className={`flex items-center gap-1.5 md:gap-1 px-2.5 py-1 md:px-1.5 md:py-0.5 rounded text-[10px] md:text-[8px] font-black uppercase tracking-tighter truncate ${
+                        r.status === 'confirmed' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-amber-500/20 text-amber-400'
+                      }`}>
+                        <div className="w-1.5 h-1.5 md:w-1 md:h-1 rounded-full bg-current flex-shrink-0" />
+                        <span className="truncate">{r.service_type || 'Service'}</span>
+                      </div>
+                    ))}
                     {totalActivity > 2 && (
-                      <span className="text-[7px] text-white/20 font-black">+{totalActivity - 2}</span>
+                      <span className="text-[7px] text-white/20 font-black">+{totalActivity - 2} more</span>
                     )}
                   </div>
                 </motion.div>
@@ -249,16 +300,13 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                         {new Date(selectedDay + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
                       </h4>
                     </div>
-                    <button
-                      onClick={() => setSelectedDay(null)}
-                      className="p-2 text-white/20 hover:text-white transition-colors"
-                    >
+                    <button onClick={() => setSelectedDay(null)} className="p-2 text-white/20 hover:text-white transition-colors">
                       <X size={18} />
                     </button>
                   </div>
                 </div>
 
-                {panelMode === 'view' ? (
+                {panelMode === 'view' && (
                   <div className="p-6 space-y-6">
                     {/* Today's Activity */}
                     {(selectedDaySessions.length > 0 || selectedDayRequests.length > 0 || selectedDayCheckin) ? (
@@ -269,49 +317,54 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                             <span className="text-xs font-black uppercase tracking-widest text-brand-coral">Checked In</span>
                           </div>
                         )}
+                        
+                        {/* WORKOUTS */}
                         {selectedDaySessions.map((s, i) => (
-                          <div key={i} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                          <div key={`sess-${i}`} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
                             <div className="flex items-start justify-between gap-2">
                               <div>
                                 <p className="text-xs font-black uppercase tracking-tight">{s.title}</p>
-                                {s.session_time && (
-                                  <p className="text-[9px] text-white/30 font-bold uppercase mt-0.5">{s.session_time}</p>
-                                )}
+                                {s.session_time && <p className="text-[9px] text-white/30 font-bold uppercase mt-0.5">{s.session_time}</p>}
                               </div>
                               <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
-                                s.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
-                                s.status === 'pending' ? 'bg-amber-500/20 text-amber-400' :
-                                'bg-brand-teal/20 text-brand-teal'
+                                s.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-brand-teal/20 text-brand-teal'
                               }`}>
-                                {s.status}
+                                {s.status === 'completed' ? 'Completed' : 'Workout'}
                               </span>
                             </div>
                             <div className="flex gap-2">
                               {s.status !== 'completed' && (
-                                <button
-                                  onClick={() => handleMarkComplete(s.id)}
-                                  className="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-1.5"
-                                >
+                                <button onClick={() => handleMarkComplete(s.id)} className="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-1.5">
                                   <CheckCircle2 size={12} /> Mark Done
                                 </button>
                               )}
-                              <button
-                                onClick={() => handleDeleteSession(s.id)}
-                                className="p-2 bg-white/5 border border-white/10 text-white/30 hover:text-brand-coral hover:border-brand-coral/30 rounded-lg transition-all"
-                              >
+                              <button onClick={() => handleDeleteSession(s.id)} className="p-2 bg-white/5 border border-white/10 text-white/30 hover:text-brand-coral hover:border-brand-coral/30 rounded-lg transition-all">
                                 <Trash2 size={12} />
                               </button>
                             </div>
                           </div>
                         ))}
+
+                        {/* SERVICES */}
                         {selectedDayRequests.map((r: any, i) => (
-                          <div key={i} className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                            <UserPlus size={14} className="text-amber-400" />
-                            <div>
-                              <span className="text-xs font-black uppercase tracking-widest text-amber-400">
-                                {r.service_type || 'Training'} Request
+                          <div key={`req-${i}`} className="p-4 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className="text-xs font-black uppercase tracking-tight">Service: {r.service_type || 'Training'}</p>
+                                {r.requested_time && <p className="text-[9px] text-white/30 font-bold uppercase mt-0.5">{r.requested_time}</p>}
+                              </div>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
+                                r.status === 'confirmed' ? 'bg-indigo-500/20 text-indigo-400' : 
+                                r.status === 'denied' ? 'bg-red-500/20 text-red-500' :
+                                'bg-amber-500/20 text-amber-400'
+                              }`}>
+                                {r.status}
                               </span>
-                              <p className="text-[9px] text-white/30 font-bold uppercase">Pending approval</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => handleDeleteRequest(r.id)} className="w-full py-2 bg-red-500/10 border border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5">
+                                <X size={12} /> Cancel Request
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -319,81 +372,96 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                     ) : (
                       <div className="py-8 text-center space-y-2">
                         <CalendarIcon size={32} className="text-white/10 mx-auto" />
-                        <p className="text-[10px] uppercase tracking-widest font-black text-white/20">Nothing scheduled</p>
+                        <p className="text-[10px] uppercase tracking-widest font-black text-white/20">Nothing Scheduled</p>
                       </div>
                     )}
 
-                    {/* Actions */}
-                    <div className="space-y-3 pt-2 border-t border-white/5">
+                    {/* Actions split evenly */}
+                    <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
                       <button
-                        onClick={() => setPanelMode('add')}
-                        className="w-full py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2"
+                        onClick={() => setPanelMode('add_workout')}
+                        className="py-4 bg-white/5 text-white font-black uppercase text-[9px] tracking-[0.2em] rounded-2xl hover:bg-white hover:text-black transition-all flex flex-col items-center justify-center gap-2"
                       >
-                        <Plus size={14} /> Add Workout
+                        <Dumbbell size={16} /> Add Workout
                       </button>
                       <button
-                        onClick={() => window.location.hash = '#/profile#services'}
-                        className="w-full py-4 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                        onClick={() => setPanelMode('add_service')}
+                        className="py-4 bg-brand-teal text-black font-black uppercase text-[9px] tracking-[0.2em] rounded-2xl hover:shadow-glow-teal transition-all flex flex-col items-center justify-center gap-2"
                       >
-                        <UserPlus size={14} /> Request Training
+                        <UserPlus size={16} /> Add Service
                       </button>
                     </div>
                   </div>
-                ) : (
-                  /* ADD WORKOUT PANEL */
+                )}
+                
+                {/* ADD WORKOUT MODE */}
+                {panelMode === 'add_workout' && (
                   <div className="p-6 space-y-6">
                     <div className="space-y-2">
-                      <h5 className="text-lg font-black uppercase tracking-tighter">Add <span className="text-brand-teal">Workout</span></h5>
-                      <p className="text-[9px] text-white/30 uppercase tracking-widest font-bold">
-                        {new Date(selectedDay + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                      </p>
+                      <h5 className="text-lg font-black uppercase tracking-tighter">Add <span className="text-white">Workout</span></h5>
+                      <p className="text-[9px] text-brand-teal uppercase tracking-widest font-bold">Log personal training</p>
                     </div>
 
                     <div className="space-y-4">
                       <div>
                         <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Workout Name</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Upper Body, HIIT, Yoga..."
-                          value={workoutTitle}
-                          onChange={e => setWorkoutTitle(e.target.value)}
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:border-brand-teal outline-none transition-all placeholder-white/20"
-                        />
+                        <input type="text" placeholder="e.g. Upper Body, HIIT..." value={workoutTitle} onChange={e => setWorkoutTitle(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:border-white/40 outline-none transition-all placeholder-white/20" />
                       </div>
-
                       <div>
                         <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Time (Optional)</label>
                         <div className="grid grid-cols-3 gap-2">
                           {['06:00', '09:00', '12:00', '15:00', '18:00', '20:00'].map(t => (
-                            <button
-                              key={t}
-                              onClick={() => setSelectedTime(t === selectedTime ? '' : t)}
-                              className={`py-3 rounded-xl text-xs font-mono font-bold border transition-all ${
-                                selectedTime === t
-                                  ? 'bg-brand-teal text-black border-brand-teal'
-                                  : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'
-                              }`}
-                            >
-                              {t}
-                            </button>
+                            <button key={t} onClick={() => setSelectedTime(t === selectedTime ? '' : t)} className={`py-3 rounded-xl text-xs font-mono font-bold border transition-all ${selectedTime === t ? 'bg-white text-black border-white' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
                           ))}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex gap-3">
-                      <button
-                        onClick={() => setPanelMode('view')}
-                        className="flex-1 py-4 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[9px] tracking-widest rounded-2xl hover:bg-white/10 transition-all"
-                      >
-                        Back
+                      <button onClick={() => setPanelMode('view')} className="flex-1 py-4 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[9px] tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back</button>
+                      <button onClick={handleAddWorkout} disabled={isSubmitting} className="flex-1 py-4 bg-white text-black font-black uppercase text-[9px] tracking-widest rounded-2xl hover:bg-white/80 transition-all flex items-center justify-center gap-2 disabled:opacity-40">
+                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <><PlusCircle size={14} /> Schedule</>}
                       </button>
-                      <button
-                        onClick={handleAddWorkout}
-                        disabled={isSubmitting}
-                        className="flex-1 py-4 bg-brand-teal text-black font-black uppercase text-[9px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 disabled:opacity-40"
-                      >
-                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <><PlusCircle size={14} /> Save</>}
+                    </div>
+                  </div>
+                )}
+
+                {/* ADD SERVICE MODE */}
+                {panelMode === 'add_service' && (
+                  <div className="p-6 space-y-6">
+                    <div className="space-y-2">
+                      <h5 className="text-lg font-black uppercase tracking-tighter">Request <span className="text-brand-teal">Service</span></h5>
+                      <p className="text-[9px] text-brand-teal uppercase tracking-widest font-bold">Book an expert session</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Type</label>
+                        <select value={serviceType} onChange={e => setServiceType(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:border-brand-teal outline-none transition-all font-bold appearance-none">
+                            <option value="Personal Training">Personal Training</option>
+                            <option value="Assisted Stretching">Assisted Stretching</option>
+                            <option value="Recovery Session">Recovery Session</option>
+                            <option value="Nutrition Consultation">Nutrition Consultation</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Preferred Time</label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {['Morning', 'Midday', 'Evening', 'Flexible'].map(t => (
+                            <button key={t} onClick={() => setSelectedTime(t)} className={`py-3 rounded-xl text-[9px] font-bold border transition-all ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Notes for Coach (Optional)</label>
+                        <textarea rows={2} placeholder="Any specific focus for this session?" value={serviceMessage} onChange={e => setServiceMessage(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:border-brand-teal outline-none transition-all placeholder-white/20 resize-none -mb-2" />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button onClick={() => setPanelMode('view')} className="w-1/3 py-4 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[9px] tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back</button>
+                      <button onClick={handleAddService} disabled={isSubmitting} className="w-2/3 py-4 bg-brand-teal text-black font-black uppercase text-[9px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 disabled:opacity-40">
+                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <><ArrowRight size={14} /> Send Request</>}
                       </button>
                     </div>
                   </div>
@@ -410,13 +478,10 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                 <div>
                   <h4 className="text-lg font-black uppercase tracking-tight text-white/30">Select a Day</h4>
                   <p className="text-[10px] uppercase tracking-widest text-white/20 font-bold mt-2 leading-relaxed">
-                    Click any day on the calendar to view, add, or edit your workouts.
+                    Click any day on the calendar to view schedule, add workouts, or request a service slot.
                   </p>
                 </div>
-                <button
-                  onClick={() => { setSelectedDay(todayStr); setPanelMode('view'); }}
-                  className="mx-auto px-8 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2"
-                >
+                <button onClick={() => { setSelectedDay(todayStr); setPanelMode('view'); }} className="mx-auto px-8 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2">
                   <Activity size={14} /> Open Today
                 </button>
               </motion.div>

@@ -30,6 +30,7 @@ import { OrderManager } from './OrderManager';
 import { RequestsManager } from './RequestsManager';
 import { RetreatManager } from './RetreatManager';
 import { AthletesManager } from './AthletesManager';
+import { ShopManager } from './ShopManager';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -100,7 +101,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
            ]);
            if (vRes.data) setVideos(vRes.data);
            if (vcRes.data) setVideoCategories(vcRes.data);
-        } else if (activeTab === 'orders' && products.length === 0) {
+        } else if ((activeTab === 'orders' || activeTab === 'shop') && products.length === 0) {
            const [pRes, oRes] = await Promise.all([
              supabase.from('products').select('*').limit(50),
              supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(50)
@@ -386,8 +387,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'retreats', label: 'Retreats', icon: MapPin },
     { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'athletes', label: 'Athletes', icon: Trophy },
+    { id: 'shop', label: 'Shop', icon: ShoppingBag },
+    { id: 'orders', label: 'Orders', icon: PackageIcon },
     { id: 'users', label: 'Users', icon: Users },
-    { id: 'orders', label: 'Orders', icon: ShoppingBag },
   ];
 
   const renderContent = () => {
@@ -446,17 +448,33 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       );
       case 'athletes': return (
         <AthletesManager 
-          athletes={athleteProfiles} 
-          onUpdate={async (id: string, updates: any) => {
-            await supabase.from('athlete_profiles').update(updates).eq('id', id);
-            setAthleteProfiles(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
-            showToast('Athlete updated', 'success');
+          athletes={athleteProfiles as any} 
+          onEdit={async (athlete: any) => {
+            const { profile, ...updates } = athlete;
+            if (athlete.id) {
+              await supabase.from('athlete_profiles').update(updates).eq('id', athlete.id);
+              if (profile && profile.full_name) {
+                 await supabase.from('profiles').update(profile).eq('id', athlete.id);
+              }
+              setAthleteProfiles(prev => prev.map(a => a.id === athlete.id ? { ...a, ...updates, profile: { ...a.profile, ...profile } } : a));
+              showToast('Athlete updated', 'success');
+            } else {
+               showToast('Creation from dashboard requires auth sync. Invite user first.', 'error');
+            }
           }}
           onDelete={async (id: string) => {
             await supabase.from('athlete_profiles').delete().eq('id', id);
             setAthleteProfiles(prev => prev.filter(a => a.id !== id));
             showToast('Athlete removed', 'success');
           }}
+        />
+      );
+      case 'shop': return (
+        <ShopManager 
+          products={products as any} 
+          onEdit={(product) => handleSaveProduct(product as any)} 
+          onDelete={handleDeleteProduct} 
+          memberDiscountValue={0.20}
         />
       );
       case 'community': return (
