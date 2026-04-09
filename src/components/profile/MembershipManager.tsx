@@ -20,7 +20,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
   const tiers = [
     {
       name: 'Basic',
-      price: '$19.99',
+      price: '$1',
       period: 'per month',
       features: ['Access to basic workouts', 'Limited training content', 'Community forum access', 'Public challenges']
     }
