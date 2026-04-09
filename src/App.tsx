@@ -1349,7 +1349,7 @@ const Home = () => {
                 <h3 className="text-3xl font-bold uppercase tracking-tighter">1-on-1 <span className="text-brand-teal">Training</span></h3>
                 <p className="text-white/50 text-sm leading-relaxed">High-density personal instruction focused on strict form, discipline, and kinetic mastery.</p>
               </div>
-              <button onClick={() => navigate('/profile#calendar')} className="btn-outline w-full uppercase tracking-widest text-[10px] hover:bg-brand-teal/10 hover:text-brand-teal hover:border-brand-teal">Request Training</button>
+              <button onClick={() => navigate('/profile#calendar')} className="btn-outline w-full uppercase tracking-widest text-[10px] hover:bg-brand-teal/10 hover:text-brand-teal hover:border-brand-teal">Request Services</button>
             </div>
           </div>
         </div>

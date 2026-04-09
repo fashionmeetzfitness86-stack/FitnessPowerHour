@@ -329,15 +329,15 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
             border: 'border-blue-500/20',
             action: () => navigate('programs')
           },
-          {
-            title: 'Request Training',
+          ...((user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'athlete') ? [{
+            title: 'Request Services',
             desc: 'Book a 1-on-1 session',
             icon: Heart,
             color: 'text-brand-coral',
             bg: 'bg-brand-coral/5',
             border: 'border-brand-coral/20',
-            action: () => navigate('services')
-          },
+            action: () => navigate('calendar')
+          }] : []),
         ].map((item, i) => (
           <motion.button
             key={i}
