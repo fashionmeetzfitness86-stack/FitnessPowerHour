@@ -84,9 +84,9 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
         service_type: serviceType,
         service_subtype: '1-on-1 Session',
         requested_date: selectedDay,
-        requested_time: selectedTime || 'Flexible',
+        requested_time: selectedTime === 'Morning' ? '08:00:00' : selectedTime === 'Evening' ? '17:00:00' : '12:00:00',
         status: 'pending',
-        notes: `Message: ${serviceMessage}`
+        notes: `Preferred Window: ${selectedTime || 'Flexible'} | Message: ${serviceMessage}`
       }).select().single();
 
       if (error) throw error;
