@@ -5,6 +5,8 @@ import { UserProfile } from '../../types';
 
 export const CommunityAccessTab = ({ user, showToast }: { user: UserProfile, showToast: (msg: string, type?: any) => void }) => {
   const [status, setStatus] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
+  const [requestId, setRequestId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -15,12 +17,14 @@ export const CommunityAccessTab = ({ user, showToast }: { user: UserProfile, sho
     try {
       const { data, error } = await supabase
         .from('community_requests')
-        .select('status')
+        .select('id, status, notes')
         .eq('user_id', user.id)
         .maybeSingle();
       
       if (data) {
         setStatus(data.status);
+        setNotes(data.notes || '');
+        setRequestId(data.id);
       }
     } catch (error) {
       console.error('Error fetching community status:', error);
@@ -30,15 +34,25 @@ export const CommunityAccessTab = ({ user, showToast }: { user: UserProfile, sho
   const requestAccess = async () => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('community_requests').insert({
-        user_id: user.id,
-        status: 'pending'
-      });
+      if (requestId) {
+          // Update existing request
+          const { error } = await supabase.from('community_requests').update({ notes }).eq('id', requestId);
+          if (error) throw error;
+          showToast('Request parameters updated successfully.', 'success');
+      } else {
+          // Create new request
+          const { data, error } = await supabase.from('community_requests').insert({
+            user_id: user.id,
+            status: 'pending',
+            notes: notes
+          }).select().single();
 
-      if (error) throw error;
-      
-      setStatus('pending');
-      showToast('Early access request submitted successfully!', 'success');
+          if (error) throw error;
+          if (data) setRequestId(data.id);
+          
+          setStatus('pending');
+          showToast('Early access request submitted successfully!', 'success');
+      }
     } catch (error: any) {
       showToast(error.message || 'Failed to request access', 'error');
     } finally {
@@ -74,6 +88,16 @@ export const CommunityAccessTab = ({ user, showToast }: { user: UserProfile, sho
         <div className="relative z-10 p-8 bg-black/40 border border-white/10 rounded-[2rem] w-full max-w-md">
             {!status && (
                 <div className="space-y-6">
+                    <div className="space-y-2 text-left">
+                        <label className="text-[9px] uppercase tracking-widest text-white/40 font-black ml-2">Why do you want to join the network?</label>
+                        <textarea 
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Optional intel..."
+                            rows={3}
+                            className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none resize-none font-mono text-white/80" 
+                        />
+                    </div>
                     <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold">Reserving a spot guarantees first-wave entry upon launch.</p>
                     <button 
                         onClick={requestAccess}
@@ -86,11 +110,33 @@ export const CommunityAccessTab = ({ user, showToast }: { user: UserProfile, sho
             )}
 
             {status === 'pending' && (
-                <div className="flex flex-col items-center gap-4">
-                    <Clock size={32} className="text-brand-coral" />
-                    <div>
-                        <h4 className="font-black uppercase tracking-widest text-brand-coral mb-1">Status: Pending</h4>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Your intel is under review.</p>
+                <div className="flex flex-col items-center gap-6 w-full">
+                    <div className="flex flex-col items-center gap-2">
+                        <Clock size={32} className="text-brand-coral" />
+                        <div>
+                            <h4 className="font-black uppercase tracking-widest text-brand-coral mb-1">Status: Pending</h4>
+                            <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold">Your intel is under review.</p>
+                        </div>
+                    </div>
+
+                    <div className="w-full space-y-4 pt-6 border-t border-white/10">
+                        <div className="space-y-2 text-left w-full">
+                            <label className="text-[9px] uppercase tracking-widest text-white/40 font-black ml-2">Update Request Notes</label>
+                            <textarea 
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Add additional details to your request..."
+                                rows={3}
+                                className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none resize-none font-mono text-white/80" 
+                            />
+                        </div>
+                        <button 
+                            onClick={requestAccess}
+                            disabled={isSubmitting}
+                            className="w-full py-4 bg-white/5 border border-white/10 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-[1.5rem] hover:bg-brand-teal hover:border-brand-teal hover:text-black hover:scale-[1.02] transition-all disabled:opacity-50 shadow-sm"
+                        >
+                            {isSubmitting ? 'Updating...' : 'Modify Protocol Request'}
+                        </button>
                     </div>
                 </div>
             )}

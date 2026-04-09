@@ -5,13 +5,11 @@ import { supabase } from '../../supabase';
 // Helper interface
 interface JoinRequest {
    id: string;
-   community_id: string;
    user_id: string;
-   role: string;
    status: string;
-   joined_at: string;
+   requested_at: string;
+   notes: string;
    users: { full_name: string; email: string; city: string; tier: string };
-   communities: { name: string; category_id: string };
 }
 
 interface Community {
@@ -34,7 +32,7 @@ export const CommunityManager = ({ posts, onDeletePost, showToast }: any) => {
      setLoading(true);
      try {
        const [reqs, grps] = await Promise.all([
-          supabase.from('community_members').select('*, users:user_id(full_name, email, city, tier), communities:community_id(name, category_id)').order('joined_at', { ascending: false }),
+          supabase.from('community_requests').select('*, users:profiles!community_requests_user_id_fkey(full_name, email, city, tier)').order('requested_at', { ascending: false }),
           supabase.from('communities').select('*').order('name', { ascending: true })
        ]);
        if (reqs.data) setRequests(reqs.data);
@@ -48,10 +46,19 @@ export const CommunityManager = ({ posts, onDeletePost, showToast }: any) => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleRequestStatus = async (id: string, status: string) => {
+  const handleRequestStatus = async (req: JoinRequest, status: string) => {
      try {
-       await supabase.from('community_members').update({ status }).eq('id', id);
-       setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+       await supabase.from('community_requests').update({ status }).eq('id', req.id);
+       setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status } : r));
+       
+       await supabase.from('notifications').insert({
+          user_id: req.user_id,
+          type: 'community',
+          title: `Tribe Request ${status.toUpperCase()}`,
+          message: `Your early access request has been evaluated. New Status: ${status}.`,
+          metadata: { route: '#/profile' }
+       });
+
        if (showToast) showToast(`Action successful: marked as ${status}`, 'success');
      } catch(e: any) {
        if (showToast) showToast('Failed to update request', 'error');
@@ -119,13 +126,18 @@ export const CommunityManager = ({ posts, onDeletePost, showToast }: any) => {
                      }`}>
                         {req.status}
                      </span>
-                     <span className="text-[10px] text-white/30 font-mono">{new Date(req.joined_at).toLocaleDateString()}</span>
+                     <span className="text-[10px] text-white/30 font-mono">{new Date(req.requested_at).toLocaleDateString()}</span>
                    </div>
                    <h3 className="text-xl font-black uppercase tracking-tight">{req.users?.full_name || 'Unknown User'}</h3>
                    <p className="text-[10px] text-brand-teal font-bold uppercase tracking-widest mt-1">
-                      Requested: {req.communities?.name || 'General Access'}
+                      Requested: General Early Access
                    </p>
                 </div>
+                {req.notes && (
+                   <div className="p-4 bg-white/5 border-b border-white/5 text-[10px] italic text-white/70">
+                      "{req.notes}"
+                   </div>
+                )}
                 <div className="p-6 space-y-4 flex-grow bg-white/[0.02] text-[11px]">
                    <div className="flex justify-between border-b border-white/5 pb-2">
                       <span className="text-white/40 uppercase font-bold tracking-widest text-[9px]">Email</span>
@@ -143,8 +155,8 @@ export const CommunityManager = ({ posts, onDeletePost, showToast }: any) => {
                 <div className="p-4 border-t border-white/5 flex gap-2 bg-black/80">
                    {req.status === 'pending' && (
                      <>
-                        <button onClick={() => handleRequestStatus(req.id, 'approved')} className="flex-1 py-3 bg-brand-teal text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-transform">Approve</button>
-                        <button onClick={() => handleRequestStatus(req.id, 'rejected')} className="flex-1 py-3 bg-white/5 text-white/60 hover:text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-transform">Reject</button>
+                        <button onClick={() => handleRequestStatus(req, 'approved')} className="flex-1 py-3 bg-brand-teal text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-transform">Approve</button>
+                        <button onClick={() => handleRequestStatus(req, 'rejected')} className="flex-1 py-3 bg-white/5 text-white/60 hover:text-red-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-transform">Reject</button>
                      </>
                    )}
                    {req.status !== 'pending' && (
