@@ -474,18 +474,12 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     switch (activeTab) {
       case 'overview': return <AdminOverview stats={stats} />;
       case 'users': return (
-        <UsersManager 
-          users={users} 
-          packages={packages} 
-          searchQuery={searchQuery} 
-          setSearchQuery={setSearchQuery} 
-          roleFilter={roleFilter} 
-          setRoleFilter={setRoleFilter} 
-          statusFilter={statusFilter} 
-          setStatusFilter={setStatusFilter} 
-          onEdit={() => showToast('Advanced edit matrix restricted.', 'info')} 
+        <UsersManager
+          users={users}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
           onUpdateUser={handleUpdateUser}
-          currentUser={user}
+          showToast={showToast}
         />
       );
       case 'content': return (
@@ -511,9 +505,37 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <RetreatManager
           retreats={retreats}
           applications={retreatApplications}
-          onAdd={() => showToast('New retreat genesis coming soon.', 'info')}
+          onAdd={() => {}}
+          onSave={async (retreat: any) => {
+            const row = {
+              title:              retreat.title,
+              description:        retreat.description || null,
+              location:           retreat.location,
+              price:              retreat.price || 0,
+              capacity:           retreat.capacity || 10,
+              visibility_status:  retreat.visibility_status || 'draft',
+              is_sold_out:        retreat.is_sold_out || false,
+              cover_image:        retreat.cover_image || null,
+              requirements:       retreat.requirements || null,
+              start_date:         retreat.start_date || null,
+              end_date:           retreat.end_date || null,
+              updated_at:         new Date().toISOString(),
+            };
+            if (retreat.id) {
+              const { error } = await supabase.from('retreats').update(row).eq('id', retreat.id);
+              if (error) throw error;
+              setRetreats(prev => prev.map(r => r.id === retreat.id ? { ...r, ...row } as any : r));
+              logActivity('UPDATE_RETREAT', 'retreat', retreat.id, row);
+            } else {
+              const { data: newR, error } = await supabase.from('retreats').insert({ ...row, created_at: new Date().toISOString() }).select().single();
+              if (error) throw error;
+              if (newR) { setRetreats(prev => [newR, ...prev]); logActivity('CREATE_RETREAT', 'retreat', newR.id, row); }
+            }
+            showToast('Retreat saved ✅', 'success');
+          }}
           onReview={handleReviewRetreatApp}
           onDelete={handleDeleteRetreat}
+          showToast={showToast}
         />
       );
       case 'athletes': return (
