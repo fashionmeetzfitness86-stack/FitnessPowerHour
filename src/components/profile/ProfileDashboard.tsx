@@ -16,7 +16,6 @@ import { MyVideos } from './MyVideos';
 import { MembershipManager } from './MembershipManager';
 import { Billing } from './Billing';
 import { RetreatsTab } from './RetreatsTab';
-import { ServicesTab } from './ServicesTab';
 import { EditProfile } from './EditProfile';
 import { Notifications } from './Notifications';
 
@@ -88,7 +87,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   const renderContent = () => {
     const isMemberLocal = isMember;
-    const lockedTabs = ['progress', 'calendar', 'internal-feed', 'services', 'retreats'];
+    const lockedTabs = ['progress', 'calendar', 'internal-feed', 'retreats'];
     
     if (!isMemberLocal && lockedTabs.includes(activeTab)) {
       return (
@@ -111,7 +110,6 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'programs': return <MyPrograms user={user} />;
       case 'membership': return <MembershipManager user={user} updateTier={updateTier} showToast={showToast} />;
       case 'billing': return <Billing user={user} showToast={showToast} />;
-      case 'services': return <ServicesTab user={user} showToast={showToast} />;
       case 'retreats': return <RetreatsTab user={user} showToast={showToast} />;
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
