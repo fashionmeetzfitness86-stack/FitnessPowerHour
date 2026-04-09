@@ -1,63 +1,10 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL || 'https://ujfpepmszqrptmcauqaa.supabase.co',
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ''
 );
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'FitnessPowerHour <onboarding@resend.dev>';
-
-async function sendConfirmationEmail(to: string, name: string, tier: string, amount: string) {
-  if (!resend) {
-    console.log('[stripe-webhook] RESEND_API_KEY not set, skipping confirmation email');
-    return;
-  }
-  try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to,
-      subject: `Welcome to FitnessPowerHour ${tier}!`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #fff; border-radius: 16px; overflow: hidden;">
-          <div style="background: linear-gradient(135deg, #0d0d0d 0%, #111 100%); padding: 40px; text-align: center; border-bottom: 1px solid rgba(45,212,191,0.2);">
-            <h1 style="font-size: 28px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">
-              Fitness<span style="color: #2dd4bf;">PowerHour</span>
-            </h1>
-          </div>
-          <div style="padding: 40px;">
-            <div style="text-align: center; margin-bottom: 32px;">
-              <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(45,212,191,0.1); display: inline-flex; align-items: center; justify-content: center;">
-                <span style="font-size: 32px;">&#10003;</span>
-              </div>
-            </div>
-            <h2 style="font-size: 22px; font-weight: 800; text-align: center; margin: 0 0 8px;">Payment Confirmed</h2>
-            <p style="color: rgba(255,255,255,0.5); text-align: center; font-size: 14px; margin: 0 0 32px;">Your membership is now active</p>
-            <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; margin-bottom: 32px;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 0;">Member</td><td style="text-align: right; font-weight: 700; padding: 8px 0;">${name}</td></tr>
-                <tr><td style="color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 0;">Plan</td><td style="text-align: right; font-weight: 700; color: #2dd4bf; padding: 8px 0;">${tier}</td></tr>
-                <tr><td style="color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 0;">Amount</td><td style="text-align: right; font-weight: 700; padding: 8px 0;">${amount}</td></tr>
-                <tr><td style="color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 0;">Billing</td><td style="text-align: right; font-weight: 700; padding: 8px 0;">Monthly</td></tr>
-              </table>
-            </div>
-            <p style="color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.6; text-align: center;">
-              Thank you for joining FitnessPowerHour. Your kinetic potential is now unlocked. Head to your profile to explore all your new features.
-            </p>
-          </div>
-          <div style="padding: 24px 40px; text-align: center; border-top: 1px solid rgba(255,255,255,0.05);">
-            <p style="color: rgba(255,255,255,0.2); font-size: 11px; margin: 0;">&copy; ${new Date().getFullYear()} FitnessPowerHour. All rights reserved.</p>
-          </div>
-        </div>
-      `
-    });
-    console.log(`[stripe-webhook] Confirmation email sent to ${to}`);
-  } catch (err) {
-    console.error('[stripe-webhook] Failed to send confirmation email:', err);
-  }
-}
 
 export default async (req: Request) => {
   if (req.method !== 'POST') {
@@ -127,13 +74,6 @@ export default async (req: Request) => {
                  status: 'sent',
                  send_at: new Date().toISOString()
             });
-
-            // Send confirmation email to customer
-            const customerEmail = session.customer_email || session.customer_details?.email;
-            if (customerEmail) {
-              const amountPaid = session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : tier;
-              await sendConfirmationEmail(customerEmail, userName, tier || 'Basic', amountPaid);
-            }
 
             // Notify Super Admins
             const { data: superAdmins } = await supabase.from('profiles').select('id').eq('role', 'super_admin');

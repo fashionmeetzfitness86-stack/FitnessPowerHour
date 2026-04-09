@@ -4915,44 +4915,24 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
   </div>
 );
 
-const Profile = () => {
-  const { user, logout, updateTier } = useAuth();
-  const navigate = useNavigate();
-  const [waited, setWaited] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>({ show: false, tier: null });
-  const { showToast } = (window as any).fmfToast || { showToast: (msg: string) => alert(`[FMF System] ${msg}`) };
-
-  // Handle payment success redirect from Stripe
-  useEffect(() => {
+const Profile = ({ user, logout, updateTier, showToast }: { user: UserProfile; logout: () => void; updateTier: (tier: string) => void; showToast: (msg: string, type?: 'success' | 'error') => void }) => {
+  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>(() => {
     const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
     if (params.get('payment') === 'success') {
-      const tier = params.get('tier');
-      if (tier && user) {
-        updateTier(tier);
+      return { show: true, tier: params.get('tier') };
+    }
+    return { show: false, tier: null };
+  });
+
+  // Handle tier update and clean URL
+  useEffect(() => {
+    if (paymentSuccess.show) {
+      if (paymentSuccess.tier) {
+        updateTier(paymentSuccess.tier);
       }
-      setPaymentSuccess({ show: true, tier: tier });
-      // Clean URL
       window.history.replaceState(null, '', window.location.pathname + '#/profile');
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) return;
-    const timer = setTimeout(() => setWaited(true), 2000);
-    return () => clearTimeout(timer);
-  }, [user]);
-
-  useEffect(() => {
-    if (!user && waited) navigate('/membership?mode=login');
-  }, [user, waited, navigate]);
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-black">
-        <div className="w-12 h-12 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <>
@@ -6069,7 +6049,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/brand/:slug" element={<BrandPage />} />
               <Route path="/profile" element={
                 user ? (
-                  <ProfileDashboard user={user} logout={logout} updateTier={updateTier} showToast={showToast} />
+                  <Profile user={user} logout={logout} updateTier={updateTier} showToast={showToast} />
                 ) : (
                   <Navigate to="/membership?mode=login" replace />
                 )
