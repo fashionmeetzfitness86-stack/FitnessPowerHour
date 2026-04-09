@@ -125,7 +125,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
   return (
     <div className="space-y-12 fade-in">
-      {/* HEADER WITH SAVE BUTTON */}
+      {/* HEADER WITHOUT SAVE BUTTON - Moved to Sticky Action Bar */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8 relative z-10">
         <div>
           <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter">
@@ -137,22 +137,25 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
         </div>
         <div className="flex gap-4 w-full md:w-auto">
             <button 
-                onClick={() => setTrainingRequest(prev => ({ ...prev, showModal: true }))}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 border border-brand-teal text-brand-teal text-[10px] uppercase tracking-widest font-black rounded-xl hover:bg-brand-teal hover:text-black transition-all"
+                onClick={(e) => { e.preventDefault(); setTrainingRequest(prev => ({ ...prev, showModal: true })); }}
+                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 border border-brand-teal text-brand-teal text-[10px] uppercase tracking-widest font-black rounded-[2rem] hover:bg-brand-teal hover:text-black transition-all"
             >
                 <UserIcon size={14} /> Request 1-on-1
-            </button>
-            <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-[0.2em] font-black rounded-xl shadow-glow-teal transition-all disabled:opacity-50"
-            >
-                {isSaving ? 'Synching...' : <><Save size={14} /> Save Changes</>}
             </button>
         </div>
       </header>
 
-      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-32">
+        {/* Sticky Global Save Bar */}
+        <div className="fixed bottom-0 left-0 right-0 p-6 lg:p-8 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/90 to-transparent z-50 pointer-events-none flex justify-center lg:pl-80">
+          <button 
+            type="submit"
+            disabled={isSaving}
+            className="pointer-events-auto flex items-center justify-center gap-3 px-12 py-5 bg-brand-teal text-black text-xs uppercase tracking-[0.2em] font-black rounded-full shadow-[0_20px_40px_rgba(45,212,191,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            {isSaving ? 'Synching Neural Matrix...' : <><Save size={18} /> Save Matrix Updates</>}
+          </button>
+        </div>
         {/* Basic Information */}
         <div className="space-y-8">
           <div className="card-gradient p-8 space-y-8 rounded-[3rem]">
@@ -163,36 +166,35 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
             <div className="space-y-6">
               <div className="flex flex-col gap-4">
-                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Profile Imagery (Min 1 / Max 10)</label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold border-b border-white/5 pb-2">Profile Imagery (Min 1 / Max 10)</label>
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                     {(formData.profile_images || []).map((img, idx) => (
-                    <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
+                    <div key={idx} className="relative aspect-square rounded-[2rem] overflow-hidden border border-white/10 group shadow-lg">
                         <img src={img} alt={`Profile ${idx}`} className="w-full h-full object-cover" />
                         <button 
                         type="button"
-                        onClick={() => handleRemoveImage(img)}
-                        className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-lg text-brand-coral opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.preventDefault(); handleRemoveImage(img); }}
+                        className="absolute top-3 right-3 p-2 bg-black/80 rounded-full text-brand-coral opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-lg"
                         >
-                        <Trash2 size={12} />
+                        <Trash2 size={14} />
                         </button>
-                        {formData.profile_image === img && (
-                        <div className="absolute inset-x-0 bottom-0 py-1 bg-brand-teal text-black text-[8px] font-black uppercase tracking-widest text-center shadow-lg">
-                            Main
+                        {formData.profile_image === img ? (
+                        <div className="absolute inset-x-0 bottom-0 py-2 bg-brand-teal/90 backdrop-blur-md text-black text-[9px] font-black uppercase tracking-widest text-center shadow-lg">
+                            Primary Hub
                         </div>
-                        )}
-                        {formData.profile_image !== img && (
+                        ) : (
                         <button 
                             type="button"
-                            onClick={() => setFormData({...formData, profile_image: img})}
-                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all"
+                            onClick={(e) => { e.preventDefault(); setFormData({...formData, profile_image: img}); }}
+                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all backdrop-blur-sm"
                         >
-                            <span className="text-[8px] font-black uppercase tracking-widest bg-white text-black px-2 py-1 rounded">Set</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] bg-white text-black px-4 py-2 rounded-full hover:scale-105 transition-transform">Set Default</span>
                         </button>
                         )}
                     </div>
                     ))}
                     {(formData.profile_images?.length || 0) < 10 && (
-                        <div className="aspect-square border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center hover:border-brand-teal/50 transition-colors">
+                        <div className="col-span-2 md:col-span-2 xl:col-span-2 aspect-video min-h-[160px] border border-dashed border-white/20 rounded-[2rem] p-4 flex flex-col items-center justify-center hover:border-brand-teal/50 transition-colors bg-white/[0.02]">
                             <MediaCapture 
                                 bucket="avatars"
                                 folder={`profiles/${user.id}`}
@@ -212,30 +214,30 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8 border-t border-white/5">
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Full Name</label>
-                  <input required type="text" name="full_name" value={formData.full_name} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Full Name</label>
+                  <input required type="text" name="full_name" value={formData.full_name} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Email Address</label>
-                  <input required type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm opacity-40 cursor-not-allowed outline-none" disabled />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Email Address</label>
+                  <input required type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm opacity-40 cursor-not-allowed outline-none font-mono" disabled />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Secure Phone</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Secure Phone</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none font-mono tracking-widest" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Date of Birth</label>
-                  <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none [&::-webkit-calendar-picker-indicator]:invert" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Date of Birth</label>
+                  <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none [&::-webkit-calendar-picker-indicator]:invert" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">City</label>
-                  <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">City</label>
+                  <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Country</label>
-                  <input type="text" name="country" value={formData.country} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Country</label>
+                  <input type="text" name="country" value={formData.country} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
               </div>
             </div>
@@ -252,20 +254,20 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Height</label>
-                  <input type="text" name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 5'10" className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm text-center focus:border-brand-coral transition-all outline-none" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Height</label>
+                  <input type="text" name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 5'10" className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm text-center focus:border-brand-coral focus:bg-white/5 transition-all outline-none font-mono tracking-widest" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Weight</label>
-                  <input type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 175 lbs" className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm text-center focus:border-brand-coral transition-all outline-none" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Weight</label>
+                  <input type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 175 lbs" className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm text-center focus:border-brand-coral focus:bg-white/5 transition-all outline-none font-mono tracking-widest" />
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Fitness Level</label>
+                    <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Fitness Level</label>
                     <div className="relative">
-                        <select name="fitness_level" value={formData.fitness_level} onChange={handleChange} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none appearance-none cursor-pointer">
+                        <select name="fitness_level" value={formData.fitness_level} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-coral focus:bg-white/5 transition-all outline-none appearance-none cursor-pointer">
                             <option value="Beginner" className="bg-brand-black">Beginner</option>
                             <option value="Intermediate" className="bg-brand-black">Intermediate</option>
                             <option value="Advanced" className="bg-brand-black">Advanced</option>
@@ -274,21 +276,21 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                     </div>
                 </div>
                 <div className="space-y-2">
-                    <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Workout Focus</label>
-                    <input type="text" name="workout_style" value={formData.workout_style} onChange={handleChange} placeholder="Strength, HIIT, etc" className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none" />
+                    <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Workout Focus</label>
+                    <input type="text" name="workout_style" value={formData.workout_style} onChange={handleChange} placeholder="Strength, HIIT, etc" className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-coral focus:bg-white/5 transition-all outline-none" />
                 </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[8px] uppercase tracking-widest text-white/40 font-bold ml-2">Primary Intent</label>
-              <textarea name="training_goals" value={formData.training_goals} onChange={handleChange} rows={1} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none resize-none" placeholder="Target objectives..." />
+              <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Primary Intent</label>
+              <textarea name="training_goals" value={formData.training_goals} onChange={handleChange} rows={2} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-coral focus:bg-white/5 transition-all outline-none resize-none" placeholder="Target objectives..." />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-[8px] uppercase tracking-widest text-brand-coral flex items-center gap-2 font-black ml-2">
-                <AlertCircle size={10} /> Limitations / Physical Restrictions
+            <div className="space-y-2 pt-4 border-t border-white/5">
+              <label className="text-[9px] uppercase tracking-widest text-brand-coral flex items-center gap-2 font-black ml-2 mb-3">
+                <AlertCircle size={12} /> Limitations / Physical Restrictions
               </label>
-              <textarea name="limitations_or_injuries" value={formData.limitations_or_injuries} onChange={handleChange} rows={2} className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm focus:border-brand-coral transition-all outline-none resize-none" placeholder="Describe any current injuries..." />
+              <textarea name="limitations_or_injuries" value={formData.limitations_or_injuries} onChange={handleChange} rows={3} className="w-full bg-brand-coral/5 border border-brand-coral/20 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-coral focus:bg-brand-coral/10 transition-all outline-none resize-none" placeholder="Describe any current injuries..." />
             </div>
           </div>
         </div>
@@ -313,12 +315,12 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                                 value={securityData.newPassword}
                                 onChange={handleSecurityChange}
                                 placeholder="New Password" 
-                                className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-5 text-sm focus:border-brand-teal transition-all outline-none pr-12" 
+                                className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal focus:bg-white/5 transition-all outline-none pr-12 font-mono tracking-widest placeholder:tracking-normal" 
                             />
                             <button 
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white"
+                                className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white transition-colors"
                             >
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
@@ -330,8 +332,8 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                                 value={securityData.confirmPassword}
                                 onChange={handleSecurityChange}
                                 placeholder="Confirm Update" 
-                                className={`w-full bg-black/40 border rounded-2xl px-6 py-5 text-sm focus:border-brand-teal transition-all outline-none ${
-                                    securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword ? 'border-brand-coral' : 'border-white/10'
+                                className={`w-full bg-black/20 border rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal focus:bg-white/5 transition-all outline-none font-mono tracking-widest placeholder:tracking-normal ${
+                                    securityData.confirmPassword && securityData.newPassword !== securityData.confirmPassword ? 'border-brand-coral bg-brand-coral/5' : 'border-white/10'
                                 }`} 
                             />
                         </div>
@@ -341,7 +343,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                         type="button"
                         disabled={!securityData.newPassword || securityData.newPassword !== securityData.confirmPassword}
                         onClick={handleUpdatePassword}
-                        className="w-full md:w-auto px-10 py-5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-brand-teal hover:scale-105 transition-all disabled:opacity-30"
+                        className="w-full md:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-[1.5rem] hover:bg-brand-teal hover:border-brand-teal hover:text-black hover:scale-105 transition-all disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:scale-100 disabled:hover:text-white disabled:hover:border-white/10"
                     >
                         Reset Password
                     </button>
