@@ -2062,14 +2062,7 @@ const VideoLibrary = () => {
               <h1 className="text-5xl font-bold uppercase tracking-tighter mb-4">Video <span className="text-brand-teal">Library</span></h1>
               <p className="text-white/40 uppercase tracking-widest text-xs">Master your movement with guided sessions</p>
             </div>
-            {(user?.role === 'admin' || user?.role === 'super_admin') && (
-              <button 
-                onClick={() => setIsUploadModalOpen(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus size={18} /> Add Video
-              </button>
-            )}
+
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
