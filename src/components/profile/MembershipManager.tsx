@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Shield, Check, Lock, Info, Loader2, X, MapPin, QrCode, Phone, Mail, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile } from '../../types';
@@ -25,6 +25,24 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
       features: ['Access to basic workouts', 'Limited training content', 'Community forum access', 'Public challenges']
     }
   ];
+
+  const [membership, setMembership] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchMembership = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_memberships')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        if (data) setMembership(data);
+      } catch (err) {}
+    };
+    fetchMembership();
+  }, [user.id]);
+
+  const hasActiveSubscription = membership?.status === 'active';
 
   const calculateDaysSinceChange = () => {
     if (!user.last_tier_change_date) return 31; // Safe default
@@ -126,13 +144,15 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
           <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter">
             Membership <span className="text-brand-teal">Management</span>
           </h2>
-          <button 
-            className="py-4 px-8 bg-white text-black hover:bg-brand-teal transition-all text-xs uppercase font-black tracking-widest rounded-xl shadow-[0_0_20px_rgba(45,212,191,0.2)] flex items-center justify-center gap-2"
-            onClick={handleManageSubscription}
-            disabled={loading}
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : 'Manage Subscription'}
-          </button>
+          {hasActiveSubscription && (
+            <button 
+              className="py-4 px-8 bg-white text-black hover:bg-brand-teal transition-all text-xs uppercase font-black tracking-widest rounded-xl shadow-[0_0_20px_rgba(45,212,191,0.2)] flex items-center justify-center gap-2"
+              onClick={handleManageSubscription}
+              disabled={loading}
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : 'Manage Subscription'}
+            </button>
+          )}
         </div>
         <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold">
           Upgrade or downgrade your access tier. Payment processed securely via Stripe.
@@ -154,7 +174,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {tiers.map((tier) => {
-          const isCurrent = user.tier === tier.name || (tier.name === 'Basic' && !user.tier);
+          const isCurrent = (user.tier === tier.name || (tier.name === 'Basic' && !user.tier)) && hasActiveSubscription;
           const isSelected = selectedTier === tier.name;
 
           return (
