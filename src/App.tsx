@@ -4912,7 +4912,7 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
         onClick={onClose}
         className="w-full py-4 bg-brand-teal text-black font-black text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 transition-all"
       >
-        Start Your Streak
+        Continue
       </button>
     </motion.div>
   </div>
