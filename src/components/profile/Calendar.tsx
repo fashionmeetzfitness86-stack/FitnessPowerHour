@@ -84,7 +84,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
       const { error } = await supabase.from('calendar_sessions').update({ status: 'completed' }).eq('id', sessionId);
       if (error) throw error;
       setSessions(prev => prev.map(s => s.id === sessionId ? { ...s, status: 'completed' } : s));
-      if (showToast) showToast('Workout marked complete! 🔥', 'success');
+      if (showToast) showToast('Great work today. You\'re building consistency. +1 day streak. Keep going.', 'success');
     } catch (err: any) {
       if (showToast) showToast('Failed to update status.', 'error');
     }
@@ -157,17 +157,19 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
             </button>
           </div>
 
-          {/* Day Headers */}
-          <div className="grid grid-cols-7 gap-1 md:gap-2">
+          {/* Day Headers (Desktop only) */}
+          <div className="hidden md:grid grid-cols-7 gap-2 mb-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
               <div key={d} className="py-3 text-center text-white/20 text-[9px] uppercase font-black tracking-widest border-b border-white/5">
                 {d}
               </div>
             ))}
+          </div>
 
-            {/* Day Cells */}
+          {/* Day Cells */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 md:gap-2 max-h-[60vh] md:max-h-none overflow-y-auto md:overflow-visible pr-2 md:pr-0">
             {days.map((date, idx) => {
-              if (!date) return <div key={idx} className="h-20 md:h-28 rounded-xl" />;
+              if (!date) return <div key={idx} className="hidden md:block h-20 md:h-28 rounded-xl" />;
 
               const dayStr = date.toISOString().split('T')[0];
               const daySessions = getSessionsForDay(dayStr);
@@ -197,21 +199,22 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={`text-xs font-black font-mono ${
+                    <span className={`text-xs md:text-sm font-black font-mono flex items-center gap-2 ${
                       isSelected ? 'text-brand-teal' : isToday ? 'text-brand-teal' : isEmptyPast ? 'text-white/20' : 'text-white/50'
                     }`}>
+                      <span className="md:hidden uppercase text-[9px] tracking-widest">{date.toLocaleDateString('en-US', { weekday: 'short' })}</span>
                       {date.getDate()}
                     </span>
-                    {hasCheckin && <div className="w-1.5 h-1.5 bg-brand-coral rounded-full" />}
+                    {hasCheckin && <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-brand-coral rounded-full" />}
                   </div>
 
-                  <div className="mt-auto space-y-0.5">
-                    {daySessions.slice(0, 2).map((s, i) => (
-                      <div key={i} className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter truncate ${
+                  <div className="mt-3 md:mt-auto space-y-1 md:space-y-0.5">
+                    {daySessions.slice(0, 3).map((s, i) => (
+                      <div key={i} className={`flex items-center gap-1.5 md:gap-1 px-2.5 py-1.5 md:px-1.5 md:py-0.5 rounded text-[10px] md:text-[7px] font-black uppercase tracking-tighter truncate ${
                         s.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-brand-teal/20 text-brand-teal'
                       }`}>
-                        <div className="w-1 h-1 rounded-full bg-current flex-shrink-0" />
-                        <span className="truncate hidden md:block">{s.title}</span>
+                        <div className="w-1.5 h-1.5 md:w-1 md:h-1 rounded-full bg-current flex-shrink-0" />
+                        <span className="truncate">{s.title}</span>
                       </div>
                     ))}
                     {totalActivity > 2 && (
@@ -225,7 +228,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
         </div>
 
         {/* DAY PANEL */}
-        <div className="xl:col-span-1">
+        <div className="xl:col-span-1 border-t md:border-t-0 border-white/5 pt-6 md:pt-0">
           <AnimatePresence mode="wait">
             {selectedDay ? (
               <motion.div

@@ -29,6 +29,7 @@ import { CommunityManager } from './CommunityManager';
 import { OrderManager } from './OrderManager';
 import { ServiceManager } from './ServiceManager';
 import { RetreatManager } from './RetreatManager';
+import { AthletesManager } from './AthletesManager';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -57,6 +58,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [communities, setCommunities] = useState<Community[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [athleteProfiles, setAthleteProfiles] = useState<any[]>([]);
   const { logActivity } = useAuth();
   
   const [stats, setStats] = useState<any>({});
@@ -128,14 +130,17 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
            if (bRes.data) setBookingRequests(bRes.data);
            if (csRes.data) setCalendarSessions(csRes.data);
            if (tRes.data) setTrainerRequests(tRes.data);
-        } else if (activeTab === 'retreats' && retreats.length === 0) {
+         } else if (activeTab === 'retreats' && retreats.length === 0) {
            const [rtRes, raRes] = await Promise.all([
              supabase.from('retreats').select('*').limit(50),
              supabase.from('retreat_applications').select('*').limit(50)
            ]);
            if (rtRes.data) setRetreats(rtRes.data);
            if (raRes.data) setRetreatApplications(raRes.data);
-        }
+         } else if (activeTab === 'athletes' && athleteProfiles.length === 0) {
+           const { data } = await supabase.from('athlete_profiles').select('*, user:users(full_name, profile_image)');
+           if (data) setAthleteProfiles(data);
+         }
       } catch (error) {
         console.error('Error fetching admin data:', error);
         showToast('System synchronization error', 'error');
@@ -375,6 +380,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'bookings', label: 'Bookings', icon: Calendar },
     { id: 'retreats', label: 'Retreats', icon: MapPin },
     { id: 'community', label: 'Community', icon: MessageSquare },
+    { id: 'athletes', label: 'Athletes', icon: Trophy },
     { id: 'users', label: 'Users', icon: Users },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
   ];
@@ -434,6 +440,21 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onDelete={handleDeleteRetreat}
         />
       );
+      case 'athletes': return (
+        <AthletesManager 
+          athletes={athleteProfiles} 
+          onUpdate={async (id: string, updates: any) => {
+            await supabase.from('athlete_profiles').update(updates).eq('id', id);
+            setAthleteProfiles(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+            showToast('Athlete updated', 'success');
+          }}
+          onDelete={async (id: string) => {
+            await supabase.from('athlete_profiles').delete().eq('id', id);
+            setAthleteProfiles(prev => prev.filter(a => a.id !== id));
+            showToast('Athlete removed', 'success');
+          }}
+        />
+      );
       case 'community': return (
         <CommunityManager 
           communities={communities} 
@@ -473,16 +494,16 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   };
 
   return (
-    <div className="min-h-screen bg-brand-black text-white flex">
-      {/* 1. FIXED LEFT SIDEBAR */}
-      <aside className="w-80 fixed inset-y-0 left-0 z-[100] border-r border-white/5 bg-brand-black/95 backdrop-blur-xl flex flex-col pt-8">
-        <div className="px-8 mb-12">
-          <Link to="/" className="flex flex-col leading-none mb-12">
+    <div className="min-h-screen bg-brand-black text-white flex flex-col lg:flex-row">
+      {/* 1. FIXED LEFT SIDEBAR (Desktop) / TOP NAV (Mobile) */}
+      <aside className="w-full lg:w-80 lg:fixed inset-y-0 left-0 z-[100] border-b lg:border-b-0 lg:border-r border-white/5 bg-brand-black/95 backdrop-blur-xl flex flex-col pt-4 lg:pt-8">
+        <div className="px-6 lg:px-8 mb-6 lg:mb-12 flex items-center lg:items-start lg:flex-col justify-between">
+          <Link to="/" className="flex flex-col leading-none">
             <span className="text-xl font-black tracking-tighter text-brand-teal uppercase">FPH Command</span>
             <span className="text-[10px] tracking-[0.4em] uppercase text-white/20 font-bold">Super Admin Base</span>
           </Link>
 
-          <div className="p-6 bg-brand-teal/5 rounded-3xl border border-brand-teal/20 flex items-center gap-4 group hover:border-brand-teal/40 transition-all">
+          <div className="hidden lg:flex p-6 bg-brand-teal/5 rounded-3xl border border-brand-teal/20 items-center gap-4 group hover:border-brand-teal/40 transition-all">
             <div className="w-12 h-12 rounded-2xl bg-brand-teal/10 flex items-center justify-center text-brand-teal font-black text-xl shadow-[0_0_20px_rgba(45,212,191,0.2)]">
               {user.full_name?.[0] || 'A'}
             </div>
@@ -493,8 +514,8 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           </div>
         </div>
 
-        <nav className="flex-grow px-4 space-y-1 overflow-y-auto no-scrollbar pb-12">
-          <p className="px-6 text-[9px] uppercase tracking-[0.3em] text-white/20 font-black mb-4">Core Systems</p>
+        <nav className="px-4 lg:px-4 space-x-2 lg:space-x-0 lg:space-y-1 overflow-x-auto lg:overflow-y-auto no-scrollbar flex lg:flex-col pb-4 lg:pb-12 flex-grow">
+          <p className="hidden lg:block px-6 text-[9px] uppercase tracking-[0.3em] text-white/20 font-black mb-4">Core Systems</p>
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -503,7 +524,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${
+                className={`flex-shrink-0 flex items-center justify-center lg:justify-start gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded-xl lg:rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${
                   isActive 
                     ? 'bg-brand-teal text-black shadow-glow-teal' 
                     : 'text-white/40 hover:text-white hover:bg-white/5'
@@ -516,7 +537,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/5 space-y-2">
+        <div className="hidden lg:flex p-4 border-t border-white/5 space-y-2 flex-col">
            <Link
             to="/profile"
             className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-brand-teal/5 text-[9px] uppercase tracking-[0.3em] font-black text-brand-teal hover:bg-brand-teal hover:text-black transition-all border border-brand-teal/10"
@@ -533,10 +554,10 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       </aside>
 
       {/* 2. MAIN CONTENT AREA */}
-      <div className="flex-1 ml-80 min-h-screen flex flex-col">
+      <div className="flex-1 lg:ml-80 flex flex-col min-h-screen w-full overflow-x-hidden">
         {/* TOP BAR */}
-        <header className="h-24 sticky top-0 z-[90] bg-brand-black/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-12">
-          <div className="flex items-center gap-8">
+        <header className="h-auto lg:h-24 py-4 lg:py-0 sticky top-0 z-[90] bg-brand-black/80 backdrop-blur-md border-b border-white/5 flex flex-col lg:flex-row items-start lg:items-center justify-between px-6 lg:px-12 gap-4 lg:gap-0">
+          <div className="flex items-center gap-4 lg:gap-8 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-glow-teal" />
               <span className="text-[10px] uppercase tracking-[0.3em] font-black text-white/40">Nexus Sync: Active</span>
@@ -567,7 +588,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         </header>
 
         {/* CONTENT */}
-        <main className="flex-1 p-12 overflow-y-auto">
+        <main className="flex-1 p-6 lg:p-12 overflow-y-auto overflow-x-hidden w-full max-w-[100vw]">
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}

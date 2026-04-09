@@ -86,7 +86,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   const renderContent = () => {
     const isMember = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
-    const lockedTabs = ['progress', 'calendar', 'programs', 'internal-feed', 'services', 'retreats'];
+    const lockedTabs = ['progress', 'calendar', 'internal-feed', 'services', 'retreats'];
     
     if (!isMember && lockedTabs.includes(activeTab)) {
       return (
@@ -149,7 +149,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
             </div>
             <div>
               <h2 className="text-xl font-bold uppercase tracking-tight">{user.full_name || 'Member'}</h2>
-              <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1 mb-2">{user.tier || 'Basic'} Member</p>
+              <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1 mb-2">{isMember ? 'Basic Tier' : 'General Access'}</p>
               {user.training_goals && user.workout_style && (
                  <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-white/10 text-center">
                     <span className="text-[8px] text-white/40 uppercase tracking-widest font-bold">Protocol Objective</span>

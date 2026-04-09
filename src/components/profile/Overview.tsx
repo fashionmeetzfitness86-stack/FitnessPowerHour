@@ -14,6 +14,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   const [hasCheckedIn, setHasCheckedIn] = useState(false);
   const [streakCount, setStreakCount] = useState(user.streak_count ?? user.streak ?? 0);
   const [todaySession, setTodaySession] = useState<CalendarSession | null>(null);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
 
   const [stats, setStats] = useState({
     sessionsThisWeek: 0,
@@ -57,12 +58,14 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
     try {
       const todayStr = new Date().toISOString().split('T')[0];
 
-      const [todayRes, weekRes] = await Promise.all([
+      const [todayRes, weekRes, requestsRes] = await Promise.all([
         supabase.from('calendar_sessions')
           .select('*').eq('user_id', user.id).eq('session_date', todayStr)
           .order('created_at', { ascending: true }).limit(1).maybeSingle(),
         supabase.from('calendar_sessions')
           .select('id, duration_minutes, status').eq('user_id', user.id),
+        supabase.from('service_requests')
+          .select('*').eq('user_id', user.id).eq('status', 'pending')
       ]);
 
       const completedSessions = weekRes.data?.filter(s => s.status === 'completed') || [];
@@ -70,6 +73,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
       const hours = Math.floor(totalMinutes / 60);
 
       setTodaySession(todayRes.data ?? null);
+      setPendingRequests(requestsRes.data || []);
       setStats({
         sessionsThisWeek: completedSessions.length,
         trainingTime: `${hours}h ${totalMinutes % 60}m`,
@@ -107,10 +111,15 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
               {hasCheckedIn ? <CheckCircle size={220} /> : <Zap size={220} />}
             </div>
 
-            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const lastCheckin = user.last_checkin ? new Date(user.last_checkin) : null;
+          const missedYesterday = !lastCheckin || (lastCheckin.toDateString() !== yesterday.toDateString() && !hasCheckedIn);
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+          return (
+            <div className="relative z-10 flex flex-col items-center text-center gap-8">
+              <div className="space-y-4">
+                <div className="flex items-center justify-center gap-2">
                   <div className={`w-2 h-2 rounded-full animate-pulse ${hasCheckedIn ? 'bg-emerald-400' : 'bg-brand-coral'}`} />
                   <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/40">Today</span>
                 </div>
@@ -118,63 +127,68 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                 {hasCheckedIn ? (
                   <>
                     <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-emerald-400 leading-none">
-                      Protocol Locked
+                      Workout Completed
                     </h2>
-                    <div className="flex flex-wrap items-center gap-4">
-                      <span className="flex items-center gap-2 text-white/50 text-xs font-bold uppercase tracking-widest">
-                        <Flame size={14} className="text-brand-coral" /> {streakCount} Day Streak
-                      </span>
-                      {todaySession && (
-                        <span className="flex items-center gap-2 text-white/50 text-xs font-bold uppercase tracking-widest">
-                          <Dumbbell size={14} className="text-brand-teal" /> {todaySession.title}
-                        </span>
-                      )}
-                    </div>
+                    <p className="text-white/40 text-sm font-bold uppercase tracking-widest mt-2 flex items-center justify-center gap-2">
+                      <Flame size={14} className="text-brand-coral" /> Keep your streak alive. {streakCount} Days.
+                    </p>
                   </>
                 ) : (
                   <>
                     <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">
-                      {firstName}, <span className="text-brand-coral">let's train.</span>
+                      You haven't <span className="text-brand-coral">trained today</span>
                     </h2>
-                    <p className="text-white/40 text-sm font-bold uppercase tracking-widest">
-                      {todaySession
-                        ? `Today: ${todaySession.title}`
-                        : 'No workout scheduled yet — add one now.'}
-                    </p>
+                    {missedYesterday ? (
+                      <p className="text-brand-coral/80 text-sm font-bold uppercase tracking-widest mt-2 flex items-center justify-center gap-2">
+                        <AlertCircle size={14} /> You missed yesterday. Let's get back on track.
+                      </p>
+                    ) : (
+                      <p className="text-amber-400 text-sm font-bold uppercase tracking-widest mt-2 flex items-center justify-center gap-2">
+                        <Flame size={14} /> Keep your streak alive
+                      </p>
+                    )}
                   </>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row justify-center gap-4 w-full md:w-auto mt-4">
                 {!hasCheckedIn ? (
                   <>
                     <button
                       onClick={handleCheckIn}
-                      className="flex-1 sm:flex-none px-10 py-5 bg-brand-coral text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 shadow-lg"
-                    >
-                      <CheckCircle size={16} /> Check In
-                    </button>
-                    <button
-                      onClick={() => navigate('calendar')}
-                      className="flex-1 sm:flex-none px-10 py-5 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
+                      className="px-10 py-5 bg-brand-coral text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:scale-105 transition-all flex items-center justify-center gap-3 shadow-lg"
                     >
                       <Play size={16} /> Start Workout
+                    </button>
+                    <button
+                      onClick={() => navigate('programs')}
+                      className="px-10 py-5 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
+                    >
+                      <VideoIcon size={16} /> Continue Program
                     </button>
                   </>
                 ) : (
                   <>
                     <button
-                      onClick={() => navigate('calendar')}
-                      className="flex-1 sm:flex-none px-10 py-5 bg-brand-teal text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2"
+                      onClick={() => {
+                        setShowReward(true); // they can view reward again
+                      }}
+                      className="px-10 py-5 bg-emerald-500 text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-emerald-400 transition-all flex items-center justify-center gap-3"
                     >
-                      <CalendarIcon size={16} /> Edit My Day <ArrowRight size={14} />
+                      <BarChart3 size={16} /> View Progress
+                    </button>
+                    <button
+                      onClick={() => navigate('calendar')}
+                      className="px-10 py-5 bg-brand-teal text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-3"
+                    >
+                      <CalendarIcon size={16} /> Edit Day
                     </button>
                     <button
                       onClick={() => navigate('programs')}
-                      className="flex-1 sm:flex-none px-10 py-5 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2"
+                      className="px-10 py-5 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white hover:text-black transition-all flex items-center justify-center gap-3"
                     >
-                      <VideoIcon size={16} /> My Program
+                      <Plus size={16} /> Add Another Workout
                     </button>
                   </>
                 )}
@@ -261,7 +275,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
         </div>
       </div>
 
-      {/* =================== QUICK ACTIONS =================== */}
+      {/* =================== QUICK ACTIONS & PENDING REQUESTS =================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           {
@@ -309,6 +323,32 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
           </motion.button>
         ))}
       </div>
+
+      {pendingRequests.length > 0 && (
+        <section className="space-y-4 fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-tighter text-amber-400 flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" /> Pending Requests
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {pendingRequests.map((req, i) => (
+              <div key={i} className="card-gradient p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex items-start gap-4">
+                <div className="p-3 bg-amber-500/10 rounded-xl text-amber-400">
+                  <Activity size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-tight text-amber-400">{req.service_type || 'Private Session'}</h4>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mt-1">Requested: {new Date(req.created_at).toLocaleDateString()}</p>
+                  <span className="inline-block px-2 py-1 bg-amber-500/20 text-amber-400 text-[8px] font-black uppercase tracking-widest rounded mt-2">
+                    Awaiting Schedule Confirmation
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* =================== WEEKLY SUMMARY =================== */}
       <section className="card-gradient p-8 md:p-10 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
@@ -383,10 +423,10 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                   Keep Going
                 </button>
                 <button
-                  onClick={() => { setShowReward(false); navigate('programs'); }}
+                  onClick={() => { setShowReward(false); navigate('progress'); }}
                   className="text-[10px] uppercase tracking-widest text-white/30 hover:text-white transition-all font-black"
                 >
-                  Start Today's Workout
+                  What's Next? View Progress
                 </button>
               </div>
             </motion.div>
