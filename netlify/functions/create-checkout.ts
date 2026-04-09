@@ -16,9 +16,8 @@ export default async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
-  // TODO: TEMPORARY $1 pricing for live testing — revert to real prices after testing
   const MEMBERSHIP_PRICES: Record<string, { amount: number; name: string }> = {
-    Basic: { amount: 100, name: 'Basic Membership' },
+    Basic: { amount: 1999, name: 'Basic Membership' },
   };
 
   try {
