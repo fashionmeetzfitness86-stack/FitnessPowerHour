@@ -27,6 +27,7 @@ import { UsersManager } from './UsersManager';
 import { VideoManager } from './VideoManager';
 import { CommunityManager } from './CommunityManager';
 import { OrderManager } from './OrderManager';
+import { NotificationManager } from './NotificationManager';
 import { RequestsManager } from './RequestsManager';
 import { RetreatManager } from './RetreatManager';
 import { AthletesManager } from './AthletesManager';
@@ -426,6 +427,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'shop', label: 'Shop', icon: ShoppingBag },
     { id: 'orders', label: 'Orders', icon: PackageIcon },
     { id: 'users', label: 'Users', icon: Users },
+    { id: 'notifications', label: 'Broadcast', icon: Send },
   ];
 
   const renderContent = () => {
@@ -535,6 +537,13 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              showToast('Updated', 'success');
           }} 
           onViewDetails={() => {}} 
+        />
+      );
+      case 'notifications': return (
+        <NotificationManager 
+          users={users}
+          groups={communities}
+          showToast={showToast}
         />
       );
       default: return (

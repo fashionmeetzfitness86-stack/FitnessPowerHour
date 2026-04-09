@@ -341,12 +341,17 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                               </span>
                             </div>
                             <div className="flex gap-2">
-                              {s.status !== 'completed' && (
+                              {s.status !== 'completed' ? (
                                 <button onClick={() => handleMarkComplete(s.id)} className="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-1.5">
                                   <CheckCircle2 size={12} /> Mark Done
                                 </button>
+                              ) : (
+                                <div className="w-full flex gap-2">
+                                  <button onClick={() => setSelectedDay(null)} className="flex-1 py-2 bg-brand-teal text-black rounded-lg text-[9px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-[0_0_15px_rgba(45,212,191,0.2)]">Check Out</button>
+                                  <button onClick={() => setPanelMode('workout')} className="flex-1 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">Add Another</button>
+                                </div>
                               )}
-                              <button onClick={() => handleDeleteSession(s.id)} className="p-2 bg-white/5 border border-white/10 text-white/30 hover:text-brand-coral hover:border-brand-coral/30 rounded-lg transition-all">
+                              <button onClick={() => handleDeleteSession(s.id)} className="p-2 bg-white/5 border border-white/10 text-white/30 hover:text-brand-coral hover:border-brand-coral/30 rounded-lg transition-all flex-shrink-0">
                                 <Trash2 size={12} />
                               </button>
                             </div>
