@@ -84,11 +84,13 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
+  const isMember = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
+
   const renderContent = () => {
-    const isMember = user?.tier === 'Basic' || user?.role === 'admin' || user?.role === 'super_admin';
+    const isMemberLocal = isMember;
     const lockedTabs = ['progress', 'calendar', 'internal-feed', 'services', 'retreats'];
     
-    if (!isMember && lockedTabs.includes(activeTab)) {
+    if (!isMemberLocal && lockedTabs.includes(activeTab)) {
       return (
         <div className="flex flex-col items-center justify-center p-16 text-center card-gradient rounded-[3rem] border border-brand-teal/20 shadow-2xl space-y-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-brand-teal/5 blur-3xl rounded-full" />
