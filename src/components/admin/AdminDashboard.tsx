@@ -298,25 +298,53 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     } catch (err) { showToast('Decommissioning failed', 'error'); }
   };
 
-  const handleSaveProduct = async (data: Partial<Product>) => {
+  const handleSaveProduct = async (data: Partial<any>) => {
     try {
+      // Map ShopProduct fields → DB column names
+      const dbRow: Record<string, any> = {
+        name:             data.name,
+        description:      data.description || null,
+        price:            data.price || 0,
+        // category is stored as category_id in the DB
+        category_id:      data.category || data.category_id || null,
+        // featured_image is the primary image
+        featured_image:   data.images?.[0] || data.featured_image || null,
+        images:           data.images || [],
+        video_url:        data.video_url || null,
+        external_link:    data.external_link || null,
+        is_recommended:   data.is_recommended ?? false,
+        // status maps to is_active boolean
+        status:           data.is_active !== false ? 'active' : 'draft',
+        visibility:       data.visibility || 'general',
+        // New fields
+        sizes:            data.sizes || [],
+        inventory_count:  data.quantity ?? data.inventory_count ?? 0,
+        gender:           data.gender || null,
+        updated_at:       new Date().toISOString(),
+      };
+
       if (data.id) {
-        const { error } = await supabase.from('products').update(data).eq('id', data.id);
-        if (error) throw error;
+        const { error } = await supabase.from('products').update(dbRow).eq('id', data.id);
+        if (error) { console.error('[Product sync error]', error); throw error; }
         setProducts(prev => prev.map(p => p.id === data.id ? { ...p, ...data } as Product : p));
-        logActivity('UPDATE_PRODUCT', 'product', data.id, data);
-        showToast('Product metadata synchronized', 'success');
+        logActivity('UPDATE_PRODUCT', 'product', data.id, dbRow);
+        showToast('Product updated ✅', 'success');
       } else {
-        const { data: newP, error } = await supabase.from('products').insert(data).select().single();
-        if (error) throw error;
+        dbRow.created_at = new Date().toISOString();
+        const { data: newP, error } = await supabase.from('products').insert(dbRow).select().single();
+        if (error) { console.error('[Product sync error]', error); throw error; }
         if (newP) {
           setProducts(prev => [newP, ...prev]);
-          logActivity('CREATE_PRODUCT', 'product', newP.id, newP);
+          logActivity('CREATE_PRODUCT', 'product', newP.id, dbRow);
         }
-        showToast('New product initialized', 'success');
+        showToast('Product published ✅', 'success');
       }
-    } catch (err) { showToast('Product sync failed', 'error'); }
+    } catch (err: any) {
+      const msg = err?.message || err?.details || 'Product sync failed';
+      showToast(`Sync failed: ${msg}`, 'error');
+    }
   };
+
 
   const handleDeleteProduct = async (id: string) => {
     try {
