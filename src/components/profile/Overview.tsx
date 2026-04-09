@@ -97,6 +97,11 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
 
   const firstName = user.full_name?.split(' ')[0] || 'Athlete';
 
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const lastCheckin = user.last_checkin ? new Date(user.last_checkin) : null;
+  const missedYesterday = !lastCheckin || (lastCheckin.toDateString() !== yesterday.toDateString() && !hasCheckedIn);
+
   return (
     <div className="space-y-8 fade-in pb-20">
 
@@ -111,12 +116,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
               {hasCheckedIn ? <CheckCircle size={220} /> : <Zap size={220} />}
             </div>
 
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const lastCheckin = user.last_checkin ? new Date(user.last_checkin) : null;
-          const missedYesterday = !lastCheckin || (lastCheckin.toDateString() !== yesterday.toDateString() && !hasCheckedIn);
 
-          return (
             <div className="relative z-10 flex flex-col items-center text-center gap-8">
               <div className="space-y-4">
                 <div className="flex items-center justify-center gap-2">
