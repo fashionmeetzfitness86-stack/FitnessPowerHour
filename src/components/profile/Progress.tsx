@@ -313,9 +313,15 @@ export const Progress = ({ user, showToast }: { user: UserProfile, showToast: (m
                 </div>
               </motion.div>
             )) : (
-              <div className="py-24 text-center space-y-4">
-                 <Activity size={48} className="mx-auto text-white/5" />
-                 <p className="text-[10px] uppercase tracking-[0.4em] text-white/20 font-black">No logs detected in the current matrix.</p>
+              <div className="py-24 text-center space-y-6">
+                 <Activity size={48} className="mx-auto text-brand-teal/20" />
+                 <div className="space-y-2">
+                   <h4 className="text-2xl font-black uppercase tracking-tighter">Start your <span className="text-brand-teal">training</span></h4>
+                   <p className="text-[10px] uppercase tracking-[0.4em] text-white/20 font-black">Your activity log is waiting for your first session.</p>
+                 </div>
+                 <button onClick={() => window.location.hash = '#/profile#calendar'} className="px-10 py-5 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 mx-auto">
+                    <Play size={16} /> Add First Workout
+                 </button>
               </div>
             )}
           </div>

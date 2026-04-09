@@ -640,6 +640,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         ? currentFavorites.filter(id => id !== videoId)
         : [...currentFavorites, videoId];
 
+      setUser({ ...user, favorites: newFavorites }); // Optimistic update
+
       await supabase.from('profiles').update({ favorites: newFavorites }).eq('id', session.user.id);
       fetchUser(session.user.id);
     } catch (error) {
@@ -650,6 +652,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateProfile = async (profileUpdate: Partial<UserProfile>) => {
     if (!user) return;
     try {
+      setUser({ ...user, ...profileUpdate } as UserProfile); // Optimistic update
+      
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) return;
 
@@ -817,19 +821,20 @@ const NotificationBell = () => {
                       key={notif.id}
                       onClick={() => {
                         markAsRead(notif.id);
-                        // In a real app, navigate to the post
+                        window.location.hash = (notif as any).metadata?.route || '#/profile';
+                        setIsOpen(false);
                       }}
                       className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer ${!(notif as any).is_read ? 'bg-brand-teal/5' : ''}`}
                     >
                       <div className="flex gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${notif.type === 'like' ? 'bg-brand-coral/20 text-brand-coral' : 'bg-brand-teal/20 text-brand-teal'}`}>
-                          {((notif as any).from_user_name || (notif as any).fromUserName || '?').charAt(0)}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${notif.type === 'milestone' || notif.type === 'system' ? 'bg-brand-teal/20 text-brand-teal' : 'bg-brand-coral/20 text-brand-coral'}`}>
+                          {((notif as any).title || '?').charAt(0)}
                         </div>
                         <div className="flex-grow space-y-1">
                           <p className="text-[11px] text-white/80 leading-tight">
-                            <span className="font-bold text-white">{(notif as any).from_user_name || (notif as any).fromUserName || 'Someone'}</span> {notif.type === 'like' ? 'liked' : 'commented on'} your post:
+                            <span className="font-bold text-white">{notif.title}</span>
                           </p>
-                          <p className="text-[10px] text-white/40 italic truncate max-w-[180px]">"{(notif as any).post_content || (notif as any).postContent || ''}"</p>
+                          <p className="text-[10px] text-white/40 italic truncate max-w-[180px]">{(notif as any).message || ''}</p>
                           <p className="text-[8px] text-white/20 uppercase tracking-widest">{new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
                         {!(notif as any).is_read && (
@@ -4307,9 +4312,9 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [localPassModal, setLocalPassModal] = useState<any>(null);
 
-  // Close modal and go to profile when user logs in (must have active membership to prevent infinite FreeAccessGate loop)
+  // Close modal and go to profile when user logs in
   useEffect(() => {
-    if (user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin')) {
+    if (user) {
       setIsRegistering(false);
       navigate('/profile');
     }
