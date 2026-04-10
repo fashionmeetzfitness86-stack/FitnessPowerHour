@@ -4069,11 +4069,6 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       setShowCheckout(false);
     }
   };
-      showToast(err.message || 'Failed to request service.', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -4224,7 +4219,6 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                         <div>
                           <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Protocol</label>
                           <div className="grid grid-cols-1 gap-2">
-                           <div className="grid grid-cols-1 gap-2">
                              {serviceOptions.map(s => (
                                 <button key={s.name} onClick={() => setSelectedService(s.name)} className={`py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border flex items-center justify-between ${selectedService === s.name ? 'bg-brand-coral/10 border-brand-coral text-brand-coral' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
                                    <span>{s.name}</span>
@@ -4232,9 +4226,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                                 </button>
                              ))}
                           </div>
-                        </div>
-
-                        <div>
+                        </div>                        <div>
                           <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Available Time Windows</label>
                           <div className="grid grid-cols-2 gap-2">
                             {timeSlots.map(t => {
