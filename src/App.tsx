@@ -3958,6 +3958,8 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
+  const [guestAge, setGuestAge] = useState('');
+  const [guestGender, setGuestGender] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState<{ date: string, time: string, service: string, amount: number, email: string } | null>(null);
 
@@ -4037,7 +4039,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
         requested_date: selectedDay,
         requested_time: formattedSlot,
         status: !user ? 'approved' : 'pending',
-        notes: (hasActiveMembership ? '' : `[Contact Preference: ${contactPreference}] `) + 'Message: ' + serviceMessage
+        notes: (hasActiveMembership ? '' : `[Contact Preference: ${contactPreference}] `) + (!user && (guestAge || guestGender) ? `[Age: ${guestAge || 'N/A'}, Gender: ${guestGender || 'N/A'}] ` : '') + 'Message: ' + serviceMessage
       }).select().single();
 
       if (error) throw error;
@@ -4058,6 +4060,8 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       setGuestName('');
       setGuestEmail('');
       setGuestPhone('');
+      setGuestAge('');
+      setGuestGender('');
     } catch (err: any) {
       showToast(err.message || 'Failed to request service.', 'error');
     } finally {
@@ -4273,6 +4277,15 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                           <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" />
                           <input type="email" placeholder="Email Address" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" />
                           <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" />
+                          <div className="grid grid-cols-2 gap-2">
+                             <input type="number" placeholder="Age (Optional)" value={guestAge} onChange={e => setGuestAge(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" min="1" max="100" />
+                             <select value={guestGender} onChange={e => setGuestGender(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all appearance-none cursor-pointer">
+                                <option value="" disabled>Gender (Optional)</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                             </select>
+                          </div>
                           
                           {showCheckout && (
                              <div className="mt-4 p-4 border border-brand-coral/30 rounded-xl bg-brand-coral/5 space-y-4">
