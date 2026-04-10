@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Save, UserCircle, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X, Phone, User as UserIcon, Send, ArrowRight } from 'lucide-react';
+import { Save, UserCircle, Activity, AlertCircle, Shield, Key, Mail, Trash2, Eye, EyeOff, X, Phone, User as UserIcon, Send, ArrowRight, Edit, Flame, Dumbbell, Target, HeartPulse, Clock, Zap, CreditCard, Crown, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { UserProfile } from '../../types';
 import { MediaCapture } from '../MediaCapture';
@@ -42,6 +42,8 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'metrics'>('overview');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -81,9 +83,11 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
       }
 
       await updateProfile(payloadToSave);
+      
       showToast('Neural matrix synchronized successfully.', 'success');
+      setIsEditing(false);
     } catch (error: any) {
-      showToast(error.message || 'Error updating profile', 'error');
+      showToast(error.message || 'Synchronization failed', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -133,17 +137,24 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
   return (
     <div className="space-y-12 fade-in">
-      {/* HEADER WITHOUT SAVE BUTTON - Moved to Sticky Action Bar */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-white/5 pb-8 relative z-10">
         <div>
-          <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter">
-            Profile <span className="text-brand-teal">Settings</span>
+          <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter flex items-center gap-4">
+            {isEditing ? 'Profile Settings' : <><Shield className="text-brand-teal" size={36} /> Intel <span className="text-brand-coral">Profile</span></>}
           </h2>
           <p className="text-white/40 text-[10px] uppercase tracking-widest mt-2 font-bold max-w-md">
-            Execute structural updates to your athlete profile.
+            {isEditing ? 'Execute structural updates to your athlete profile.' : 'Live telemetry and structural profile data.'}
           </p>
         </div>
         <div className="flex gap-4 w-full md:w-auto">
+            {!isEditing && (
+              <button 
+                  onClick={() => setIsEditing(true)}
+                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 bg-white/5 border border-white/10 hover:border-brand-teal text-white hover:text-brand-teal text-[10px] uppercase tracking-widest font-black rounded-[2rem] transition-all"
+              >
+                  <Edit size={14} /> Edit Profile
+              </button>
+            )}
             <button 
                 onClick={(e) => { e.preventDefault(); setTrainingRequest(prev => ({ ...prev, showModal: true })); }}
                 className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 border border-brand-teal text-brand-teal text-[10px] uppercase tracking-widest font-black rounded-[2rem] hover:bg-brand-teal hover:text-black transition-all"
@@ -153,9 +164,139 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
         </div>
       </header>
 
+      {!isEditing ? (
+        <div className="space-y-8 pb-32">
+          {/* Hero Row */}
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10 card-gradient border border-white/5 p-8 rounded-[3rem]">
+            <div className="w-32 h-32 md:w-40 md:h-40 bg-brand-teal/5 border border-brand-teal/20 rounded-3xl flex items-center justify-center text-5xl font-black text-brand-teal shrink-0 relative overflow-hidden shadow-[0_0_50px_rgba(45,212,191,0.1)]">
+              {user.profile_image
+                ? <img src={user.profile_image} alt="Avatar" className="w-full h-full object-cover" />
+                : (user.full_name || user.email || 'U')[0].toUpperCase()}
+              {user.country && (
+                <div className="absolute bottom-2 right-2 bg-black/80 px-3 py-1.5 rounded-lg text-[9px] uppercase tracking-widest font-black text-white border border-white/10">
+                  {user.country}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0 text-center md:text-left pt-4 md:pt-0">
+              <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tight truncate text-white mb-2">
+                {user.full_name || 'Ghost Athlete'}
+              </h2>
+              <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-4 mb-6">
+                <p className="text-xs text-white/60 font-mono flex items-center gap-2">
+                  <Mail size={14} className="text-brand-teal" /> {user.email}
+                </p>
+                {user.phone && (
+                  <p className="text-xs text-white/60 font-mono flex items-center gap-2 md:border-l md:border-white/10 md:pl-4">
+                    <Phone size={14} className="text-brand-teal" /> {user.phone}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+                  <CheckCircle size={12} /> {user.status || 'Active'}
+                </span>
+                {(user.age || user.city) && (
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-white/60">
+                    {user.age ? `${user.age} Y/O` : 'AGE N/A'}
+                    {user.city ? ` / ${user.city}` : ''}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border bg-brand-coral/10 border-brand-coral/20 text-brand-coral">
+                  <Flame size={12} /> {(user as any).streak_count || 0} Day Streak
+                </span>
+              </div>
+              {user.short_bio && (
+                <div className="mt-6 p-5 bg-black/40 border border-white/5 rounded-2xl">
+                  <p className="text-[10px] uppercase tracking-widest text-white/30 font-black mb-2 flex items-center gap-2 justify-center md:justify-start"><Target size={12}/> Motivation / Goal</p>
+                  <p className="text-sm text-white/80 italic leading-relaxed">"{user.short_bio}"</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex border-b border-white/10 relative z-10 gap-8 px-4 overflow-x-auto">
+            {['overview', 'metrics'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative whitespace-nowrap ${activeTab === tab ? 'text-brand-teal' : 'text-white/30 hover:text-white/60'}`}
+              >
+                {tab === 'overview' ? 'Account Base' : 'Athletic Intel'}
+                {activeTab === tab && (
+                  <motion.div layoutId="activetab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-teal rounded-t-full shadow-[0_0_10px_rgba(45,212,191,0.5)]" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="relative z-10 pt-4">
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { label: 'Platform Role', value: user.role || 'user', icon: Crown },
+                  { label: 'Access Tier', value: user.tier || 'Free', icon: Zap },
+                  { label: 'Membership', value: (user as any).membership_status || '—', icon: CreditCard },
+                  { label: 'Joined', value: user.signup_date ? new Date(user.signup_date).toLocaleDateString() : '—', icon: Clock },
+                  { label: 'Stripe Sub ID', value: user.stripe_subscription_id || 'N/A', icon: CreditCard },
+                  { label: 'Last Check-In', value: user.last_checkin || 'Never', icon: Activity },
+                ].map((item, i) => (
+                  <div key={i} className="p-6 bg-white/[0.02] rounded-3xl border border-white/[0.05] hover:bg-white/[0.05] transition-colors">
+                    <p className="text-[9px] uppercase tracking-widest text-white/40 font-bold mb-4 flex items-center gap-2">
+                      <item.icon size={12} className="text-white/30" /> {item.label}
+                    </p>
+                    <p className="text-lg font-black text-white truncate capitalize">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'metrics' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="p-8 bg-white/[0.02] rounded-3xl border border-white/[0.05]">
+                  <p className="text-[10px] uppercase tracking-widest text-brand-teal font-black mb-6 flex items-center gap-3">
+                    <Target size={14} /> Physicals
+                  </p>
+                  <div className="space-y-4 border-l-2 border-white/5 pl-4">
+                    <div><span className="text-[10px] uppercase text-white/40 font-bold block mb-1">Height</span><span className="text-sm font-black">{user.height || '—'}</span></div>
+                    <div><span className="text-[10px] uppercase text-white/40 font-bold block mb-1">Weight</span><span className="text-sm font-black">{user.weight || '—'}</span></div>
+                  </div>
+                </div>
+                <div className="p-8 bg-white/[0.02] rounded-3xl border border-white/[0.05]">
+                  <p className="text-[10px] uppercase tracking-widest text-brand-teal font-black mb-6 flex items-center gap-3">
+                    <Dumbbell size={14} /> Training Model
+                  </p>
+                  <div className="space-y-4 border-l-2 border-white/5 pl-4">
+                    <div><span className="text-[10px] uppercase text-white/40 font-bold block mb-1">Level</span><span className="text-sm font-black text-brand-coral uppercase tracking-widest">{user.fitness_level || '—'}</span></div>
+                    <div><span className="text-[10px] uppercase text-white/40 font-bold block mb-1">Focus</span><span className="text-sm font-black">{user.workout_style || '—'}</span></div>
+                  </div>
+                </div>
+                <div className="p-8 bg-white/[0.02] rounded-3xl border border-white/[0.05] md:col-span-2 lg:col-span-1">
+                  <p className="text-[10px] uppercase tracking-widest text-brand-teal font-black mb-6 flex items-center gap-3">
+                    <HeartPulse size={14} /> Limitations & Goals
+                  </p>
+                  <div className="space-y-4 border-l-2 border-white/5 pl-4">
+                    <div><span className="text-[10px] uppercase text-white/40 font-bold block mb-1">Injuries / Alerts</span><span className="text-sm font-black text-red-400">{user.limitations_or_injuries || 'None Disclosed'}</span></div>
+                    <div><span className="text-[10px] uppercase text-white/40 font-bold block mb-1">Core Goal</span><span className="text-sm font-black">{user.training_goals || '—'}</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
       <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-32">
         {/* Sticky Global Save Bar */}
-        <div className="fixed bottom-0 left-0 right-0 p-6 lg:p-8 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/90 to-transparent z-50 pointer-events-none flex justify-center lg:pl-80">
+        <div className="fixed bottom-0 left-0 right-0 p-6 lg:p-8 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/90 to-transparent z-50 pointer-events-none flex items-center justify-center gap-4 lg:pl-80">
+          <button 
+            type="button" 
+            onClick={() => setIsEditing(false)}
+            className="pointer-events-auto px-12 py-5 bg-white/5 border border-white/10 text-white text-xs uppercase tracking-[0.2em] font-black rounded-full hover:bg-white/10 transition-all backdrop-blur-md"
+          >
+            Cancel
+          </button>
           <button 
             type="submit"
             disabled={isSaving}
@@ -359,6 +500,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
             </div>
         </div>
       </form>
+      )}
 
       {/* 1-ON-1 TRAINING REQUEST MODAL */}
       <AnimatePresence>

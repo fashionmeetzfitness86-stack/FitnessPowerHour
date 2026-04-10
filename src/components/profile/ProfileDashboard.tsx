@@ -80,7 +80,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     { id: 'membership', label: 'Membership', icon: Shield },
     { id: 'billing', label: 'Billing', icon: CreditCard },
     { id: 'orders', label: 'Order History', icon: ShoppingBag },
-    { id: 'settings', label: 'Edit Profile', icon: Settings },
+    { id: 'settings', label: 'My Profile', icon: Settings },
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
