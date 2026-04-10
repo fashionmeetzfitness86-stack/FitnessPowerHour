@@ -28,8 +28,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
   const [recipientType, setRecipientType]   = useState<'broadcast' | 'individual' | 'city' | 'group'>('broadcast');
   const [recipientValue, setRecipientValue] = useState('');
   const [userSearch, setUserSearch]         = useState('');
-  const [scheduleAt, setScheduleAt]         = useState('');
-  const [repeatInterval, setRepeatInterval] = useState<'none' | '12h' | '24h' | 'weekly'>('none');
+  const [targetRoute, setTargetRoute]       = useState('#/profile');
   const [isDraft, setIsDraft]               = useState(false);
   const [isSubmitting, setIsSubmitting]     = useState(false);
 
@@ -77,8 +76,6 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
         message: payload.message,
         recipient_type: recipientType,
         recipient_value: recipientValue,
-        scheduled_at: scheduleAt || null,
-        repeat_interval: repeatInterval !== 'none' ? repeatInterval : null,
         status,
         sent_count: sentCount,
         created_at: new Date().toISOString(),
@@ -111,16 +108,16 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
         return;
       }
 
-      const status: DraftNotification['status'] = asDraft ? 'draft' : scheduleAt ? 'scheduled' : 'sent';
+      const status: DraftNotification['status'] = asDraft ? 'draft' : 'sent';
 
-      if (!asDraft && status === 'sent') {
+      if (!asDraft) {
         // Batch insert max 50 at a time to avoid payload limits
         const payloads = userIds.map(id => ({
           user_id: id,
           type: 'system',
           title,
           message,
-          metadata: { source: 'Admin Broadcast', scheduled_at: scheduleAt || null }
+          metadata: { source: 'Admin Broadcast', route: targetRoute || '#/profile' }
         }));
         for (let i = 0; i < payloads.length; i += 50) {
           const { error } = await supabase.from('notifications').insert(payloads.slice(i, i + 50));
@@ -128,17 +125,15 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
         }
       }
 
-      await logBroadcast({ title, message }, userIds.length, status);
+      await logBroadcast({ title, message, route: targetRoute }, userIds.length, status);
 
       showToast?.(
-        asDraft ? 'Saved as draft ✅' :
-        status === 'scheduled' ? `Scheduled for ${new Date(scheduleAt).toLocaleString()} ✅` :
-        `Sent to ${userIds.length} user(s) ✅`,
+        asDraft ? 'Saved as draft ✅' : `Broadcast active! Sent to ${userIds.length} user(s) ✅`,
         'success'
       );
 
       // Reset
-      setTitle(''); setMessage(''); setRecipientValue(''); setScheduleAt(''); setUserSearch(''); setRepeatInterval('none');
+      setTitle(''); setMessage(''); setRecipientValue(''); setTargetRoute('#/profile'); setUserSearch('');
       if (tab === 'compose') fetchHistory();
     } catch (err: any) {
       showToast?.(err?.message || 'Dispatch failed', 'error');
@@ -157,8 +152,6 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
     setMessage(h.message);
     setRecipientType(h.recipient_type as any);
     setRecipientValue(h.recipient_value || '');
-    setScheduleAt(h.scheduled_at ? new Date(h.scheduled_at).toISOString().slice(0, 16) : '');
-    setRepeatInterval(h.repeat_interval || 'none');
     setTab('compose');
   };
 
@@ -277,28 +270,23 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
             </div>
 
             {/* Step 3: Schedule & Repeat (optional) */}
+            {/* Step 3: Destination (optional) */}
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
               <h3 className="text-xs uppercase font-black tracking-widest text-white/40 flex items-center gap-2">
-                <Calendar size={14} /> 3. Schedule & Repeat (optional)
+                <Target size={14} /> 3. Destination Link (Optional)
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Send At</label>
-                  <input type="datetime-local" value={scheduleAt} onChange={e => setScheduleAt(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal" />
-                  {scheduleAt && <p className="text-[9px] text-brand-teal font-black">Scheduled for: {new Date(scheduleAt).toLocaleString()}</p>}
-                  {scheduleAt && <button onClick={() => setScheduleAt('')} className="text-[9px] text-white/30 hover:text-white underline">Clear schedule</button>}
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Repeat Strategy</label>
-                  <select value={repeatInterval} onChange={e => setRepeatInterval(e.target.value as any)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal">
-                    <option value="none">One-time Broadcast</option>
-                    <option value="12h">Repeat Every 12 Hours</option>
-                    <option value="24h">Repeat Every 24 Hours</option>
-                    <option value="weekly">Repeat Weekly</option>
-                  </select>
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">In-App Target Route</label>
+                <select value={targetRoute} onChange={e => setTargetRoute(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal">
+                  <option value="#/profile">Profile/Dashboard (Default)</option>
+                  <option value="#/shop">Shop Page</option>
+                  <option value="#/retreats">Retreats Page</option>
+                  <option value="#/community">Community Timeline</option>
+                  <option value="#/videos">Video Library</option>
+                  <option value="#/services">Services Page</option>
+                </select>
+                <p className="text-[8px] opacity-50 mt-1">When users click the notification on their bell, they will be sent here.</p>
               </div>
             </div>
 
@@ -311,7 +299,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
               <button onClick={() => handleDispatch(false)} disabled={isSubmitting || !title || !message}
                 className="flex-1 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 disabled:opacity-40">
                 {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                {scheduleAt ? 'Schedule' : 'Send Now'}
+                Broadcast Now
               </button>
             </div>
           </motion.div>
