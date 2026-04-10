@@ -325,7 +325,7 @@ interface AuthContextType {
   addNotification: (notif: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   clearNotifications: () => Promise<void>;
-  toggleFavorite: (videoId: string) => Promise<void>;
+  toggleFavorite: (videoId: string) => Promise<{ success: boolean; message: string }>;
   toggleBookmark: (videoId: string) => Promise<{ success: boolean; message: string }>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   updateSecurity: (email?: string, password?: string) => Promise<void>;
@@ -661,10 +661,16 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const toggleFavorite = async (videoId: string) => {
-    if (!user) return;
+    if (!user) return { success: false, message: 'Must be logged in to like videos' };
     try {
+      const hasActiveMembership = !!(user.tier === 'Basic' || user.membership_status === 'active' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete');
+      if (!hasActiveMembership) {
+        return { success: false, message: 'Upgrade to membership to like and save videos to your program.' };
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+      if (!session?.user) return { success: false, message: 'Session expired' };
+      
       const currentFavorites = user.favorites || [];
       const isFavorited = currentFavorites.includes(videoId);
       const newFavorites = isFavorited
@@ -675,16 +681,25 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await supabase.from('profiles').update({ favorites: newFavorites }).eq('id', session.user.id);
       fetchUser(session.user.id);
+      
+      return { success: true, message: isFavorited ? 'Removed from liked videos.' : 'Video liked and added to My Program.' };
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      return { success: false, message: 'Failed to update liked videos.' };
     }
   };
 
   const toggleBookmark = async (videoId: string) => {
-    if (!user) return { success: false, message: 'Must be logged in' };
+    if (!user) return { success: false, message: 'Must be logged in to bookmark videos' };
     try {
+      const hasActiveMembership = !!(user.tier === 'Basic' || user.membership_status === 'active' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete');
+      if (!hasActiveMembership) {
+        return { success: false, message: 'Upgrade to membership to bookmark videos and build your program.' };
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return { success: false, message: 'Must be logged in' };
+      if (!session?.user) return { success: false, message: 'Session expired' };
+      
       const currentBookmarks = user.bookmarks || [];
       const isBookmarked = currentBookmarks.includes(videoId);
 
@@ -2315,9 +2330,10 @@ const VideoLibrary = ({ showToast }: { showToast: (msg: string, type?: 'success'
                       <Bookmark size={14} className={user?.bookmarks?.includes(video.id) ? 'fill-black' : ''} />
                     </button>
                     <button 
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        toggleFavorite(video.id);
+                        const { success, message } = await toggleFavorite(video.id);
+                        if (showToast) showToast(message, success ? 'success' : 'error');
                       }}
                       className={`p-2 rounded-full backdrop-blur-md transition-all ${
                         user?.favorites?.includes(video.id) 
@@ -5544,7 +5560,10 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                     <Bookmark size={20} className={user?.bookmarks?.includes(video.id) ? 'fill-black' : ''} />
                   </button>
                   <button 
-                    onClick={() => toggleFavorite(video.id)}
+                    onClick={async () => {
+                      const { success, message } = await toggleFavorite(video.id);
+                      if (showToast) showToast(message, success ? 'success' : 'error');
+                    }}
                     className={`p-4 rounded-full backdrop-blur-md transition-all ${
                       user?.favorites?.includes(video.id) 
                         ? 'bg-brand-coral text-white' 

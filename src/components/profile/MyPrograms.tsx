@@ -233,11 +233,8 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
   };
 
   const handleToggleLike = async (videoId: string) => {
-    await toggleFavorite(videoId);
-    if (showToast) {
-       const isLiked = !user.favorites?.includes(videoId);
-       showToast(isLiked ? 'Added to liked videos! ❤️' : 'Removed from liked videos.', 'success');
-    }
+    const { success, message } = await toggleFavorite(videoId);
+    if (showToast) showToast(message, success ? 'success' : 'error');
   };
 
   const handleStartWorkout = (video: any) => {
