@@ -15,6 +15,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   const [streakCount, setStreakCount] = useState(user.streak_count ?? user.streak ?? 0);
   const [todaySession, setTodaySession] = useState<CalendarSession | null>(null);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [bookmarkedVideos, setBookmarkedVideos] = useState<any[]>([]);
 
   const [stats, setStats] = useState({
     sessionsThisWeek: 0,
@@ -73,14 +74,15 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
     try {
       const todayStr = new Date().toISOString().split('T')[0];
 
-      const [todayRes, weekRes, requestsRes] = await Promise.all([
+      const [todayRes, weekRes, requestsRes, bookmarksRes] = await Promise.all([
         supabase.from('calendar_sessions')
           .select('*').eq('user_id', user.id).eq('session_date', todayStr)
           .order('created_at', { ascending: true }).limit(1).maybeSingle(),
         supabase.from('calendar_sessions')
           .select('id, duration_minutes, status').eq('user_id', user.id),
         supabase.from('service_requests')
-          .select('*').eq('user_id', user.id).eq('status', 'pending')
+          .select('*').eq('user_id', user.id).eq('status', 'pending'),
+        user.bookmarks?.length ? supabase.from('videos').select('*').in('id', user.bookmarks) : Promise.resolve({ data: [] })
       ]);
 
       const completedSessions = weekRes.data?.filter(s => s.status === 'completed') || [];
@@ -89,6 +91,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
 
       setTodaySession(todayRes.data ?? null);
       setPendingRequests(requestsRes.data || []);
+      setBookmarkedVideos(bookmarksRes.data || []);
       setStats({
         sessionsThisWeek: completedSessions.length,
         trainingTime: `${hours}h ${totalMinutes % 60}m`,
@@ -102,7 +105,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
     }
   };
 
-  useEffect(() => { fetchStats(); }, [user.id]);
+  useEffect(() => { fetchStats(); }, [user.id, user.bookmarks?.length]);
 
   if (loading) return (
     <div className="flex items-center justify-center py-40">
@@ -307,6 +310,66 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
           <Flame size={11} className="text-brand-coral" /> {streakCount} Day streak — keep it going
         </div>
       </div>
+
+      {/* =================== ACTIVE PROGRAM STRIP (Bookmarked Videos) =================== */}
+      {bookmarkedVideos.length > 0 && (
+        <section className="space-y-5 fade-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                <VideoIcon className="text-brand-teal" size={20} /> My Program
+              </h3>
+              <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mt-1">Your bookmarked protocols are ready to execute.</p>
+            </div>
+            <button
+              onClick={() => navigate('programs')}
+              className="px-4 py-3 bg-brand-teal/10 border border-brand-teal/20 text-brand-teal font-black uppercase text-[9px] tracking-widest rounded-xl hover:bg-brand-teal hover:text-black transition-all"
+            >
+              Manage / Play
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {bookmarkedVideos.map(video => (
+              <motion.div
+                key={video.id}
+                whileHover={{ y: -4 }}
+                onClick={() => navigate('programs')}
+                className="card-gradient group border border-brand-teal/10 hover:border-brand-teal/40 transition-all rounded-[2rem] overflow-hidden shadow-xl cursor-pointer"
+              >
+                <div className="aspect-video relative overflow-hidden bg-white/5">
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all z-10" />
+                  {video.thumbnail_url ? (
+                    <img src={video.thumbnail_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <VideoIcon size={40} className="text-white/10" />
+                    </div>
+                  )}
+                  {/* Play button overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="p-4 bg-brand-teal text-black rounded-full shadow-glow-teal hover:scale-110 transition-transform">
+                      <Play size={20} fill="black" className="translate-x-0.5" />
+                    </div>
+                  </div>
+                  {/* Bookmark badge indicator natively rendered so they know connection works */}
+                  <div className="absolute top-3 right-3 z-30 p-2 bg-brand-teal/10 backdrop-blur-md rounded-xl text-brand-teal border border-brand-teal/20">
+                    <CheckCircle2 size={14} />
+                  </div>
+                </div>
+                <div className="p-5 space-y-3">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-widest text-brand-teal font-black block mb-1">{video.category || 'Workout'}</span>
+                    <h4 className="text-sm font-black uppercase tracking-tight leading-snug line-clamp-2">{video.title}</h4>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-white/30 text-[9px] font-bold uppercase tracking-widest pt-2 border-t border-white/5">
+                    <Clock size={10} /> {video.duration || '—'}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* =================== QUICK ACTIONS & PENDING REQUESTS =================== */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
