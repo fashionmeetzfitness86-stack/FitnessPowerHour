@@ -2981,8 +2981,8 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                 </div>
                 
                 <p className="text-[8px] text-white/20 uppercase tracking-widest text-center leading-relaxed">
-                  Shipping and taxes calculated at checkout. <br />
-                  Secure payment powered by FMF.
+                  Your delivery address will be collected securely at Checkout. <br />
+                  Shipping and taxes calculated on the next screen.
                 </p>
               </div>
             )}
