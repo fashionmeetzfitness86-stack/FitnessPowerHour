@@ -67,7 +67,13 @@ export const OrderHistory = ({ user, showToast }: { user: UserProfile; showToast
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') {
+          setOrders([]); // Graceful degradation for missing production tables
+          return;
+        }
+        throw error;
+      }
       if (!ordersData) return;
 
       // Fetch items for these orders

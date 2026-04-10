@@ -93,8 +93,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              supabase.from('activity_logs').select('user_id').gte('created_at', todayISO)
            ]);
            
-           // We do a safe count for workout logs separately without breaking if table missing
-           const { count: workoutsToday } = await supabase.from('workout_logs').select('*', { count: 'exact', head: true }).gte('created_at', todayISO).catch(() => ({count: 0})) || {count: 0};
+           // Safe count without using .catch that breaks Supabase Thenable
+           const workoutRes = await supabase.from('workout_logs').select('*', { count: 'exact', head: true }).gte('created_at', todayISO);
+           const workoutsToday = workoutRes?.count || 0;
 
            const revenueToday = ordersRes.data?.reduce((acc: number, curr: any) => acc + (Number(curr.total_amount) || 0), 0) || 0;
            const activeUsersToday = new Set(logsRes.data?.map((l: any) => l.user_id)).size;
