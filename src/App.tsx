@@ -3335,36 +3335,58 @@ const Store = () => {
                         </>
                       )}
                     </button>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const res = await fetch('/.netlify/functions/create-checkout', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              type: 'shop',
-                              items: [{
-                                id: selectedProduct.id,
-                                name: selectedProduct.name,
-                                description: selectedProduct.description,
-                                price: isMember ? Math.floor(selectedProduct.price * 0.7) : selectedProduct.price,
-                                quantity: 1
-                              }],
-                              userId: user?.id || '',
-                              userEmail: user?.email || ''
-                            })
-                          });
-                          const data = await res.json();
-                          if (data.url) window.location.href = data.url;
-                        } catch (err) {
-                          console.error('Buy now error:', err);
-                        }
-                      }}
-                      className="w-full border border-white/10 py-6 rounded-full font-bold text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all"
-                    >
-                      Buy It Now
-                    </button>
-                  </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const res = await fetch('/.netlify/functions/create-checkout', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                type: 'shop',
+                                items: [{
+                                  id: selectedProduct.id,
+                                  name: selectedProduct.name,
+                                  description: selectedProduct.description,
+                                  price: isMember ? Math.floor(selectedProduct.price * 0.7) : selectedProduct.price,
+                                  quantity: 1
+                                }],
+                                userId: user?.id || '',
+                                userEmail: user?.email || ''
+                              })
+                            });
+                            const data = await res.json();
+                            if (data.url) window.location.href = data.url;
+                          } catch (err) {
+                            console.error('Buy now error:', err);
+                          }
+                        }}
+                        className="w-full border border-white/10 py-6 rounded-full font-bold text-xs uppercase tracking-[0.2em] hover:bg-white/5 transition-all"
+                      >
+                        Buy It Now
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const url = `${window.location.origin}/#/shop/product/${selectedProduct.id}`;
+                          if (navigator.share) {
+                            try {
+                              await navigator.share({
+                                title: selectedProduct.name,
+                                text: `Check out ${selectedProduct.name} on the FMF Store`,
+                                url: url
+                              });
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          } else {
+                            navigator.clipboard.writeText(url);
+                            alert('Product link copied to clipboard!');
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-3 border border-brand-teal/30 text-brand-teal py-4 rounded-full font-bold text-xs uppercase tracking-[0.2em] hover:bg-brand-teal hover:text-black transition-all"
+                      >
+                        <Share2 size={16} /> Share Product
+                      </button>
+                    </div>
 
                   <p className="text-[9px] text-white/20 uppercase tracking-widest leading-relaxed">
                     Free shipping on orders over $150. Power Hour Members receive priority fulfillment and exclusive packaging.
@@ -5980,7 +6002,27 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                   >
                     <Heart size={20} className={user?.favorites?.includes(video.id) ? 'fill-white' : ''} />
                   </button>
-                  <button className="p-4 rounded-full bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10 transition-all">
+                  <button 
+                    onClick={async () => {
+                      const url = `${window.location.origin}/#/video/${video.id}`;
+                      if (navigator.share) {
+                        try {
+                          await navigator.share({
+                            title: video.title,
+                            text: `Check out ${video.title} on FMF Power Hour`,
+                            url: url
+                          });
+                        } catch (err) {
+                          console.error('Error sharing:', err);
+                        }
+                      } else {
+                        navigator.clipboard.writeText(url);
+                        if (showToast) showToast('Video link copied to clipboard!', 'success');
+                      }
+                    }}
+                    className="p-4 rounded-full bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10 transition-all"
+                    title="Share Video"
+                  >
                     <Share2 size={20} />
                   </button>
                 </div>
