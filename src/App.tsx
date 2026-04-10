@@ -2987,6 +2987,21 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
   );
 };
 
+export const useProducts = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    supabase.from('products').select('*').then(({ data }) => {
+      // the backend checkout expects db products to be active
+      if (data) setProducts(data as Product[]);
+      setLoading(false);
+    });
+  }, []);
+  
+  return { products, loading };
+};
+
 const Store = () => {
   const { user } = useAuth();
   const { category } = useParams();
@@ -3021,6 +3036,8 @@ const Store = () => {
     addToRecentlyViewed(product);
   };
 
+  const { products: dbProducts, loading } = useProducts();
+
   const isMember = !!(user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete'));
   const discount = 0.2; // 20% discount for members
 
@@ -3028,7 +3045,7 @@ const Store = () => {
   const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÃ‰ Paris Collection', 'Mike Water Fitness'];
 
   const filteredProducts = useMemo(() => {
-    let filtered = PRODUCTS;
+    let filtered = dbProducts;
     if (activeTab !== 'All') {
       filtered = filtered.filter(p => p.category_id === activeTab.toLowerCase());
     }
@@ -4333,7 +4350,8 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const product = PRODUCTS.find(p => p.id === id);
+  const { products, loading } = useProducts();
+  const product = products.find(p => p.id === id);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
 
@@ -4439,7 +4457,8 @@ const ProductDetail = () => {
 const BrandPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const brandProducts = PRODUCTS.filter(p => p.brand_id.toLowerCase().replace(/ /g, '-') === slug);
+  const { products } = useProducts();
+  const brandProducts = products.filter(p => p.brand_id.toLowerCase().replace(/ /g, '-') === slug);
 
   return (
     <div className="pt-40 pb-32 px-6">
