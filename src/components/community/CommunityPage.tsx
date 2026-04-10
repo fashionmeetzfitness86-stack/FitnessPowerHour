@@ -2,8 +2,14 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Users, MapPin, Activity, Bell, Lock } from 'lucide-react';
 import { UserProfile } from '../../types';
+import { AnimatePresence } from 'motion/react';
+import { X, Mail, User } from 'lucide-react';
 
-export const CommunityPage = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
+export const CommunityPage = ({ user, showToast }: { user: UserProfile | null, showToast: any }) => {
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+
   const [joinedEarlyAccess, setJoinedEarlyAccess] = useState(() => {
     return localStorage.getItem(`fmf_whitelist_${user?.id || 'guest'}`) === 'true';
   });
@@ -16,9 +22,19 @@ export const CommunityPage = ({ user, showToast }: { user: UserProfile, showToas
   ];
 
   const handleEarlyAccess = () => {
+     if (!user) {
+        setShowGuestModal(true);
+     } else {
+        finalizeEarlyAccess();
+     }
+  };
+
+  const finalizeEarlyAccess = (e?: React.FormEvent) => {
+     if (e) e.preventDefault();
      setJoinedEarlyAccess(true);
-     localStorage.setItem(`fmf_whitelist_${user?.id || 'guest'}`, 'true');
+     localStorage.setItem(`fmf_whitelist_${user?.id || guestEmail || 'guest'}`, 'true');
      showToast('You are on the Early Access List.', 'success');
+     setShowGuestModal(false);
   };
 
   return (
@@ -123,6 +139,69 @@ export const CommunityPage = ({ user, showToast }: { user: UserProfile, showToas
             </div>
          </div>
       </div>
+
+      <AnimatePresence>
+        {showGuestModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="card-gradient w-full max-w-sm rounded-[3rem] p-10 border border-brand-teal/20 shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowGuestModal(false)}
+                className="absolute top-6 right-6 text-white/30 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+              
+              <div className="text-center space-y-2 mb-8">
+                <Lock className="mx-auto text-brand-teal mb-4" size={32} />
+                <h3 className="text-2xl font-black uppercase tracking-tighter">Guest Verification</h3>
+                <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Please identify yourself to establish a network node.</p>
+              </div>
+
+              <form onSubmit={finalizeEarlyAccess} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-black flex items-center gap-2">
+                    <User size={12} /> Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={guestName}
+                    onChange={e => setGuestName(e.target.value)}
+                    placeholder="Enter full name"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal text-white transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-black flex items-center gap-2">
+                    <Mail size={12} /> Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={guestEmail}
+                    onChange={e => setGuestEmail(e.target.value)}
+                    placeholder="Enter email address"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal text-white transition-all"
+                  />
+                </div>
+                
+                <button
+                  type="submit"
+                  className="w-full mt-4 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:shadow-glow-teal transition-all"
+                >
+                  Submit & Confirm
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
