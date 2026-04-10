@@ -98,7 +98,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
            const workoutsToday = workoutRes?.count || 0;
 
            const revenueToday = ordersRes.data?.reduce((acc: number, curr: any) => acc + (Number(curr.total_amount) || 0), 0) || 0;
-           const activeUsersToday = new Set(logsRes.data?.map((l: any) => l.user_id)).size;
+           const activeUsersToday = logsRes.data ? new Set(logsRes.data.map((l: any) => l.user_id)).size : 0;
 
            setStats({
              activeMembers: activeMembers || 0,
@@ -156,9 +156,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
            const { data } = await supabase.from('athlete_profiles').select('*, user:users(full_name, profile_image)');
            if (data) setAthleteProfiles(data);
          }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching admin data:', error);
-        showToast('System synchronization error', 'error');
+        showToast(`System synchronization error: ${error?.message || error}`, 'error');
       } finally {
         setLoading(false);
       }
