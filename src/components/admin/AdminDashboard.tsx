@@ -74,24 +74,38 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     const fetchData = async () => {
       setLoading(true);
       try {
-        if (activeTab === 'overview' && !stats.users) {
-           const [{ count: uCount }, { count: pCount }, { count: oCount }, { count: cCount }, logsRes, ordersRes] = await Promise.all([
-             supabase.from('profiles').select('*', { count: 'exact', head: true }),
-             supabase.from('products').select('*', { count: 'exact', head: true }),
-             supabase.from('orders').select('*', { count: 'exact', head: true }),
-             supabase.from('communities').select('*', { count: 'exact', head: true }),
-             supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20),
-             supabase.from('orders').select('total_amount').eq('status', 'paid')
+        if (activeTab === 'overview' && !stats.activeMembers) {
+           const todayStart = new Date();
+           todayStart.setHours(0, 0, 0, 0);
+           const todayISO = todayStart.toISOString();
+
+           const [
+             { count: activeMembers }, 
+             { count: pendingOrders }, 
+             { count: pendingRequests }, 
+             ordersRes,
+             logsRes
+           ] = await Promise.all([
+             supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('membership_status', 'active'),
+             supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+             supabase.from('service_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+             supabase.from('orders').select('total_amount').in('status', ['paid', 'completed', 'shipping', 'processing']).gte('created_at', todayISO),
+             supabase.from('activity_logs').select('user_id').gte('created_at', todayISO)
            ]);
            
-           const totalRevenue = ordersRes.data?.reduce((acc: number, curr: any) => acc + (curr.total_amount || 0), 0) || 0;
+           // We do a safe count for workout logs separately without breaking if table missing
+           const { count: workoutsToday } = await supabase.from('workout_logs').select('*', { count: 'exact', head: true }).gte('created_at', todayISO).catch(() => ({count: 0})) || {count: 0};
+
+           const revenueToday = ordersRes.data?.reduce((acc: number, curr: any) => acc + (Number(curr.total_amount) || 0), 0) || 0;
+           const activeUsersToday = new Set(logsRes.data?.map((l: any) => l.user_id)).size;
 
            setStats({
-             users: uCount || 0,
-             products: pCount || 0,
-             orders: oCount || 0,
-             communities: cCount || 0,
-             revenue: totalRevenue.toFixed(2)
+             activeMembers: activeMembers || 0,
+             revenueToday: revenueToday.toFixed(2),
+             pendingOrders: pendingOrders || 0,
+             activeUsersToday: activeUsersToday || 0,
+             pendingRequests: pendingRequests || 0,
+             workoutsToday: workoutsToday || 0,
            });
         } else if (activeTab === 'users' && users.length === 0) {
            const { data } = await supabase.from('profiles').select('*').limit(50);
@@ -468,7 +482,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     );
 
     switch (activeTab) {
-      case 'overview': return <AdminOverview stats={stats} />;
+      case 'overview': return <AdminOverview stats={stats} onNavigate={setActiveTab} />;
       case 'users': return (
         <UsersManager
           users={users}
