@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1693,7 +1693,7 @@ const SystemSection = () => {
   const phases = [
     {
       title: 'Foundation',
-      weeks: 'Weeks 1Ã¢â‚¬â€œ4',
+      weeks: 'Weeks 1-4',
       focus: ['Mobility', 'Core Stability', 'Body Control'],
       exercises: ['Push-ups', 'Squats', 'Planks', 'Lunges'],
       goal: 'Prepare the body for more advanced training.',
@@ -1701,7 +1701,7 @@ const SystemSection = () => {
     },
     {
       title: 'Power',
-      weeks: 'Weeks 5Ã¢â‚¬â€œ8',
+      weeks: 'Weeks 5-8',
       focus: ['Explosive Strength', 'Endurance', 'Conditioning'],
       exercises: ['Jump Squats', 'Pull-ups', 'Burpees', 'Core Circuits'],
       goal: 'Build athletic performance.',
@@ -1709,7 +1709,7 @@ const SystemSection = () => {
     },
     {
       title: 'Mastery',
-      weeks: 'Weeks 9Ã¢â‚¬â€œ12',
+      weeks: 'Weeks 9-12',
       focus: ['Full-body Strength', 'Advanced Calisthenics', 'Mental Discipline'],
       exercises: ['Muscle-ups', 'Pistol Squats', 'Handstand Work', 'Advanced Core Training'],
       goal: 'Develop total body strength and control.',
@@ -1803,21 +1803,7 @@ const SystemSection = () => {
           ))}
         </div>
 
-        <div className="mt-24 p-12 rounded-3xl border border-white/5 bg-gradient-to-r from-brand-teal/10 to-transparent flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-bold uppercase tracking-tighter">Session Structure</h3>
-            <p className="text-white/40 text-sm uppercase tracking-widest">45Ã¢â‚¬â€œ60 Minutes of Focused Discipline</p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-4">
-            {['Warm-up', 'Strength', 'Conditioning', 'Cool Down'].map((step, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-brand-teal font-bold">0{i + 1}</span>
-                <span className="text-xs uppercase tracking-widest text-white/60">{step}</span>
-                {i < 3 && <div className="w-8 h-px bg-white/10 hidden sm:block" />}
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Session Structure Removed */}
       </div>
     </section>
   );
