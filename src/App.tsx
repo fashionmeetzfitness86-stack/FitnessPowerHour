@@ -3464,7 +3464,7 @@ const Store = () => {
                     </p>
                   </div>
                 </div>
-                <button className="btn-primary">Explore CLÉ Paris</button>
+                <button onClick={() => window.open('https://clparis.com', '_blank', 'noopener,noreferrer')} className="btn-primary">Explore CLÉ Paris</button>
               </div>
             </div>
           </div>
