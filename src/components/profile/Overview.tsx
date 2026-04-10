@@ -314,7 +314,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                       <Plus size={16} /> Add Second Workout
                     </button>
                     <button
-                      onClick={() => setShowReward(true)}
+                      onClick={() => navigate('progress')}
                       className="w-full py-5 bg-transparent text-white/40 hover:text-white font-black uppercase text-[10px] tracking-[0.3em] transition-all flex items-center justify-center gap-3"
                     >
                       View Progress
@@ -827,47 +827,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
         )}
       </AnimatePresence>
 
-      {/* =================== REWARD MODAL =================== */}
-      <AnimatePresence>
-        {showReward && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 20 }}
-              className="card-gradient w-full max-w-sm p-12 text-center space-y-8 rounded-[4rem] border border-brand-teal/30 shadow-[0_0_100px_rgba(45,212,191,0.2)]"
-            >
-              <div className="w-24 h-24 bg-brand-teal/10 rounded-[2.5rem] flex items-center justify-center mx-auto text-brand-teal border border-brand-teal/20 shadow-glow-teal">
-                <Rocket size={48} className="animate-bounce" />
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-4xl font-black uppercase tracking-tighter">System <span className="text-brand-teal">Locked</span></h3>
-                <p className="text-xl font-bold uppercase tracking-widest">🔥 {streakCount} Day Streak!</p>
-                <p className="text-[11px] uppercase tracking-widest text-white/40 font-bold leading-relaxed px-4">
-                  Your discipline is compounding. 80% of members didn't check in today. You did.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setShowReward(false)}
-                  className="w-full py-5 bg-brand-teal text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl shadow-glow-teal"
-                >
-                  Keep Going
-                </button>
-                <button
-                  onClick={() => { setShowReward(false); navigate('progress'); }}
-                  className="text-[10px] uppercase tracking-widest text-white/30 hover:text-white transition-all font-black"
-                >
-                  What's Next? View Progress
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 };
