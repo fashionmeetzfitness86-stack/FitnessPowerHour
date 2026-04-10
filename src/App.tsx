@@ -203,7 +203,7 @@ const PRODUCTS: Product[] = [
     id: 'p3', 
     brand_id: 'cle-paris',
     category_id: 'fragrance',
-    name: "CLÃ‰ PARIS L'EAU",
+    name: "CLÉ Paris L'EAU",
     slug: 'cle-paris-leau',
     description: 'A fresh, sophisticated fragrance for the modern athlete.',
     price: 120,
@@ -211,8 +211,8 @@ const PRODUCTS: Product[] = [
     sku: 'FRG-001',
     inventory_count: 30,
     status: 'active',
-    featured_image: placeholder('ClÃ© Paris', 'c4a265'),
-    images: [placeholder('ClÃ© Paris', 'c4a265')],
+    featured_image: placeholder('Clé Paris', 'c4a265'),
+    images: [placeholder('Clé Paris', 'c4a265')],
     ingredients: ['Bergamot', 'Sandalwood', 'Marine Accord'],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
@@ -268,10 +268,10 @@ const COLLABORATIONS: CollaborationBrand[] = [
   },
   { 
     id: 'c4', 
-    name: 'CLÃ‰ PARIS', 
+    name: 'CLÉ PARIS', 
     category: 'Luxury Fragrance & Lifestyle', 
     description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
-    image: placeholder('ClÃ© Paris', 'c4a265'),
+    image: placeholder('Clé Paris', 'c4a265'),
     link: 'https://cle-paris.com',
     buttonText: 'Explore Brand'
   },
@@ -491,7 +491,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchUser(session.user.id);
         fetchNotifications(session.user.id);
 
-        // â”€â”€ Realtime: Re-fetch profile whenever the webhook updates tier/membership_status â”€â”€
+        // ——— Realtime: Re-fetch profile whenever the webhook updates tier/membership_status ———
         realtimeChannel = supabase
           .channel(`profile-sync-${session.user.id}`)
           .on(
@@ -503,7 +503,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
               filter: `id=eq.${session.user.id}`
             },
             (_payload) => {
-              console.log('[Realtime] Profile updated â€” refreshing user state');
+              console.log('[Realtime] Profile updated — refreshing user state');
               fetchUser(session.user.id);
             }
           )
@@ -592,7 +592,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         await supabase.from('profiles').insert(dbRow);
       }
 
-      // Sign out immediately â€” user must confirm email before accessing the app
+      // Sign out immediately — user must confirm email before accessing the app
       await supabase.auth.signOut();
     } catch (error) {
       console.error('Signup error:', error);
@@ -1243,7 +1243,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
       </div>
     </div>
     <div className="max-w-7xl mx-auto pt-8 border-t border-white/5 text-[10px] uppercase tracking-[0.3em] text-white/20 flex flex-col md:flex-row justify-between items-center gap-4">
-      <span>Ã‚Â© 2026 Fitness Power Hour. All Rights Reserved.</span>
+      <span>© 2026 Fitness Power Hour. All Rights Reserved.</span>
       <span>Miami Beach</span>
     </div>
   </footer>
@@ -1357,7 +1357,7 @@ const Home = () => {
           <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter text-white">What is FMF?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {['Train', 'Recover', 'Elevate'].map((block, i) => (
-              <div key={i} className="card-gradient p-12 aspect-square flex flex-col items-center justify-center text-center group transition-all hover:border-brand-teal/50">
+              <div key={i} className="card-gradient p-12 aspect-square flex flex-col items-center justify-center text-center group transition-all hover:border-brand-teal/50 transition-all">
                 <div className="w-16 h-16 rounded-full bg-brand-teal/10 flex items-center justify-center text-brand-teal mb-6 group-hover:scale-110 transition-transform">
                   {i === 0 ? <Dumbbell size={32} /> : i === 1 ? <Heart size={32} /> : <Zap size={32} />}
                 </div>
@@ -1575,7 +1575,7 @@ const PhilosophySection = () => {
             </h2>
             <div className="space-y-6 text-white/60 text-lg font-light leading-relaxed">
               <p>
-                Fitness Power Hour is not just a workout program Ã¢â‚¬â€ it is a lifestyle built around discipline, movement, and personal strength.
+                Fitness Power Hour is not just a workout program — it is a lifestyle built around discipline, movement, and personal strength.
               </p>
               <p>
                 We believe that training is a daily ritual that strengthens both the body and the mind. It is the ultimate expression of self-respect and the foundation of a high-performance life.
@@ -2412,10 +2412,6 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
   const totalDays = daysInMonth(currentYear, currentMonth);
   const startDay = firstDayOfMonth(currentYear, currentMonth);
 
-  const prevMonth = () => setSelectedDate(new Date(currentYear, currentMonth - 1, 1));
-  const nextMonth = () => setSelectedDate(new Date(currentYear, currentMonth + 1, 1));
-  const goToToday = () => setSelectedDate(new Date());
-
   const { user } = useAuth();
 
   const handleBooking = (session: TrainingSession) => {
@@ -2509,15 +2505,15 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
                     {selectedDate.toLocaleString('default', { month: 'long' })} <span className="text-brand-teal">{currentYear}</span>
                   </h2>
                   <button 
-                    onClick={goToToday}
+                    onClick={() => setSelectedDate(new Date())}
                     className="text-[10px] uppercase tracking-widest text-brand-teal hover:text-brand-coral transition-colors"
                   >
                     Go to Today
                   </button>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={prevMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors"><ChevronLeft size={20} /></button>
-                  <button onClick={nextMonth} className="p-2 hover:bg-white/5 rounded-lg transition-colors"><ChevronRight size={20} /></button>
+                  <button onClick={() => setSelectedDate(new Date(currentYear, currentMonth - 1, 1))} className="p-2 hover:bg-white/5 rounded-lg transition-colors"><ChevronLeft size={20} /></button>
+                  <button onClick={() => setSelectedDate(new Date(currentYear, currentMonth + 1, 1))} className="p-2 hover:bg-white/5 rounded-lg transition-colors"><ChevronRight size={20} /></button>
                 </div>
               </div>
 
@@ -3042,7 +3038,7 @@ const Store = () => {
   const discount = 0.2; // 20% discount for members
 
   const tabs = ['All', 'Apparel', 'Gear', 'Accessories', 'Fragrance', 'Lifestyle', 'Nutrition'];
-  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÃ‰ Paris Collection', 'Mike Water Fitness'];
+  const collections = ['All', 'FMF Training Collection', 'FMF Lifestyle Collection', 'FMF x Sorority Collection', 'Pier St Barth Collection', 'CLÉ Paris Collection', 'Mike Water Fitness'];
 
   const filteredProducts = useMemo(() => {
     let filtered = dbProducts;
@@ -3444,20 +3440,19 @@ const Store = () => {
 
             <div className="mt-32 p-12 md:p-24 rounded-[3rem] bg-gradient-to-br from-brand-black via-brand-black to-brand-teal/10 border border-white/5 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 bg-gradient-to-l from-[#c4a265]/20 to-transparent" />
-              <div className="relative z-10 max-w-xl space-y-8">
-                <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Luxury Lifestyle</span>
-                <h2 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
-                  CLÃ‰ <span className="text-brand-teal italic">Paris</span>
-                </h2>
-                <p className="text-white/60 text-lg font-light leading-relaxed italic">
-                  "Train with discipline. Move with strength. Carry yourself with elegance."
-                </p>
-                <div className="space-y-4 text-sm text-white/40 leading-relaxed">
-                  <p>
-                    CLÃ‰ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
-                  </p>
+              <div className="md:w-1/2 flex flex-col justify-center space-y-6">
+                <h3 className="text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-4">
+                  CLÉ <span className="text-brand-teal italic">Paris</span>
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <Star className="text-brand-teal shrink-0 mt-1" size={20} />
+                    <p className="text-white/60 text-lg font-light leading-relaxed">
+                    CLÉ Paris represents the elegance and sophistication of the Fashion meetz Fitness lifestyle. Luxury, confidence, and personal presence for the refined athlete.
+                    </p>
+                  </div>
                 </div>
-                <button className="btn-primary">Explore CLÃ‰ Paris</button>
+                <button className="btn-primary">Explore CLÉ Paris</button>
               </div>
             </div>
           </div>
