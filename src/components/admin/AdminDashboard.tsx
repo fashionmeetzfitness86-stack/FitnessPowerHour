@@ -233,12 +233,31 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     }
   };
 
-  const handleReviewRetreatApp = async (id: string, status: 'accepted' | 'declined') => {
+  const handleReviewRetreatApp = async (id: string, status: 'accepted' | 'declined' | 'needs_call', admin_notes?: string) => {
     try {
-      await supabase.from('retreat_applications').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
-      setRetreatApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+      await supabase.from('retreat_applications').update({ status, admin_notes: admin_notes || null, updated_at: new Date().toISOString() }).eq('id', id);
+      setRetreatApplications(prev => prev.map(a => a.id === id ? { ...a, status, admin_notes } : a));
+      
+      // Find the application to get user_id for notification
+      const app = retreatApplications.find(a => a.id === id);
+      if (app) {
+        const notifMsg = status === 'accepted'
+          ? 'Congratulations! Your retreat application has been approved. Check your Retreats tab for details.'
+          : status === 'needs_call'
+          ? 'Your retreat application requires a follow-up call. Our team will reach out to your email soon.'
+          : 'Your retreat application was not selected at this time. Thank you for applying.';
+        await supabase.from('notifications').insert({
+          user_id: app.user_id,
+          type: 'retreat',
+          title: status === 'accepted' ? 'Retreat Application Approved 🎉' : status === 'needs_call' ? 'Follow-Up Call Required 📞' : 'Application Update',
+          message: notifMsg,
+          metadata: { route: '#/profile' }
+        });
+      }
+
       logActivity('REVIEW_RETREAT_APP', 'retreat_application', id, { status });
-      showToast(`Applicant ${status}`, 'success');
+      const label = status === 'accepted' ? 'Approved ✅' : status === 'needs_call' ? 'Flagged for call 📞' : 'Declined';
+      showToast(`Applicant ${label}`, 'success');
     } catch (error) {
       showToast('Decision transmission failed', 'error');
     }

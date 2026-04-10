@@ -437,7 +437,10 @@ export interface RetreatApplication {
   user_id: string;
   user_name: string;
   user_email: string;
-  status: 'pending' | 'accepted' | 'declined';
+  status: 'pending' | 'accepted' | 'declined' | 'needs_call';
+  admin_notes?: string;
+  message?: string;
+  phone?: string;
   created_at: string;
   updated_at: string;
 }
