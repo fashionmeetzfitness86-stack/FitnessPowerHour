@@ -400,7 +400,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                         <Dumbbell size={16} /> Add Workout
                       </button>
                       <button
-                        onClick={() => navigate('/services')}
+                        onClick={() => setPanelMode('add_service')}
                         className="py-4 bg-brand-teal text-black font-black uppercase text-[9px] tracking-[0.2em] rounded-2xl hover:shadow-glow-teal transition-all flex flex-col items-center justify-center gap-2"
                       >
                         <UserPlus size={16} /> Book Service
@@ -441,7 +441,45 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                   </div>
                 )}
 
-                {/* ADD WORKOUT MODE */}
+                {/* ADD SERVICE MODE */}
+                {panelMode === 'add_service' && (
+                  <div className="p-6 space-y-6">
+                    <div className="space-y-2">
+                      <h5 className="text-lg font-black uppercase tracking-tighter">Book <span className="text-brand-teal">Service</span></h5>
+                      <p className="text-[9px] text-brand-teal uppercase tracking-widest font-bold">Request a 1-on-1 session</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Type</label>
+                        <select value={serviceType} onChange={e => setServiceType(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs font-bold uppercase tracking-widest text-white focus:border-white/40 outline-none transition-all appearance-none cursor-pointer hover:bg-white/10">
+                          <option value="Personal Training" className="bg-brand-black">Personal Training</option>
+                          <option value="Nutrition Coaching" className="bg-brand-black">Nutrition Coaching</option>
+                          <option value="Video Analysis" className="bg-brand-black">Video Analysis</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Preferred Time</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM', '7:00 PM'].map(t => (
+                            <button key={t} onClick={() => setSelectedTime(t === selectedTime ? '' : t)} className={`py-3 rounded-xl text-[10px] font-mono font-bold border transition-all ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Notes (Optional)</label>
+                        <textarea placeholder="Any specific focus areas or requests?" value={serviceMessage} onChange={e => setServiceMessage(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:border-white/40 outline-none transition-all placeholder-white/20 h-24 resize-none" />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button onClick={() => setPanelMode('view')} className="flex-1 py-4 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[9px] tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back</button>
+                      <button onClick={handleAddService} disabled={isSubmitting || !selectedTime} className="flex-1 py-4 bg-brand-teal text-black font-black uppercase text-[9px] tracking-widest rounded-2xl hover:scale-105 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:hover:scale-100">
+                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <><UserPlus size={14} /> Request</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ) : (
               <motion.div
