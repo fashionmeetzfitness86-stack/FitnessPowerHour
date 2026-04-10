@@ -16,6 +16,7 @@ interface DraftNotification {
   status: 'draft' | 'scheduled' | 'sent';
   created_at: string;
   sent_count?: number;
+  repeat_interval?: 'none' | '12h' | '24h' | 'weekly';
 }
 
 export const NotificationManager = ({ users = [], groups = [], showToast }: any) => {
@@ -28,6 +29,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
   const [recipientValue, setRecipientValue] = useState('');
   const [userSearch, setUserSearch]         = useState('');
   const [scheduleAt, setScheduleAt]         = useState('');
+  const [repeatInterval, setRepeatInterval] = useState<'none' | '12h' | '24h' | 'weekly'>('none');
   const [isDraft, setIsDraft]               = useState(false);
   const [isSubmitting, setIsSubmitting]     = useState(false);
 
@@ -76,6 +78,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
         recipient_type: recipientType,
         recipient_value: recipientValue,
         scheduled_at: scheduleAt || null,
+        repeat_interval: repeatInterval !== 'none' ? repeatInterval : null,
         status,
         sent_count: sentCount,
         created_at: new Date().toISOString(),
@@ -135,7 +138,8 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
       );
 
       // Reset
-      setTitle(''); setMessage(''); setRecipientValue(''); setScheduleAt(''); setUserSearch('');
+      setTitle(''); setMessage(''); setRecipientValue(''); setScheduleAt(''); setUserSearch(''); setRepeatInterval('none');
+      if (tab === 'compose') fetchHistory();
     } catch (err: any) {
       showToast?.(err?.message || 'Dispatch failed', 'error');
     } finally {
@@ -146,6 +150,22 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
   const handleDeleteHistory = async (id: string) => {
     await supabase.from('admin_broadcast_log').delete().eq('id', id);
     setHistory(prev => prev.filter(h => h.id !== id));
+  };
+
+  const handleEditHistory = (h: DraftNotification) => {
+    setTitle(h.title);
+    setMessage(h.message);
+    setRecipientType(h.recipient_type as any);
+    setRecipientValue(h.recipient_value || '');
+    setScheduleAt(h.scheduled_at ? new Date(h.scheduled_at).toISOString().slice(0, 16) : '');
+    setRepeatInterval(h.repeat_interval || 'none');
+    setTab('compose');
+  };
+
+  const handleResendHistory = async (h: DraftNotification) => {
+    handleEditHistory(h);
+    // User can just click 'Send Now' from compose, but we'll show toast
+    showToast?.('Notification loaded. Review and click Send Now.', 'success');
   };
 
   const RECIPIENT_TYPES = [
@@ -256,17 +276,29 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
               </div>
             </div>
 
-            {/* Step 3: Schedule (optional) */}
+            {/* Step 3: Schedule & Repeat (optional) */}
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
               <h3 className="text-xs uppercase font-black tracking-widest text-white/40 flex items-center gap-2">
-                <Calendar size={14} /> 3. Schedule (optional)
+                <Calendar size={14} /> 3. Schedule & Repeat (optional)
               </h3>
-              <div className="space-y-1.5">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Send At</label>
-                <input type="datetime-local" value={scheduleAt} onChange={e => setScheduleAt(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal" />
-                {scheduleAt && <p className="text-[9px] text-brand-teal font-black">Scheduled for: {new Date(scheduleAt).toLocaleString()}</p>}
-                {scheduleAt && <button onClick={() => setScheduleAt('')} className="text-[9px] text-white/30 hover:text-white underline">Clear schedule</button>}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Send At</label>
+                  <input type="datetime-local" value={scheduleAt} onChange={e => setScheduleAt(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal" />
+                  {scheduleAt && <p className="text-[9px] text-brand-teal font-black">Scheduled for: {new Date(scheduleAt).toLocaleString()}</p>}
+                  {scheduleAt && <button onClick={() => setScheduleAt('')} className="text-[9px] text-white/30 hover:text-white underline">Clear schedule</button>}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Repeat Strategy</label>
+                  <select value={repeatInterval} onChange={e => setRepeatInterval(e.target.value as any)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal">
+                    <option value="none">One-time Broadcast</option>
+                    <option value="12h">Repeat Every 12 Hours</option>
+                    <option value="24h">Repeat Every 24 Hours</option>
+                    <option value="weekly">Repeat Weekly</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -321,10 +353,17 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
                         {h.sent_count !== undefined && <span>{h.sent_count} recipients</span>}
                         <span>{new Date(h.created_at).toLocaleDateString()}</span>
                         {h.scheduled_at && <span className="text-amber-400">⏰ {new Date(h.scheduled_at).toLocaleString()}</span>}
+                        {h.repeat_interval && h.repeat_interval !== 'none' && <span className="text-brand-teal flex items-center gap-1"><Repeat size={10} /> Every {h.repeat_interval}</span>}
                       </div>
                     </div>
-                    <button onClick={() => handleDeleteHistory(h.id)}
-                      className="p-1.5 text-white/20 hover:text-red-400 transition-all flex-shrink-0"><Trash2 size={13} /></button>
+                    <div className="flex flex-col gap-2 flex-shrink-0">
+                      <button onClick={() => handleResendHistory(h)} className="p-1 text-white/60 hover:text-brand-teal transition-all flex items-center justify-center bg-white/5 hover:bg-white/10 rounded" title="Edit & Re-send">
+                        <Send size={12} />
+                      </button>
+                      <button onClick={() => handleDeleteHistory(h.id)} className="p-1 text-white/40 hover:text-red-400 transition-all flex items-center justify-center bg-white/5 hover:bg-white/10 rounded" title="Delete Log">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
