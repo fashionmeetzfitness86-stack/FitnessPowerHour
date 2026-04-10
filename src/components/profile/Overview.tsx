@@ -221,10 +221,27 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const lastCheckin = user.last_checkin ? new Date(user.last_checkin) : null;
-  const missedYesterday = !lastCheckin || (lastCheckin.toDateString() !== yesterday.toDateString() && !hasCheckedIn);
+  const isProfileIncomplete = !user.height || !user.weight || !user.phone || !user.workout_style || !user.country || !user.short_bio;
 
   return (
     <div className="space-y-8 fade-in pb-20">
+      
+      {isProfileIncomplete && (
+        <div className="bg-amber-500/10 border border-amber-500/30 p-6 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_20px_rgba(245,158,11,0.1)]">
+          <div className="flex items-start md:items-center gap-4">
+            <AlertCircle size={28} className="text-amber-500 shrink-0 mt-1 md:mt-0" />
+            <div>
+              <h4 className="text-amber-500 font-black uppercase tracking-tight text-lg mb-1">Complete Your Athletic Intel</h4>
+              <p className="text-[10px] text-white/60 uppercase tracking-widest leading-relaxed">
+                Your profile is missing vital physiological or contact parameters. This will delay physical product shipments and 1-on-1 training approvals.
+              </p>
+            </div>
+          </div>
+          <button onClick={() => navigate('settings')} className="px-8 py-4 bg-amber-500 text-black text-[10px] uppercase font-black tracking-[0.2em] rounded-xl hover:scale-105 active:scale-95 transition-all whitespace-nowrap shadow-xl">
+            Update Matrix
+          </button>
+        </div>
+      )}
 
       {/* =================== TIMER BAR — shows when active =================== */}
       <AnimatePresence>

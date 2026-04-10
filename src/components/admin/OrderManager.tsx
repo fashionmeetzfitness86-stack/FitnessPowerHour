@@ -26,6 +26,7 @@ export const OrderManager = ({ orders, users, onUpdateStatus }: OrderManagerProp
   const [statusFilter, setStatusFilter] = useState('all');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = useState('');
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
 
   const filteredOrders = orders.filter(o => {
     const u = users.find(user => user.id === o.user_id);
@@ -136,6 +137,14 @@ export const OrderManager = ({ orders, users, onUpdateStatus }: OrderManagerProp
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {/* View Details */}
+                      <button
+                        onClick={() => setViewingOrder(o)}
+                        className="p-1.5 bg-blue-500/10 hover:bg-blue-500 rounded-lg text-blue-400 hover:text-white transition-all"
+                        title="View Details"
+                      >
+                        <Eye size={13} />
+                      </button>
                       {/* Quick complete */}
                       {o.status !== 'completed' && o.status !== 'cancelled' && (
                         <button
@@ -200,6 +209,52 @@ export const OrderManager = ({ orders, users, onUpdateStatus }: OrderManagerProp
                 <button onClick={() => setConfirmingId(null)} className="flex-1 py-3 bg-white/5 text-white font-black uppercase text-[10px] rounded-xl hover:bg-white/10 transition-all">Cancel</button>
                 <button onClick={confirmStatusChange} className="flex-1 py-3 bg-brand-coral text-black font-black uppercase text-[10px] rounded-xl hover:bg-brand-coral/80 transition-all">Confirm</button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View Address/Details Modal */}
+      <AnimatePresence>
+        {viewingOrder && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
+              className="bg-[#0f0f0f] border border-white/10 rounded-3xl p-8 w-full max-w-md space-y-6 shadow-2xl"
+            >
+              <div className="flex justify-between items-center pb-4 border-b border-white/5">
+                <h3 className="text-xl font-black uppercase tracking-tight text-white">Order Details</h3>
+                <button onClick={() => setViewingOrder(null)} className="text-white/40 hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1 font-bold">Stripe Session ID</p>
+                  <p className="text-xs font-mono text-white/60">{viewingOrder.stripe_session_id || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-brand-teal mb-2 font-bold">Shipping Address</p>
+                  {viewingOrder.shipping_address ? (
+                    <div className="bg-white/5 p-4 rounded-xl text-xs font-bold text-white/80 space-y-1.5 border border-white/10 shadow-inner">
+                      {viewingOrder.shipping_address.name && <p className="text-brand-teal uppercase tracking-widest text-[10px] mb-2">{viewingOrder.shipping_address.name}</p>}
+                      <p>{viewingOrder.shipping_address.line1}</p>
+                      {viewingOrder.shipping_address.line2 && <p>{viewingOrder.shipping_address.line2}</p>}
+                      <p>{viewingOrder.shipping_address.city}, {viewingOrder.shipping_address.state} {viewingOrder.shipping_address.postal_code}</p>
+                      <p className="text-white/40 pt-2">{viewingOrder.shipping_address.country}</p>
+                    </div>
+                  ) : (
+                    <div className="bg-amber-500/10 p-4 rounded-xl text-xs text-amber-500/60 italic border border-amber-500/20">
+                      No shipping address was collected.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setViewingOrder(null)} className="w-full py-4 mt-6 bg-white/10 hover:bg-white text-white hover:text-black font-black uppercase text-[10px] tracking-widest rounded-xl transition-all">Close Details</button>
             </motion.div>
           </motion.div>
         )}

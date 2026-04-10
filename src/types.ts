@@ -297,6 +297,7 @@ export interface Order {
   total_amount: number;
   status: 'pending' | 'paid' | 'shipped' | 'cancelled';
   shipping_address?: any;
+  stripe_session_id?: string;
   created_at: string;
   items?: OrderItem[];
   customer_name_snapshot?: string;
