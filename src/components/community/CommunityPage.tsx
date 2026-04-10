@@ -4,7 +4,9 @@ import { Users, MapPin, Activity, Bell, Lock } from 'lucide-react';
 import { UserProfile } from '../../types';
 
 export const CommunityPage = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
-  const [joinedEarlyAccess, setJoinedEarlyAccess] = useState(false);
+  const [joinedEarlyAccess, setJoinedEarlyAccess] = useState(() => {
+    return localStorage.getItem(`fmf_whitelist_${user?.id || 'guest'}`) === 'true';
+  });
 
   const hubs = [
     { name: 'Miami Core', location: 'Miami, FL', active: 142, icon: MapPin },
@@ -15,6 +17,7 @@ export const CommunityPage = ({ user, showToast }: { user: UserProfile, showToas
 
   const handleEarlyAccess = () => {
      setJoinedEarlyAccess(true);
+     localStorage.setItem(`fmf_whitelist_${user?.id || 'guest'}`, 'true');
      showToast('You are on the Early Access List.', 'success');
   };
 
