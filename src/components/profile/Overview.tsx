@@ -221,7 +221,16 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const lastCheckin = user.last_checkin ? new Date(user.last_checkin) : null;
-  const isProfileIncomplete = !user.full_name || !user.phone || !user.email || !user.height || !user.weight || !user.city || !user.address || !user.short_bio;
+  const missingFields = [];
+  if (!user.full_name?.trim()) missingFields.push('Full Name');
+  if (!user.phone?.trim()) missingFields.push('Phone Number');
+  if (!user.email?.trim()) missingFields.push('Email');
+  if (!user.height?.trim()) missingFields.push('Height');
+  if (!user.weight?.trim()) missingFields.push('Weight');
+  if (!user.city?.trim()) missingFields.push('City');
+  if (!user.address?.trim()) missingFields.push('Address');
+  if (!user.short_bio?.trim()) missingFields.push('Athletic Intel/Bio');
+  const isProfileIncomplete = missingFields.length > 0;
   const missedYesterday = !lastCheckin || (lastCheckin.toDateString() !== yesterday.toDateString() && !hasCheckedIn);
 
   return (
@@ -234,7 +243,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
             <div>
               <h4 className="text-amber-500 font-black uppercase tracking-tight text-lg mb-1">Complete Your Athletic Intel</h4>
               <p className="text-[10px] text-white/60 uppercase tracking-widest leading-relaxed">
-                Your profile is missing vital physiological or contact parameters. This will delay physical product shipments and 1-on-1 training approvals.
+                Your profile is missing vital parameters: <span className="text-amber-500 font-bold">{missingFields.join(', ')}</span>. This will delay product shipments and 1-on-1 access.
               </p>
             </div>
           </div>
