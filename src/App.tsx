@@ -5813,6 +5813,57 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
   const { user, toggleFavorite, toggleBookmark } = useAuth();
   const [video, setVideo] = useState<Video | undefined>(VIDEOS.find(v => v.id === id));
   const [loading, setLoading] = useState(!video);
+  const [isLogging, setIsLogging] = useState(false);
+
+  const handleLogWorkout = async () => {
+    if (!user) {
+      if (showToast) showToast('Please login to log a workout', 'error');
+      return;
+    }
+    
+    setIsLogging(true);
+    try {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      
+      // Check existing sessions today
+      const { data: existing } = await supabase
+        .from('calendar_sessions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('session_date', todayStr);
+        
+      const sessionCount = existing?.length || 0;
+      
+      await supabase.from('calendar_sessions').insert({
+        user_id: user.id,
+        source_type: 'check_in',
+        title: sessionCount >= 1 ? `Second Session: ${video?.title || 'Workout'}` : `Completed: ${video?.title || 'Workout'}`,
+        session_date: todayStr,
+        session_time: now.toISOString().split('T')[1].split('.')[0],
+        duration_minutes: parseInt(video?.duration || '45'),
+        status: 'completed'
+      });
+      
+      if (sessionCount === 0) {
+        await supabase.from('profiles').update({
+          last_checkin: now.toISOString(),
+          streak_count: (user.streak_count || user.streak || 0) + 1
+        }).eq('id', user.id);
+        if (showToast) showToast('🔥 Workout Logged! Streak increased!', 'success');
+      } else {
+        if (showToast) showToast('✅ Additional workout logged!', 'success');
+      }
+      
+      // Navigate to profile dashboard after brief delay to see the active streak
+      setTimeout(() => navigate('/profile'), 1500);
+      
+    } catch (err: any) {
+      if (showToast) showToast(err.message || 'Failed to log workout', 'error');
+    } finally {
+      setIsLogging(false);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -5945,6 +5996,21 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                     This session is designed to push your boundaries while maintaining perfect form. Focus on the mind-muscle connection and breathe through every movement.
                   </p>
                 </div>
+                
+                {user && (
+                    <button 
+                      disabled={isLogging}
+                      onClick={handleLogWorkout}
+                      className="w-full mt-8 py-5 flex items-center justify-center gap-3 bg-brand-teal text-black uppercase tracking-widest text-[11px] font-black rounded-2xl hover:bg-brand-teal/90 transition-all disabled:opacity-50 shadow-[0_0_40px_rgba(45,212,191,0.2)]"
+                    >
+                      {isLogging ? (
+                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <CheckCircle size={20} className="fill-black text-brand-teal" />
+                      )}
+                      {isLogging ? 'Logging Session...' : 'Complete Session & Log Check-in'}
+                    </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-12 border-t border-white/5">
