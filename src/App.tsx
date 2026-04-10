@@ -4888,7 +4888,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
 
   const tiers = [
     {
-      name: 'Free Profile',
+      name: 'Free',
       price: 'Free',
       period: 'forever',
       features: [
@@ -4898,6 +4898,19 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
         'Preview training content'
       ],
       button: 'Sign Up Free',
+      highlight: true
+    },
+    {
+      name: 'Basic',
+      price: '$19.99',
+      period: 'per month',
+      features: [
+        'Full Video Library Access',
+        'Program Builder Tracker',
+        'Service Booking Privileges',
+        'VIP Access to FMF Store'
+      ],
+      button: 'Get Full Access',
       highlight: false
     }
   ];
@@ -5011,7 +5024,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
           </p>
         </header>
 
-        <div className="grid grid-cols-1 max-w-sm mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8">
           {tiers.map((tier, i) => (
             <div 
               key={i} 
