@@ -711,9 +711,9 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                   <Camera size={30} />
                 </div>
                 <h3 className="text-2xl font-black uppercase tracking-tighter">
-                  {todayCheckInCount >= 1 ? `Workout #${todayCheckInCount + 1}` : 'Check-In'} <span className="text-brand-coral">Photo</span>
+                  {todayCheckInCount >= 1 ? `Workout #${todayCheckInCount + 1}` : 'Checkout'} <span className="text-brand-coral">Photo</span>
                 </h3>
-                <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 font-black">Upload your photo to confirm this session</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 font-black">Take your photo to confirm this session</p>
               </div>
 
               {/* Timer section */}
@@ -737,11 +737,13 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                 <div className="flex gap-3">
                   <button
                     onClick={() => {
-                      if (timerSeconds === 0 && !timerActive) {
-                        // Fresh start
+                      if (timerActive) {
+                        // Stop and reset
+                        setTimerActive(false);
                         setTimerSeconds(0);
+                      } else {
+                        setTimerActive(true);
                       }
-                      setTimerActive(a => !a);
                     }}
                     className={`flex-1 py-3 rounded-xl text-[9px] uppercase font-black tracking-widest transition-all border ${
                       timerActive
@@ -749,16 +751,8 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                         : 'bg-brand-teal/10 border-brand-teal/30 text-brand-teal hover:bg-brand-teal hover:text-black'
                     }`}
                   >
-                    {timerActive ? '⏸ Pause' : timerSeconds > 0 ? '▶ Resume' : '▶ Start Timer'}
+                    {timerActive ? '⏹ Stop' : '▶ Start Timer'}
                   </button>
-                  {timerSeconds > 0 && (
-                    <button
-                      onClick={() => { setTimerActive(false); setTimerSeconds(0); }}
-                      className="px-4 py-3 rounded-xl text-[9px] uppercase font-black tracking-widest bg-white/5 border border-white/10 text-white/40 hover:text-white transition-all"
-                    >
-                      Reset
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -794,8 +788,8 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                           <Upload size={22} />
                         </div>
                         <div className="text-center">
-                          <p className="text-[10px] uppercase tracking-widest font-black text-white/60">Tap to upload photo</p>
-                          <p className="text-[9px] text-white/30 mt-1">Camera or Gallery</p>
+                          <p className="text-[10px] uppercase tracking-widest font-black text-white/60">Tap to take photo</p>
+                          <p className="text-[9px] text-white/30 mt-1">Camera Only</p>
                         </div>
                       </>
                     )}
@@ -822,10 +816,10 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                   className="w-full py-5 bg-brand-coral text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(232,116,97,0.3)] flex items-center justify-center gap-3 disabled:opacity-40 disabled:scale-100"
                 >
                   {isSubmittingCheckIn ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                  Confirm Check-In
+                  Confirm Checkout
                 </button>
                 <p className="text-center text-[9px] text-white/20 uppercase tracking-widest font-bold">
-                  Photo required to seal your check-in
+                  Photo required to seal your checkout
                 </p>
               </div>
             </motion.div>
