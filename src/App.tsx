@@ -3305,7 +3305,7 @@ const Store = () => {
                     </div>
                     {!isMember && (
                       <Link to="/membership" className="flex items-center gap-2 text-brand-coral text-[10px] uppercase tracking-widest font-bold hover:underline">
-                        <Zap size={12} /> Join Power Hour for 30% off
+                        <Zap size={12} /> Join Power Hour for 20% off
                       </Link>
                     )}
                   </div>
@@ -3347,7 +3347,7 @@ const Store = () => {
                                   id: selectedProduct.id,
                                   name: selectedProduct.name,
                                   description: selectedProduct.description,
-                                  price: isMember ? Math.floor(selectedProduct.price * 0.7) : selectedProduct.price,
+                                  price: isMember ? Math.floor(selectedProduct.price * (1 - discount)) : selectedProduct.price,
                                   quantity: 1
                                 }],
                                 userId: user?.id || '',
