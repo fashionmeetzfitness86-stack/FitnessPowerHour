@@ -111,13 +111,13 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         } else if (activeTab === 'users' && users.length === 0) {
            const { data } = await supabase.from('profiles').select('*').limit(50);
            if (data) setUsers(data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
-        } else if (activeTab === 'content' && videos.length === 0) {
-           const [vRes, vcRes] = await Promise.all([
-             supabase.from('videos').select('*').order('created_at', { ascending: false }).limit(50),
-             supabase.from('video_categories').select('*')
-           ]);
+         } else if (activeTab === 'content' && videos.length === 0) {
+           // Fetch videos; video_categories is optional — ignore if table doesn't exist
+           const vRes = await supabase.from('videos').select('*').order('created_at', { ascending: false }).limit(100);
            if (vRes.data) setVideos(vRes.data);
+           const vcRes = await supabase.from('video_categories').select('*');
            if (vcRes.data) setVideoCategories(vcRes.data);
+           // Don't throw on category fetch failure — table may not exist yet
         } else if ((activeTab === 'orders' || activeTab === 'shop') && products.length === 0) {
            const [pRes, oRes] = await Promise.all([
              supabase.from('products').select('*').limit(50),
@@ -280,7 +280,10 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         }
         showToast('New media asset published', 'success');
       }
-    } catch (err) { showToast('Video sync failed', 'error'); }
+    } catch (err: any) {
+      console.error('[Video sync error]', err);
+      showToast(`Video sync failed: ${err?.message || 'unknown error'}`, 'error');
+    }
   };
 
   const handleDeleteVideo = async (id: string) => {
