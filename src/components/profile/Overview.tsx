@@ -222,6 +222,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   yesterday.setDate(yesterday.getDate() - 1);
   const lastCheckin = user.last_checkin ? new Date(user.last_checkin) : null;
   const isProfileIncomplete = !user.full_name || !user.phone || !user.email || !user.height || !user.weight || !user.city || !user.address || !user.short_bio;
+  const missedYesterday = !lastCheckin || (lastCheckin.toDateString() !== yesterday.toDateString() && !hasCheckedIn);
 
   return (
     <div className="space-y-8 fade-in pb-20">
