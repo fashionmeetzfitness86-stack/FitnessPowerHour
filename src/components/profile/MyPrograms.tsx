@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   PlaySquare, Play, Plus, BookmarkX, BookmarkPlus, 
   Video as VideoIcon, Loader2, ChevronRight, Clock, Search, Shuffle,
-  CheckCircle, Star, X, Camera, MessageSquare, AlertTriangle
+  CheckCircle, Star, X, Camera, MessageSquare, AlertTriangle, Bookmark, Heart
 } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
@@ -199,7 +199,7 @@ const CheckInDialog = ({
 
 // ── Main Component ───────────────────────────────────────────────────────────
 export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?: any }) => {
-  const { updateProfile } = useAuth();
+  const { updateProfile, toggleBookmark, toggleFavorite } = useAuth();
   const [allVideos, setAllVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -227,16 +227,14 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
     return () => clearTimeout(timer);
   }, [workoutStartTime]);
 
-  const toggleLike = async (videoId: string) => {
-    const current = user.favorites || [];
-    const isLiked = current.includes(videoId);
-    const updated = isLiked ? current.filter(id => id !== videoId) : [...current, videoId];
-    try {
-      await updateProfile({ favorites: updated });
-      if (showToast) showToast(isLiked ? 'Removed from program.' : 'Added to your program! ✅', 'success');
-    } catch (err) {
-      if (showToast) showToast('Failed to update program.', 'error');
-    }
+  const handleToggleBookmark = async (videoId: string) => {
+    const { success, message } = await toggleBookmark(videoId);
+    if (showToast) showToast(message, success ? 'success' : 'error');
+  };
+
+  const handleToggleLike = async (videoId: string) => {
+    const { success, message } = await toggleFavorite(videoId);
+    if (showToast) showToast(message, success ? 'success' : 'error');
   };
 
   const handleStartWorkout = (video: any) => {
@@ -306,8 +304,14 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
     }
   };
 
+  const bookmarkedVideos = allVideos.filter(v => user.bookmarks?.includes(v.id));
   const likedVideos = allVideos.filter(v => user.favorites?.includes(v.id));
-  const availableVideos = allVideos.filter(v => !user.favorites?.includes(v.id));
+  const availableVideos = allVideos.filter(v => !user.bookmarks?.includes(v.id));
+
+  const filteredBookmarked = bookmarkedVideos.filter(v =>
+    v.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const filteredLiked = likedVideos.filter(v =>
     v.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -320,8 +324,9 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
   ).slice(0, 6);
 
   const shuffleAndStart = () => {
-    if (likedVideos.length === 0) return;
-    const random = likedVideos[Math.floor(Math.random() * likedVideos.length)];
+    const pool = bookmarkedVideos.length > 0 ? bookmarkedVideos : likedVideos;
+    if (pool.length === 0) return;
+    const random = pool[Math.floor(Math.random() * pool.length)];
     handleStartWorkout(random);
   };
 
@@ -390,14 +395,14 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
       </header>
 
       {/* QUICK START CARD */}
-      {likedVideos.length > 0 && (
+      {(bookmarkedVideos.length > 0 || likedVideos.length > 0) && (
         <div className="relative">
           <div className="absolute -inset-px rounded-[2.5rem] bg-brand-teal opacity-10 blur" />
           <div className="relative card-gradient rounded-[2.5rem] border border-brand-teal/20 p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div className="space-y-2">
               <span className="text-[9px] font-black uppercase tracking-[0.5em] text-brand-teal">Quick Start</span>
               <h3 className="text-2xl font-black uppercase tracking-tighter">
-                {likedVideos.length} Workout{likedVideos.length !== 1 ? 's' : ''} Ready
+                {bookmarkedVideos.length > 0 ? bookmarkedVideos.length : likedVideos.length} Workout{((bookmarkedVideos.length > 0 ? bookmarkedVideos.length : likedVideos.length) !== 1) ? 's' : ''} Ready
               </h3>
               <p className="text-white/40 text-xs font-bold uppercase tracking-widest">
                 Your saved video protocols are ready to execute.
@@ -434,21 +439,9 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
         />
       </div>
 
-      {/* MY PROGRAM (LIKED VIDEOS) */}
-      <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
-            <div className="w-6 h-6 bg-brand-teal/20 rounded-lg flex items-center justify-center">
-              <VideoIcon size={12} className="text-brand-teal" />
-            </div>
-            My Workouts
-            <span className="text-[10px] font-black text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded-lg">
-              {likedVideos.length}
-            </span>
-          </h3>
-        </div>
-
-        {filteredLiked.length === 0 ? (
+      {/* MY PROGRAM (BOOKMARKED & LIKED VIDEOS) */}
+      <div className="space-y-8">
+        {(filteredBookmarked.length === 0 && filteredLiked.length === 0) ? (
           <div className="py-20 text-center card-gradient border border-white/5 rounded-[2.5rem] space-y-6">
             <div className="w-20 h-20 bg-brand-teal/10 rounded-[1.5rem] flex items-center justify-center mx-auto border border-brand-teal/20">
               <PlaySquare size={36} className="text-brand-teal" />
@@ -458,7 +451,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                 Start your <span className="text-brand-teal">program</span>
               </h4>
               <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-white/30 max-w-xs mx-auto leading-relaxed">
-                Browse the video library and tap the bookmark icon to add workouts to your program.
+                Browse the video library and tap the bookmark icon to add up to 5 priority workouts to your program.
               </p>
             </div>
             <div className="flex gap-4 justify-center px-8 flex-wrap">
@@ -468,20 +461,26 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
               >
                 <VideoIcon size={14} /> Browse Videos
               </button>
-              {allVideos.length > 0 && (
-                <button
-                  onClick={() => toggleLike(allVideos[0].id)}
-                  className="px-8 py-4 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-white hover:text-black transition-all flex items-center gap-2"
-                >
-                  <Plus size={14} /> Add First Workout
-                </button>
-              )}
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            <AnimatePresence mode="popLayout">
-              {filteredLiked.map(video => (
+          <>
+            {filteredBookmarked.length > 0 && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
+                    <div className="w-6 h-6 bg-brand-teal/20 rounded-lg flex items-center justify-center">
+                      <Bookmark size={12} className="text-brand-teal" />
+                    </div>
+                    Bookmarked Videos
+                    <span className="text-[10px] font-black text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded-lg">
+                      {bookmarkedVideos.length} / 5
+                    </span>
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  <AnimatePresence mode="popLayout">
+                    {filteredBookmarked.map(video => (
                 <motion.div
                   key={video.id}
                   layout
@@ -509,8 +508,8 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                       </button>
                     </div>
                     <button
-                      onClick={e => { e.stopPropagation(); toggleLike(video.id); }}
-                      className="absolute top-3 right-3 z-30 p-2 bg-black/60 backdrop-blur-sm rounded-xl text-brand-coral hover:bg-brand-coral/20 transition-all"
+                      onClick={e => { e.stopPropagation(); handleToggleBookmark(video.id); }}
+                      className="absolute top-3 right-3 z-30 p-2 bg-black/60 backdrop-blur-sm rounded-xl text-brand-teal hover:bg-brand-coral/20 hover:text-brand-coral transition-all"
                       title="Remove from program"
                     >
                       <BookmarkX size={15} />
@@ -535,12 +534,86 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                   </div>
                 </motion.div>
               ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </div>
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
 
-      {/* SUGGESTED VIDEOS */}
+            {filteredLiked.length > 0 && (
+              <div className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
+                    <div className="w-6 h-6 bg-brand-coral/20 rounded-lg flex items-center justify-center">
+                      <Heart size={12} className="text-brand-coral" fill="currentColor" />
+                    </div>
+                    Liked Videos
+                    <span className="text-[10px] font-black text-brand-coral bg-brand-coral/10 px-2 py-0.5 rounded-lg">
+                      {likedVideos.length}
+                    </span>
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                  <AnimatePresence mode="popLayout">
+                    {filteredLiked.map(video => (
+                      <motion.div
+                        key={video.id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="card-gradient group border border-white/5 hover:border-brand-coral/30 transition-all rounded-[2rem] overflow-hidden shadow-xl"
+                      >
+                        <div className="aspect-video relative overflow-hidden bg-white/5">
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all z-10" />
+                          {video.thumbnail_url ? (
+                            <img src={video.thumbnail_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <VideoIcon size={40} className="text-white/10" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 transition-all">
+                            <button
+                              onClick={() => handleStartWorkout(video)}
+                              className="p-4 bg-brand-teal text-black rounded-full shadow-glow-teal hover:scale-110 transition-transform"
+                            >
+                              <Play size={20} fill="black" className="translate-x-0.5" />
+                            </button>
+                          </div>
+                          <button
+                            onClick={e => { e.stopPropagation(); handleToggleLike(video.id); }}
+                            className="absolute top-3 right-3 z-30 p-2 bg-black/60 backdrop-blur-sm rounded-xl text-brand-coral hover:bg-white/10 transition-all"
+                            title="Unlike video"
+                          >
+                            <Heart size={15} fill="currentColor" />
+                          </button>
+                        </div>
+                        <div className="p-5 space-y-3">
+                          <div>
+                            <span className="text-[8px] uppercase tracking-widest text-brand-coral font-black">{video.category || 'Workout'}</span>
+                            <h4 className="text-sm font-black uppercase tracking-tight mt-0.5 line-clamp-1">{video.title}</h4>
+                          </div>
+                          <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                            <div className="flex items-center gap-1.5 text-white/30 text-[9px] font-bold uppercase tracking-widest">
+                              <Clock size={10} /> {video.duration || '—'}
+                            </div>
+                            <button
+                              onClick={() => handleStartWorkout(video)}
+                              className="text-[9px] uppercase tracking-widest text-white/30 hover:text-brand-coral transition-all flex items-center gap-1.5 font-black"
+                            >
+                              Start <ChevronRight size={11} />
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>      {/* SUGGESTED VIDEOS */}
       {filteredAvailable.length > 0 && (
         <div className="space-y-5">
           <div className="flex items-center gap-3">
@@ -567,9 +640,9 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                   <p className="text-[8px] uppercase tracking-widest text-white/20 font-bold mt-0.5">{video.category || 'Workout'}</p>
                 </div>
                 <button
-                  onClick={() => toggleLike(video.id)}
+                  onClick={() => handleToggleBookmark(video.id)}
                   className="flex-shrink-0 p-2.5 border border-white/10 text-white/20 hover:border-brand-teal hover:text-brand-teal rounded-xl transition-all"
-                  title="Add to My Program"
+                  title="Bookmark Video"
                 >
                   <BookmarkPlus size={14} />
                 </button>

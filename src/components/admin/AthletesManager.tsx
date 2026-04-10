@@ -199,15 +199,32 @@ export const AthletesManager = ({ athletes, onEdit, onDelete }: AthletesManagerP
 
                         <div className="flex-1 overflow-y-auto p-8 space-y-8">
                             
+                            {/* Profile Image Upload */}
+                            {!editingAthlete.profile?.profile_image && !(editingAthlete.images?.[0]) && (
+                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
+                                    <label className="text-[10px] uppercase tracking-widest text-brand-coral font-bold ml-2">Upload Athlete Photo</label>
+                                    <MediaCapture 
+                                        bucket="fmf-media" 
+                                        folder="athletes" 
+                                        accept="image/*" 
+                                        onUploadSuccess={(url) => setEditingAthlete({ ...editingAthlete, profile: { ...editingAthlete.profile, profile_image: url }, images: [url] })} 
+                                    />
+                                </div>
+                            )}
+
                             {/* Profile Image & Name Block */}
                             <div className="flex gap-6 items-center">
-                                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/10 shrink-0 relative group">
-                                    {editingAthlete.profile?.profile_image || editingAthlete.images?.[0] ? (
+                                {(editingAthlete.profile?.profile_image || editingAthlete.images?.[0]) && (
+                                    <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-white/10 shrink-0 relative group">
                                         <img src={editingAthlete.profile?.profile_image || editingAthlete.images?.[0]} alt="Athlete" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-white/5 flex items-center justify-center text-white/20"><Upload size={24}/></div>
-                                    )}
-                                </div>
+                                        <button 
+                                            onClick={(e) => { e.preventDefault(); setEditingAthlete({ ...editingAthlete, profile: { ...editingAthlete.profile, profile_image: '' }, images: [] }); }} 
+                                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X size={24} className="text-white" />
+                                        </button>
+                                    </div>
+                                )}
                                 <div className="space-y-2 flex-1">
                                     <label className="text-[10px] uppercase tracking-widest text-brand-coral font-bold">Full Name</label>
                                     <input type="text" value={editingAthlete.profile?.full_name || ''} onChange={e => setEditingAthlete({ ...editingAthlete, profile: { ...editingAthlete.profile, full_name: e.target.value } })} className="w-full bg-transparent border-b-2 border-white/10 px-0 py-2 text-2xl font-black uppercase tracking-tight outline-none focus:border-brand-coral text-white placeholder:text-white/20" placeholder="e.g. John Doe" />

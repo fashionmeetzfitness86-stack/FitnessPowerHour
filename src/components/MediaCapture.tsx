@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Camera, Upload, X, Check } from 'lucide-react';
+import { Camera, Upload, X, Check, Link as LinkIcon } from 'lucide-react';
 import { supabase } from '../supabase';
 
 interface MediaCaptureProps {
@@ -25,6 +25,7 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [urlInput, setUrlInput] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -145,7 +146,38 @@ export const MediaCapture: React.FC<MediaCaptureProps> = ({
           className="flex flex-col items-center justify-center p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-brand-coral/10 hover:border-brand-coral/50 transition-all text-white/60 hover:text-brand-coral group w-full"
         >
           <Upload size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-          <span className="text-[10px] uppercase tracking-widest font-bold">Upload</span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="h-px bg-white/10 flex-1" />
+        <span className="text-[9px] uppercase tracking-widest font-black text-white/20">OR URL</span>
+        <div className="h-px bg-white/10 flex-1" />
+      </div>
+
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+          <input 
+            type="url" 
+            placeholder="Paste image/video URL..." 
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            className="w-full bg-black/40 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-xs outline-none focus:border-brand-teal"
+          />
+        </div>
+        <button 
+          onClick={(e) => { 
+            e.preventDefault(); 
+            if (urlInput.trim()) {
+              onUploadSuccess(urlInput.trim()); 
+              setUrlInput(''); 
+            }
+          }}
+          disabled={!urlInput.trim()}
+          className="px-5 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-brand-teal/20 hover:border-brand-teal/40 hover:text-brand-teal transition-all text-white/60 text-[10px] uppercase tracking-widest font-black disabled:opacity-30 disabled:pointer-events-none"
+        >
+          Add
         </button>
       </div>
     </div>

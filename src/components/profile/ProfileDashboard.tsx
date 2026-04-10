@@ -10,6 +10,7 @@ import { supabase } from '../../supabase';
 
 import { Overview } from './Overview';
 import { Progress } from './Progress';
+import { OrderHistory } from './OrderHistory';
 import { Calendar as CalendarTab } from './Calendar';
 import { MyPrograms } from './MyPrograms';
 import { MyVideos } from './MyVideos';
@@ -124,6 +125,7 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       case 'settings': return <EditProfile user={user} showToast={showToast} />;
       case 'notifications': return <Notifications user={user} showToast={showToast} />;
       case 'community': return <CommunityAccessTab user={user} showToast={showToast} />;
+      case 'orders': return <OrderHistory user={user} showToast={showToast} />;
       default: return <Overview user={user} showToast={showToast} onTabChange={setActiveTab} />;
     }
   };
