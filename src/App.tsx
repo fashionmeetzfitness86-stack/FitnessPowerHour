@@ -1355,7 +1355,7 @@ const Home = () => {
               Start Your Program
             </button>
             <button onClick={() => navigate('/membership')} className="btn-outline px-12 py-5 text-sm uppercase tracking-widest font-bold border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-black transition-all">
-              Join for ${get('home_membership_price', '19.99')}
+              Join for Free
             </button>
           </div>
         </div>
@@ -1465,26 +1465,26 @@ const Home = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-brand-teal/10 blur-[100px] rounded-full" />
         <div className="relative z-10 max-w-4xl mx-auto text-center space-y-12">
           <h2 className="text-4xl md:text-7xl font-bold uppercase tracking-tighter text-white">
-            Basic <span className="text-brand-teal">Membership</span>
+            Create Your <span className="text-brand-teal">Profile</span>
           </h2>
           <div className="flex justify-center">
             <div className="w-full max-w-md card-gradient p-12 space-y-8 border border-brand-teal shadow-[0_0_50px_rgba(45,212,191,0.15)] relative bg-brand-black">
               <div className="absolute -top-4 -right-4 bg-brand-teal text-black px-4 py-1 text-[10px] font-black uppercase tracking-widest rounded-sm rotate-3">
-                Full Access
+                Join Now
               </div>
               <h3 className="text-2xl font-bold uppercase tracking-widest text-center text-white">FMF Basic</h3>
               <div className="text-center">
-                <span className="text-6xl font-black text-white">${get('home_membership_price', '19.99')}</span>
-                <span className="text-white/40 text-xs uppercase tracking-widest">/mo</span>
+                <span className="text-6xl font-black text-white">Free</span>
+                <span className="text-white/40 text-xs uppercase tracking-widest pl-2">Access</span>
               </div>
               <ul className="space-y-4 text-left text-sm text-white/70">
-                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Full Video Library Access</li>
-                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Program Builder Tracker</li>
-                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Service Booking Privileges</li>
-                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> VIP Access to FMF Store</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Create Your Athlete Profile</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Preview Training Programs</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> Access Community Forums</li>
+                <li className="flex items-center gap-3"><Check size={16} className="text-brand-teal"/> VIP FMF Store Access</li>
               </ul>
               <button onClick={() => navigate('/membership')} className="w-full btn-primary bg-brand-teal text-black border-transparent shadow-glow-teal hover:scale-105 transition-all">
-                Become a Member
+                Create Free Account
               </button>
             </div>
           </div>
@@ -4888,16 +4888,16 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
 
   const tiers = [
     {
-      name: 'Basic',
-      price: '$19.99',
-      period: 'per month',
+      name: 'Free Profile',
+      price: 'Free',
+      period: 'forever',
       features: [
-        'Access to basic workouts',
-        'Limited training content',
-        'Community forum access',
-        'Public challenges'
+        'Create your athlete profile',
+        'Explore the platform',
+        'Access to community forums',
+        'Preview training content'
       ],
-      button: 'Get Started',
+      button: 'Sign Up Free',
       highlight: false
     }
   ];
