@@ -574,14 +574,41 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onEdit={async (athlete: any) => {
             const { profile, ...updates } = athlete;
             if (athlete.id) {
+              // UPDATE existing athlete
               await supabase.from('athlete_profiles').update(updates).eq('id', athlete.id);
               if (profile && profile.full_name) {
                  await supabase.from('profiles').update(profile).eq('id', athlete.id);
               }
               setAthleteProfiles(prev => prev.map(a => a.id === athlete.id ? { ...a, ...updates, profile: { ...a.profile, ...profile } } : a));
-              showToast('Athlete updated', 'success');
+              showToast('Athlete updated ✅', 'success');
             } else {
-               showToast('Creation from dashboard requires auth sync. Invite user first.', 'error');
+              // CREATE new athlete — generate a fresh UUID, no auth user required
+              const newId = crypto.randomUUID();
+              const insertRow = {
+                id: newId,
+                workout_style:        updates.workout_style || '',
+                eating_schedule:      updates.eating_schedule || '',
+                preferred_body_type:  updates.preferred_body_type || '',
+                fitness_philosophy:   updates.fitness_philosophy || '',
+                specialty:            updates.specialty || 'Strength',
+                short_description:    updates.short_description || '',
+                is_active:            updates.is_active ?? true,
+                social_links:         updates.social_links || {},
+                images:               updates.images || (profile?.profile_image ? [profile.profile_image] : []),
+                created_at:           new Date().toISOString(),
+              };
+              const { data: newAthlete, error } = await supabase
+                .from('athlete_profiles')
+                .insert(insertRow)
+                .select()
+                .single();
+              if (error) {
+                console.error('[Athlete create error]', error);
+                showToast(`Failed to create athlete: ${error.message}`, 'error');
+                return;
+              }
+              setAthleteProfiles(prev => [{ ...newAthlete, profile: profile || { full_name: profile?.full_name || 'New Athlete' } }, ...prev]);
+              showToast('Athlete added to roster ✅', 'success');
             }
           }}
           onDelete={async (id: string) => {
