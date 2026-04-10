@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -1657,7 +1657,7 @@ const TrainerSection = () => {
             <div className="space-y-6 text-white/60 text-lg font-light leading-relaxed">
               <p className="text-white font-medium">Michael Leggett</p>
               <p>
-                With over 20 years of training experience, Michael Leggett is the architect of the Fitness Power Hour program. His journey began as a street athlete, mastering the raw strength of calisthenics in urban environments.
+                With over 20 ye— Michael Leggett is the architect of the Fitness Power Hour program. His journey began as a street athlete, mastering the raw strength of calisthenics in urban environments.
               </p>
               <p>
                 Today, he is a global authority in functional training and bodyweight mastery. Fitness Power Hour was created after years of studying how the body develops strength through movement, focusing on the intersection of physical capability and mental discipline.
@@ -1678,9 +1678,9 @@ const TrainerSection = () => {
             <div className="pt-8 border-t border-white/10">
               <Quote className="text-brand-coral mb-4 opacity-40" size={32} />
               <p className="text-2xl italic font-light text-white/80 leading-tight">
-                Ã¢â‚¬Å“Your body is the first tool you were given. Learning how to use it changes everything.Ã¢â‚¬Â
+                "Your body is the first tool you were given. Learning how to use it changes everything."
               </p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">Ã¢â‚¬â€ Michael Leggett</p>
+              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">— Michael Leggett</p>
             </div>
           </motion.div>
         </div>
@@ -5113,7 +5113,7 @@ const Philosophy = () => {
               <p className="text-2xl italic font-light text-white/80 leading-tight">
                 "We don't just build muscles. We build the character required to use them with purpose."
               </p>
-              <p className="mt-4 text-xs uppercase tracking-[0.3em] text-white/40">Ã¢â‚¬â€ Michael Leggett</p>
+              <p cl— Michael Leggett</p>
             </div>
           </div>
           <div className="relative aspect-square rounded-3xl overflow-hidden">
