@@ -2612,7 +2612,7 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
                 <MapPin className="text-brand-coral mt-1" size={18} />
                 <div>
                   <p className="text-sm font-bold uppercase tracking-tight">FMF Training Lab Miami</p>
-                  <p className="text-xs text-white/40 leading-relaxed">123 Ocean Drive, South Beach, Miami, FL 33139</p>
+                  <p className="text-xs text-white/40 leading-relaxed">Miami Beach, FL</p>
                 </div>
               </div>
             </div>
@@ -2675,8 +2675,10 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
                       </div>
                       {!bookedSessionIds.includes(session.id) ? (
                         <button 
-                          onClick={() => handleBooking(session)}
-                          className="btn-primary py-3 px-6 text-[10px]"
+                          disabled
+                          onClick={(e) => e.preventDefault()}
+                          className="btn-primary py-3 px-6 text-[10px] opacity-50 cursor-not-allowed"
+                          title="Booking opens when physical location officially launches"
                         >
                           Book Now
                         </button>
