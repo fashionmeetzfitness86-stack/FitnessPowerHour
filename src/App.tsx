@@ -3955,9 +3955,19 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
   
   const hasActiveMembership = !!(user && (user.tier === 'Basic' || user.membership_status === 'active' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete'));
 
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [bookingConfirmed, setBookingConfirmed] = useState<{ date: string, time: string, service: string, amount: number, email: string } | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const services = ['Massages', 'Stretching', 'Physical Therapy'];
+  const serviceOptions = [
+    { name: 'Stretching', price: 180 },
+    { name: 'Massage', price: 120 },
+    { name: 'Recovery', price: 80 }
+  ];
   const timeSlots = ['09:00 AM', '10:30 AM', '01:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'];
 
   useEffect(() => {
@@ -3976,8 +3986,8 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
   }, [user]);
 
   const handleAddService = async () => {
-    if (!user) {
-      showToast('Please login to request a session.', 'error');
+    if (!user && (!guestName || !guestEmail || !guestPhone)) {
+      showToast('Please provide your full name, email, and phone number to book as a guest.', 'error');
       return;
     }
     if (!selectedDay) {
@@ -3986,6 +3996,11 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
     }
     if (!selectedSlot) {
       showToast('Please select a time slot.', 'error');
+      return;
+    }
+
+    if (!user && !showCheckout) {
+      setShowCheckout(true);
       return;
     }
 
@@ -4008,26 +4023,48 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
          return;
       }
 
+      const activeServiceObj = serviceOptions.find(ref => ref.name === selectedService);
+      const amountPaid = !user ? activeServiceObj?.price : 0;
+
       const { data, error } = await supabase.from('service_requests').insert({
-        user_id: user.id,
+        user_id: user ? user.id : null,
+        guest_name: !user ? guestName : null,
+        guest_email: !user ? guestEmail : null,
+        guest_phone: !user ? guestPhone : null,
+        amount_paid: amountPaid,
         service_type: selectedService,
         service_subtype: 'FlexMob305',
         requested_date: selectedDay,
         requested_time: formattedSlot,
-        status: 'pending',
+        status: !user ? 'approved' : 'pending',
         notes: (hasActiveMembership ? '' : `[Contact Preference: ${contactPreference}] `) + 'Message: ' + serviceMessage
       }).select().single();
 
       if (error) throw error;
       if (data) {
         setAllRequests(prev => [...prev, data]);
-        setMyRequests(prev => [...prev, data]);
+        if (user) setMyRequests(prev => [...prev, data]);
       }
-      showToast('Service Request Submitted! Awaiting admin confirmation.', 'success');
+      
+      setBookingConfirmed({
+        date: selectedDay,
+        time: selectedSlot,
+        service: selectedService,
+        amount: amountPaid || 0,
+        email: user?.email || guestEmail,
+      });
+
       setServiceMessage('');
-      setSelectedSlot('');
-      setSelectedDay(null);
+      setGuestName('');
+      setGuestEmail('');
+      setGuestPhone('');
     } catch (err: any) {
+      showToast(err.message || 'Failed to request service.', 'error');
+    } finally {
+      setIsSubmitting(false);
+      setShowCheckout(false);
+    }
+  };
       showToast(err.message || 'Failed to request service.', 'error');
     } finally {
       setIsSubmitting(false);
@@ -4183,9 +4220,11 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                         <div>
                           <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Protocol</label>
                           <div className="grid grid-cols-1 gap-2">
-                             {services.map(s => (
-                                <button key={s} onClick={() => setSelectedService(s)} className={`py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border ${selectedService === s ? 'bg-brand-coral/10 border-brand-coral text-brand-coral' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
-                                   {s}
+                           <div className="grid grid-cols-1 gap-2">
+                             {serviceOptions.map(s => (
+                                <button key={s.name} onClick={() => setSelectedService(s.name)} className={`py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border flex items-center justify-between ${selectedService === s.name ? 'bg-brand-coral/10 border-brand-coral text-brand-coral' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
+                                   <span>{s.name}</span>
+                                   {!user && <span className="opacity-60">${s.price}</span>}
                                 </button>
                              ))}
                           </div>
@@ -4229,11 +4268,25 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                      </div>
 
                      {!user ? (
-                        <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
-                           <AlertCircle size={14} /> You must be logged in to book.
+                        <div className="space-y-3 pt-4 border-t border-white/5">
+                          <label className="text-[9px] uppercase tracking-widest font-black text-brand-coral block mb-3">Guest Contact Info</label>
+                          <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" />
+                          <input type="email" placeholder="Email Address" value={guestEmail} onChange={e => setGuestEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" />
+                          <input type="tel" placeholder="Phone Number" value={guestPhone} onChange={e => setGuestPhone(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" />
+                          
+                          {showCheckout && (
+                             <div className="mt-4 p-4 border border-brand-coral/30 rounded-xl bg-brand-coral/5 space-y-4">
+                                <h5 className="text-[10px] font-black uppercase text-brand-coral tracking-widest flex items-center justify-between"><span>Payment Details</span> <span>${serviceOptions.find(o => o.name === selectedService)?.price}.00</span></h5>
+                                <input type="text" placeholder="Card Number (Mock Stripe Checkout)" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/50" />
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input type="text" placeholder="MM/YY" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/50" />
+                                  <input type="text" placeholder="CVC" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/50" />
+                                </div>
+                             </div>
+                          )}
                         </div>
                      ) : !hasActiveMembership && (
-                        <div className="space-y-4">
+                        <div className="space-y-4 pt-4 border-t border-white/5">
                           <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Admin Contact Preference</label>
                           <div className="grid grid-cols-2 gap-2">
                              {contactOptions.map(opt => (
@@ -4246,9 +4299,27 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                         </div>
                      )}
 
-                     <button onClick={handleAddService} disabled={isSubmitting || !selectedSlot || !user} className="w-full py-4 bg-brand-coral text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-coral transition-all flex items-center justify-center gap-2 disabled:opacity-40">
-                        {isSubmitting ? 'Syncing...' : <>Request Slot Sync <ArrowRight size={14} /></>}
-                     </button>
+                     {!bookingConfirmed ? (
+                        <button onClick={handleAddService} disabled={isSubmitting || !selectedSlot || (!user && (!guestName || !guestEmail || !guestPhone))} className="w-full py-4 bg-brand-coral text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-coral transition-all flex items-center justify-center gap-2 disabled:opacity-40">
+                           {isSubmitting ? 'Processing Booking...' : (!user && !showCheckout) ? 'Continue to Checkout' : (!user && showCheckout) ? `Pay $${serviceOptions.find(o => o.name === selectedService)?.price} & Book` : <>Request Slot Sync <ArrowRight size={14} /></>}
+                        </button>
+                     ) : (
+                        <div className="mt-4 p-5 rounded-2xl border border-brand-coral/30 bg-brand-coral/5 space-y-4 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-8 opacity-5 text-brand-coral"><Check size={80} /></div>
+                          <h3 className="text-xl font-black text-brand-coral uppercase tracking-tighter">Booking Confirmed</h3>
+                          <div className="space-y-1 text-xs font-bold text-white/60 relative z-10">
+                            <p>Service: <span className="text-white">{bookingConfirmed.service}</span></p>
+                            <p>Date: <span className="text-white">{bookingConfirmed.date}</span></p>
+                            <p>Time: <span className="text-white">{bookingConfirmed.time}</span></p>
+                            <p>Location: <span className="text-white">Miami Core Facility HQ</span></p>
+                            {bookingConfirmed.amount > 0 && <p>Amount Paid: <span className="text-white">${bookingConfirmed.amount}.00</span></p>}
+                          </div>
+                          <p className="text-[9px] uppercase tracking-widest text-white/40 leading-relaxed border-t border-white/10 pt-3">
+                             An email confirmation has been sent instantly to <span className="text-white">{bookingConfirmed.email}</span> with these details. You must email us 48hr before your appointment to cancel, or you must show up.
+                          </p>
+                          <button onClick={() => { setBookingConfirmed(null); setSelectedDay(null); setSelectedSlot(''); }} className="w-full mt-2 py-3 bg-white/10 text-white hover:bg-white text-black font-black uppercase text-[9px] tracking-widest rounded-xl transition-all">Done</button>
+                        </div>
+                     )}
                   </div>
                 </motion.div>
               ) : (
