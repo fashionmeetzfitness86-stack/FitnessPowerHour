@@ -25,7 +25,7 @@ import {
   Filter, Search, User, Quote, Plus, Minus, Upload, Link2, Send, Bell, Trash2,
   Youtube, ExternalLink, Share2, Trophy, Check, Users, Power, Ban, Layout, Globe,
   Edit2, Truck, Eye, Printer, UserPlus, UserMinus, MoreHorizontal,
-  LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award, Shield
+  LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award, Shield, Bookmark
 } from 'lucide-react';
 import { AthletesDirectory } from './components/athletes/AthletesDirectory';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
@@ -326,6 +326,7 @@ interface AuthContextType {
   markAsRead: (id: string) => Promise<void>;
   clearNotifications: () => Promise<void>;
   toggleFavorite: (videoId: string) => Promise<void>;
+  toggleBookmark: (videoId: string) => Promise<{ success: boolean; message: string }>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   updateSecurity: (email?: string, password?: string) => Promise<void>;
   logActivity: (action: string, entityType: string, entityId?: string, metadata?: any) => Promise<void>;
@@ -679,6 +680,34 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const toggleBookmark = async (videoId: string) => {
+    if (!user) return { success: false, message: 'Must be logged in' };
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return { success: false, message: 'Must be logged in' };
+      const currentBookmarks = user.bookmarks || [];
+      const isBookmarked = currentBookmarks.includes(videoId);
+
+      if (!isBookmarked && currentBookmarks.length >= 5) {
+        return { success: false, message: 'You can only bookmark up to 5 videos in My Program. Remove one to add another.' };
+      }
+
+      const newBookmarks = isBookmarked
+        ? currentBookmarks.filter(id => id !== videoId)
+        : [...currentBookmarks, videoId];
+
+      setUser({ ...user, bookmarks: newBookmarks }); // Optimistic update
+
+      await supabase.from('profiles').update({ bookmarks: newBookmarks }).eq('id', session.user.id);
+      fetchUser(session.user.id);
+      
+      return { success: true, message: isBookmarked ? 'Video removed from My Program.' : 'Video bookmarked and added to My Program.' };
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      return { success: false, message: 'Failed to update bookmarks.' };
+    }
+  };
+
   const updateProfile = async (profileUpdate: Partial<UserProfile>) => {
     if (!user) return;
     try {
@@ -757,6 +786,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       markAsRead, 
       clearNotifications,
       toggleFavorite,
+      toggleBookmark,
       updateProfile,
       updateSecurity,
       logActivity
@@ -2082,8 +2112,8 @@ const VideoUploadModal = ({ onClose, onAdd }: { onClose: () => void; onAdd: (v: 
   );
 };
 
-const VideoLibrary = () => {
-  const { user, toggleFavorite } = useAuth();
+const VideoLibrary = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void }) => {
+  const { user, toggleFavorite, toggleBookmark } = useAuth();
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -2271,6 +2301,20 @@ const VideoLibrary = () => {
                   </div>
                   <div className="absolute top-4 right-4 flex items-center gap-2">
                     <button 
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const { success, message } = await toggleBookmark(video.id);
+                        if (showToast) showToast(message, success ? 'success' : 'error');
+                      }}
+                      className={`p-2 rounded-full backdrop-blur-md transition-all ${
+                        user?.bookmarks?.includes(video.id) 
+                          ? 'bg-brand-teal text-black' 
+                          : 'bg-black/60 text-white/80 hover:text-white hover:bg-black/80'
+                      }`}
+                    >
+                      <Bookmark size={14} className={user?.bookmarks?.includes(video.id) ? 'fill-black' : ''} />
+                    </button>
+                    <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleFavorite(video.id);
@@ -2278,7 +2322,7 @@ const VideoLibrary = () => {
                       className={`p-2 rounded-full backdrop-blur-md transition-all ${
                         user?.favorites?.includes(video.id) 
                           ? 'bg-brand-coral text-white' 
-                          : 'bg-black/60 text-white/60 hover:text-white hover:bg-black/80'
+                          : 'bg-black/60 text-white/80 hover:text-white hover:bg-black/80'
                       }`}
                     >
                       <Heart size={14} className={user?.favorites?.includes(video.id) ? 'fill-white' : ''} />
@@ -5390,10 +5434,10 @@ const FAQItem = ({ question, answer }: { question: string; answer: string }) => 
   );
 };
 
-const VideoDetail = () => {
+const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error' | 'warning' | 'info') => void }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, toggleFavorite } = useAuth();
+  const { user, toggleFavorite, toggleBookmark } = useAuth();
   const [video, setVideo] = useState<Video | undefined>(VIDEOS.find(v => v.id === id));
   const [loading, setLoading] = useState(!video);
 
@@ -5486,6 +5530,19 @@ const VideoDetail = () => {
                   <h1 className="text-5xl font-bold uppercase tracking-tighter leading-none">{video.title}</h1>
                 </div>
                 <div className="flex items-center gap-4">
+                  <button 
+                    onClick={async () => {
+                      const { success, message } = await toggleBookmark(video.id);
+                      if (showToast) showToast(message, success ? 'success' : 'error');
+                    }}
+                    className={`p-4 rounded-full backdrop-blur-md transition-all ${
+                      user?.bookmarks?.includes(video.id) 
+                        ? 'bg-brand-teal text-black' 
+                        : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/10'
+                    }`}
+                  >
+                    <Bookmark size={20} className={user?.bookmarks?.includes(video.id) ? 'fill-black' : ''} />
+                  </button>
                   <button 
                     onClick={() => toggleFavorite(video.id)}
                     className={`p-4 rounded-full backdrop-blur-md transition-all ${
@@ -6058,8 +6115,8 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
               <Route path="/program" element={<ProgramPage />} />
               <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
-              <Route path="/videos" element={<VideoLibrary />} />
-              <Route path="/video/:id" element={<VideoDetail />} />
+              <Route path="/videos" element={<VideoLibrary showToast={showToast} />} />
+              <Route path="/video/:id" element={<VideoDetail showToast={showToast} />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />

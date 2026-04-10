@@ -374,6 +374,7 @@ export interface UserProfile {
   membership_status?: 'active' | 'inactive' | 'past_due' | 'canceling';
 
   favorites?: string[];
+  bookmarks?: string[];
   streak_count?: number;
   last_checkin?: string;
   referral_code?: string;
