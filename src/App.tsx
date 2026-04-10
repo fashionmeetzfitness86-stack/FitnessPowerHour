@@ -465,11 +465,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       const dbRow = {
         id: session.user.id,
         full_name: displayName,
-        email: session.user.email || '',
         role: session.user.email?.toLowerCase() === 'fashionmeetzfitness86@gmail.com' ? 'admin' : 'user',
         tier: 'Free',
-        status: 'active',
-        signup_date: now
+        status: 'active'
       };
       supabase.from('profiles').upsert(dbRow).then(({ error: insertErr }) => {
         if (insertErr) console.error('Auto-create profile error:', insertErr);
