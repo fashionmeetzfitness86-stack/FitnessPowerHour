@@ -396,7 +396,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
           { label: 'Completed', value: stats.sessionsThisWeek, icon: CheckCircle, color: 'text-brand-teal', bg: 'bg-brand-teal/5', action: () => navigate('calendar') },
           { label: 'Scheduled', value: pendingRequests.length, icon: CalendarIcon, color: 'text-brand-teal', bg: 'bg-white/5', action: () => navigate('calendar') },
           { label: 'Current Streak', value: `${streakCount}d`, icon: Flame, color: 'text-brand-coral', bg: 'bg-brand-coral/5', action: () => showToast('Streak matrix mapping incoming.', 'info') },
-          { label: 'Rank', value: user.role === 'admin' ? 'Elite' : 'Athlete', icon: Zap, color: 'text-brand-teal', bg: 'bg-brand-teal/5', action: () => navigate('membership') }
+          { label: 'Rank', value: user.role === 'admin' ? 'Elite' : 'Athlete', icon: Zap, color: 'text-brand-teal', bg: 'bg-brand-teal/5', action: () => showToast('Athlete ranking system coming soon!', 'info') }
         ].map((s, idx) => (
           <motion.button
             key={idx}
