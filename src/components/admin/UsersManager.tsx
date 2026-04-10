@@ -4,7 +4,7 @@ import {
   User, Search, Shield, ShieldCheck, ShieldAlert,
   CreditCard, Ban, Trash2, Edit2, X, Check,
   Mail, Phone, ChevronDown, Crown, UserCheck, AlertTriangle,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, CheckCircle, XCircle, Zap, Clock, Flame
 } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
@@ -248,48 +248,77 @@ export const UsersManager = ({
             <motion.div
               initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
               onClick={e => e.stopPropagation()}
-              className="bg-[#0d0d0d] border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl space-y-6"
+              className="bg-[#050505] border border-white/10 rounded-[2rem] p-6 lg:p-8 w-full max-w-lg shadow-[0_0_80px_rgba(45,212,191,0.05)] space-y-6 relative overflow-hidden"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black uppercase tracking-tighter text-brand-teal">User Profile</h3>
-                <button onClick={() => setViewingUser(null)} className="p-2 text-white/30 hover:text-white"><X size={18} /></button>
+              {/* Background Glows */}
+              <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-brand-teal/10 blur-[80px] rounded-full pointer-events-none" />
+              <div className="absolute bottom-[-10%] left-[-10%] w-48 h-48 bg-brand-coral/5 blur-[80px] rounded-full pointer-events-none" />
+              
+              <div className="flex items-center justify-between relative z-10 pb-2 border-b border-white/5">
+                <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                  <Shield size={20} className="text-brand-teal" /> 
+                  Intel <span className="text-brand-coral">Profile</span>
+                </h3>
+                <button onClick={() => setViewingUser(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all"><X size={16} /></button>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-brand-teal/10 border border-brand-teal/20 rounded-2xl flex items-center justify-center text-2xl font-black text-brand-teal">
-                  {(viewingUser.full_name || viewingUser.email || 'U')[0].toUpperCase()}
+
+              {/* Header Box */}
+              <div className="flex items-center gap-5 relative z-10 bg-white/[0.02] border border-white/5 p-5 rounded-3xl backdrop-blur-md">
+                <div className="w-20 h-20 bg-brand-teal/5 border border-brand-teal/20 rounded-[1.2rem] flex items-center justify-center text-3xl font-black text-brand-teal shrink-0 shadow-inner overflow-hidden relative group">
+                  <div className="absolute inset-0 bg-brand-teal/10 animate-pulse pointer-events-none" />
+                  {viewingUser.profile_image ? (
+                    <img src={viewingUser.profile_image} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    (viewingUser.full_name || viewingUser.email || 'U')[0].toUpperCase()
+                  )}
                 </div>
-                <div>
-                  <p className="text-xl font-black uppercase tracking-tight">{viewingUser.full_name || 'No Name'}</p>
-                  <p className="text-[10px] text-white/40 font-mono mt-0.5">{viewingUser.email}</p>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-xl lg:text-2xl font-black uppercase tracking-tight truncate text-white">{viewingUser.full_name || 'Anonymous User'}</h2>
+                  <p className="text-[10px] lg:text-[11px] text-white/40 font-mono mt-0.5 mb-3 truncate">{viewingUser.email}</p>
+                  
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                    viewingUser.status === 'active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-500'
+                  }`}>
+                    {viewingUser.status === 'active' ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                    {viewingUser.status || 'active'}
+                  </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* Data Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 relative z-10">
                 {[
-                  { label: 'Role', value: viewingUser.role || 'user' },
-                  { label: 'Tier', value: viewingUser.tier || 'Free' },
-                  { label: 'Status', value: viewingUser.status || 'active' },
-                  { label: 'Membership', value: (viewingUser as any).membership_status || '—' },
-                  { label: 'Joined', value: viewingUser.signup_date ? new Date(viewingUser.signup_date).toLocaleDateString() : '—' },
-                  { label: 'Streak', value: `${(viewingUser as any).streak_count || 0} days` },
-                ].map(item => (
-                  <div key={item.label} className="p-4 bg-white/5 rounded-xl border border-white/5">
-                    <p className="text-[9px] uppercase tracking-widest text-white/30 font-black mb-1">{item.label}</p>
-                    <p className="text-sm font-black capitalize">{item.value}</p>
-                  </div>
-                ))}
+                  { label: 'Platform Role', value: viewingUser.role || 'user', icon: Crown },
+                  { label: 'Access Tier', value: viewingUser.tier || 'Free', icon: Zap },
+                  { label: 'Membership', value: (viewingUser as any).membership_status || '—', icon: CreditCard },
+                  { label: 'Joined', value: viewingUser.signup_date ? new Date(viewingUser.signup_date).toLocaleDateString() : '—', icon: Clock },
+                  { label: 'Streak', value: `${(viewingUser as any).streak_count || 0} days`, icon: Flame },
+                ].map((item, idx) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className={`p-4 bg-white/[0.03] rounded-2xl border border-white/[0.05] flex flex-col justify-between hover:bg-white/[0.04] transition-colors ${idx === 4 ? 'col-span-2 md:col-span-1' : ''}`}>
+                      <p className="text-[8px] uppercase tracking-widest text-white/40 font-bold mb-2 flex items-center gap-1.5">
+                        <Icon size={10} className="text-white/30" /> {item.label}
+                      </p>
+                      <p className="text-sm font-black capitalize text-white truncate">{item.value}</p>
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex gap-3 pt-2">
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4 border-t border-white/5 relative z-10">
                 <button
                   onClick={() => { handleSuspend(viewingUser); setViewingUser(null); }}
-                  className="flex-1 py-3 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-amber-500 hover:text-black transition-all"
+                  className="flex-1 py-3.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-500 font-black uppercase text-[9px] tracking-widest rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.05)]"
                 >
-                  {viewingUser.status === 'suspended' ? 'Reactivate' : 'Suspend'}
+                  {viewingUser.status === 'suspended' ? 'Reactivate User' : 'Suspend Account'}
                 </button>
                 <button
                   onClick={() => { setDeletingUser(viewingUser); setViewingUser(null); }}
-                  className="flex-1 py-3 bg-red-500/10 border border-red-500/30 text-red-400 font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                  className="flex-1 py-3.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-500 font-black uppercase text-[9px] tracking-widest rounded-xl transition-all shadow-[0_0_15px_rgba(239,68,68,0.05)]"
                 >
-                  Delete User
+                  Delete Profile
                 </button>
               </div>
             </motion.div>
