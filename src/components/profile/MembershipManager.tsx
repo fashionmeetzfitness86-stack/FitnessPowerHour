@@ -174,7 +174,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {tiers.map((tier) => {
-          const isCurrent = (user.tier === tier.name || (tier.name === 'Basic' && !user.tier)) && hasActiveSubscription;
+          const isCurrent = user.tier?.toLowerCase() === tier.name.toLowerCase() || (tier.name === 'Basic' && (!user.tier || user.tier.toLowerCase() === 'none'));
           const isSelected = selectedTier === tier.name;
 
           return (
