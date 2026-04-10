@@ -63,7 +63,7 @@ export const RequestsManager = ({
   const handleCreateSubmit = async () => {
     setCreateSubmitting(true);
     let user_id = null;
-    const existing = users.find(u => u.email.toLowerCase() === createForm.email.toLowerCase());
+    const existing = users.find(u => u.email?.toLowerCase() === createForm.email?.toLowerCase());
     if (existing) user_id = existing.id;
 
     try {
