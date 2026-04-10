@@ -221,7 +221,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const lastCheckin = user.last_checkin ? new Date(user.last_checkin) : null;
-  const isProfileIncomplete = !user.height || !user.weight || !user.phone || !user.workout_style || !user.country || !user.short_bio;
+  const isProfileIncomplete = !user.full_name || !user.phone || !user.email || !user.height || !user.weight || !user.city || !user.address || !user.short_bio;
 
   return (
     <div className="space-y-8 fade-in pb-20">

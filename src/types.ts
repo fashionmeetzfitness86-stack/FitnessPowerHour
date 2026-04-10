@@ -386,6 +386,7 @@ export interface UserProfile {
   last_tier_change_date?: string;
   height?: string;
   weight?: string;
+  address?: string;
   workout_style?: string;
   training_goals?: string;
   preferred_workout_days?: string[];

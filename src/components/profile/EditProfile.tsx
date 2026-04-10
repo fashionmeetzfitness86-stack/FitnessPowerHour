@@ -365,28 +365,32 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 pt-8 border-t border-white/5">
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Full Name</label>
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Full Name <span className="text-brand-coral">*</span></label>
                   <input required type="text" name="full_name" value={formData.full_name} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Email Address</label>
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Email Address <span className="text-brand-coral">*</span></label>
                   <input required type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm opacity-40 cursor-not-allowed outline-none font-mono" disabled />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Secure Phone</label>
-                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none font-mono tracking-widest" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Secure Phone <span className="text-brand-coral">*</span></label>
+                  <input type="tel" name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none font-mono tracking-widest" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Date of Birth</label>
                   <input type="date" name="date_of_birth" value={formData.date_of_birth} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none [&::-webkit-calendar-picker-indicator]:invert" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">City</label>
-                  <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">City <span className="text-brand-coral">*</span></label>
+                  <input type="text" name="city" value={formData.city || ''} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Country</label>
-                  <input type="text" name="country" value={formData.country} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                  <input type="text" name="country" value={formData.country || ''} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Physical Address <span className="text-brand-coral">*</span></label>
+                  <input type="text" name="address" value={formData.address || ''} onChange={handleChange} placeholder="Street address, apartment, suite, etc." className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
               </div>
             </div>
@@ -403,12 +407,12 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Height</label>
-                  <input type="text" name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 5'10" className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm text-center focus:border-brand-coral focus:bg-white/5 transition-all outline-none font-mono tracking-widest" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Height <span className="text-brand-coral">*</span></label>
+                  <input type="text" name="height" value={formData.height || ''} onChange={handleChange} placeholder="e.g. 5'10" className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm text-center focus:border-brand-coral focus:bg-white/5 transition-all outline-none font-mono tracking-widest" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Weight</label>
-                  <input type="text" name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 175 lbs" className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm text-center focus:border-brand-coral focus:bg-white/5 transition-all outline-none font-mono tracking-widest" />
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Weight <span className="text-brand-coral">*</span></label>
+                  <input type="text" name="weight" value={formData.weight || ''} onChange={handleChange} placeholder="e.g. 175 lbs" className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm text-center focus:border-brand-coral focus:bg-white/5 transition-all outline-none font-mono tracking-widest" />
                 </div>
             </div>
 
@@ -431,8 +435,13 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
             </div>
 
             <div className="space-y-2">
+              <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Athletic Intel / Motivation <span className="text-brand-coral">*</span></label>
+              <textarea name="short_bio" value={formData.short_bio || ''} onChange={handleChange} rows={2} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-coral focus:bg-white/5 transition-all outline-none resize-none" placeholder="What is your fitness goal and motivation?..." />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Primary Intent</label>
-              <textarea name="training_goals" value={formData.training_goals} onChange={handleChange} rows={2} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-coral focus:bg-white/5 transition-all outline-none resize-none" placeholder="Target objectives..." />
+              <textarea name="training_goals" value={formData.training_goals || ''} onChange={handleChange} rows={2} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-coral focus:bg-white/5 transition-all outline-none resize-none" placeholder="Target objectives..." />
             </div>
 
             <div className="space-y-2 pt-4 border-t border-white/5">
