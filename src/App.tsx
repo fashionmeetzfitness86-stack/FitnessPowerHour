@@ -2904,7 +2904,7 @@ const CartModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }
                 cart.map((item) => (
                   <div key={item.product.id} className="flex gap-6 group">
                     <div className="w-24 h-32 rounded-xl overflow-hidden bg-white/5 flex-shrink-0">
-                      <img src={item.product.featured_image} alt={item.product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
+                      <img src={item.product.images?.[0] || item.product.featured_image} alt={item.product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
                     </div>
                     <div className="flex-1 flex flex-col justify-between py-2">
                       <div className="space-y-1">
@@ -3139,7 +3139,7 @@ const Store = () => {
               onClick={() => handleQuickView(product)}
             >
               <div className="relative aspect-[3/4] overflow-hidden rounded-2xl mb-6">
-                <img src={product.featured_image || (product.images && product.images[0])} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" referrerPolicy="no-referrer" />
+                <img src={product.images?.[0] || product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-brand-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button className="bg-white text-brand-black px-8 py-4 rounded-full flex items-center gap-3 transform translate-y-4 group-hover:translate-y-0 transition-all font-bold text-[10px] uppercase tracking-widest shadow-2xl">
                     <ShoppingBag size={16} />
@@ -3190,7 +3190,7 @@ const Store = () => {
               {recentlyViewed.map((p: Product) => (
                 <div key={p.id} className="card-gradient p-6 space-y-6 group cursor-pointer" onClick={() => navigate(`/shop/product/${p.id}`)}>
                   <div className="aspect-[4/5] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                    <img src={p.featured_image || (p.images && p.images[0])} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={p.images?.[0] || p.featured_image} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                   <div>
                     <h4 className="font-bold uppercase tracking-tighter">{p.name}</h4>
@@ -3228,7 +3228,7 @@ const Store = () => {
 
                 <div className="w-full md:w-1/2 aspect-[4/5] md:aspect-auto">
                   <img 
-                    src={selectedProduct.featured_image} 
+                    src={selectedProduct.images?.[0] || selectedProduct.featured_image} 
                     alt={selectedProduct.name} 
                     className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
                     referrerPolicy="no-referrer"
@@ -3414,7 +3414,7 @@ const Store = () => {
                   onClick={() => handleQuickView(product)}
                 >
                   <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0">
-                    <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
+                    <img src={product.images?.[0] || product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
                   </div>
                   <div className="space-y-1">
                     <h3 className="text-sm font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{product.name}</h3>
@@ -4733,7 +4733,7 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
           <div className="space-y-8">
             <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-white/5">
-              <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000" referrerPolicy="no-referrer" />
+              <img src={product.images?.[0] || product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-1000" referrerPolicy="no-referrer" />
             </div>
             <div className="grid grid-cols-4 gap-4">
               {product.gallery?.map((img, i) => (
@@ -4792,7 +4792,7 @@ const ProductDetail = () => {
               {recentlyViewed.map((p: Product) => (
                 <div key={p.id} className="card-gradient p-6 space-y-6 group cursor-pointer" onClick={() => navigate(`/shop/product/${p.id}`)}>
                   <div className="aspect-[4/5] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                    <img src={p.featured_image} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={p.images?.[0] || p.featured_image} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                   <div>
                     <h4 className="font-bold uppercase tracking-tighter">{p.name}</h4>
@@ -4826,7 +4826,7 @@ const BrandPage = () => {
           {brandProducts.map(product => (
             <div key={product.id} className="card-gradient p-8 space-y-8 group cursor-pointer" onClick={() => navigate(`/shop/product/${product.id}`)}>
               <div className="aspect-[4/5] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <img src={product.images?.[0] || product.featured_image} alt={product.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               </div>
               <div className="space-y-2">
                 <h3 className="text-xl font-bold uppercase tracking-tighter">{product.name}</h3>
