@@ -494,7 +494,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                 <div className="aspect-video relative overflow-hidden bg-white/5">
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all z-10" />
                   {video.thumbnail_url ? (
-                    <img src={video.thumbnail_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
+                    <img src={video.thumbnail_url} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'; }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <VideoIcon size={40} className="text-white/10" />

@@ -254,6 +254,7 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
                   src={video.video_url} 
                   className={`w-full h-full object-cover transition-all duration-700 ${isSelected ? 'opacity-30' : 'opacity-80 group-hover:scale-105 group-hover:opacity-100'}`} 
                   poster={video.thumbnail_url} 
+                  onError={(e) => { e.currentTarget.setAttribute('poster', 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'); }}
                   preload="none"
                 />
                 

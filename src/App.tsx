@@ -2298,7 +2298,7 @@ const VideoLibrary = ({ showToast }: { showToast: (msg: string, type?: 'success'
                 }}
               >
                 <div className="relative aspect-video">
-                  <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
+                  <img src={video.thumbnail_url || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'; }} alt={video.title} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" referrerPolicy="no-referrer" />
                   
                   {video.is_premium ? (
                     <div className="absolute top-4 left-4 bg-brand-coral border border-brand-coral/50 text-white text-[8px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded shadow-lg z-10">
@@ -5976,7 +5976,7 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                   allowFullScreen
                 />
               )}
-              <img src={video.thumbnail_url} alt={video.title} className="absolute inset-0 w-full h-full object-cover -z-10 opacity-40" />
+              <img src={video.thumbnail_url || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'; }} alt={video.title} className="absolute inset-0 w-full h-full object-cover -z-10 opacity-40" />
             </div>
 
             <div className="space-y-8">
@@ -6129,7 +6129,7 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                 {VIDEOS.filter(v => v.id !== video.id).slice(0, 2).map(v => (
                   <Link key={v.id} to={`/video/${v.id}`} className="flex gap-4 group">
                     <div className="w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0">
-                      <img src={v.thumbnail_url} alt={v.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+                      <img src={v.thumbnail_url || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'; }} alt={v.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
                     </div>
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{v.title}</h4>

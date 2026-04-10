@@ -494,7 +494,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                   <div className="aspect-video relative overflow-hidden bg-white/5">
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all z-10" />
                     {video.thumbnail_url ? (
-                      <img src={video.thumbnail_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
+                      <img src={video.thumbnail_url} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'; }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <VideoIcon size={40} className="text-white/10" />
@@ -574,7 +574,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                         <div className="aspect-video relative overflow-hidden bg-white/5">
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all z-10" />
                           {video.thumbnail_url ? (
-                            <img src={video.thumbnail_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
+                            <img src={video.thumbnail_url} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'; }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={video.title} />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <VideoIcon size={40} className="text-white/10" />
@@ -634,7 +634,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
               >
                 <div className="w-20 aspect-video bg-white/5 rounded-xl overflow-hidden flex-shrink-0 relative">
                   {video.thumbnail_url ? (
-                    <img src={video.thumbnail_url} className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt={video.title} />
+                    <img src={video.thumbnail_url} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'; }} className="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt={video.title} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <VideoIcon size={18} className="text-white/10" />
