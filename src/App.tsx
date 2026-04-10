@@ -746,7 +746,20 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         ...cleanProfileUpdate
       }).eq('id', session.user.id);
 
-      if (error) throw error;
+      if (error) {
+        // If error is about a missing column (schema cache), strip the offending field and retry
+        const missingColMatch = error.message?.match(/column "?(\w+)"? of relation/i) ||
+                                error.message?.match(/Could not find the '(\w+)' column/i);
+        if (missingColMatch) {
+          const badCol = missingColMatch[1];
+          console.warn(`Column '${badCol}' not in DB schema yet — saving without it.`);
+          const { [badCol as keyof typeof cleanProfileUpdate]: _removed, ...safeUpdate } = cleanProfileUpdate as any;
+          const { error: retryError } = await supabase.from('profiles').update(safeUpdate).eq('id', session.user.id);
+          if (retryError) throw retryError;
+        } else {
+          throw error;
+        }
+      }
       fetchUser(session.user.id);
     } catch (error) {
       console.error('Error updating profile:', error);
