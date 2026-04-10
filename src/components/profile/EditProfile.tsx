@@ -72,7 +72,15 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
 
     try {
       setIsSaving(true);
-      await updateProfile(formData);
+      
+      const payloadToSave = { ...formData };
+      
+      // Prevent PostgreSQL error: invalid input syntax for type date: ""
+      if (!payloadToSave.date_of_birth || payloadToSave.date_of_birth === '') {
+         payloadToSave.date_of_birth = null as any;
+      }
+
+      await updateProfile(payloadToSave);
       showToast('Neural matrix synchronized successfully.', 'success');
     } catch (error: any) {
       showToast(error.message || 'Error updating profile', 'error');
