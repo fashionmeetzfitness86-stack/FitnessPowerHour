@@ -2193,10 +2193,26 @@ const VideoLibrary = ({ showToast }: { showToast: (msg: string, type?: 'success'
         <header className="mb-16 space-y-12">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
             <div>
+              {user && (
+                <button 
+                  onClick={() => { window.location.hash = '#/profile#programs'; }}
+                  className="mb-8 flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-white/40 hover:text-brand-teal transition-colors"
+                >
+                  <ChevronLeft size={14} /> Back to My Program
+                </button>
+              )}
               <h1 className="text-5xl font-bold uppercase tracking-tighter mb-4">Video <span className="text-brand-teal">Library</span></h1>
               <p className="text-white/40 uppercase tracking-widest text-xs">Master your movement with guided sessions</p>
             </div>
 
+            {user && (user.tier !== 'Basic' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete') && (
+              <button
+                onClick={() => { window.location.hash = '#/profile#programs'; }}
+                className="px-8 py-4 bg-brand-teal text-black font-black uppercase tracking-widest text-[10px] rounded-2xl hover:shadow-glow-teal transition-all flex items-center gap-2 shadow-lg w-full md:w-auto justify-center"
+              >
+                <PlayCircle size={16} /> See My Program
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

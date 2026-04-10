@@ -519,7 +519,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         <VideoManager 
           videos={videos} 
           categories={videoCategories} 
-          onUpload={() => handleSaveVideo({ title: 'New Video', visibility_status: 'draft', level: 'Beginner' })} 
+          onUpload={() => handleSaveVideo({ title: 'New Video', video_url: '', thumbnail_url: '', visibility_status: 'draft', level: 'Beginner' })} 
           onEdit={handleSaveVideo} 
           onDelete={handleDeleteVideo} 
         />

@@ -390,7 +390,7 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
           My <span className="text-brand-teal">Program</span>
         </h2>
         <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold mt-2">
-          Like a video to add it to your program. Start anytime.
+          Your active protocol. Build your routine from your bookmarked workouts.
         </p>
       </header>
 
@@ -441,44 +441,46 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
 
       {/* MY PROGRAM (BOOKMARKED & LIKED VIDEOS) */}
       <div className="space-y-8">
-        {(filteredBookmarked.length === 0 && filteredLiked.length === 0) ? (
-          <div className="py-20 text-center card-gradient border border-white/5 rounded-[2.5rem] space-y-6">
-            <div className="w-20 h-20 bg-brand-teal/10 rounded-[1.5rem] flex items-center justify-center mx-auto border border-brand-teal/20">
-              <PlaySquare size={36} className="text-brand-teal" />
+        {(bookmarkedVideos.length === 0 && likedVideos.length === 0) && (
+          <div className="flex flex-col md:flex-row items-center gap-6 p-6 card-gradient border border-white/5 rounded-[2.5rem] shadow-xl">
+            <div className="w-16 h-16 bg-brand-teal/10 rounded-[1.5rem] flex items-center justify-center flex-shrink-0 border border-brand-teal/20">
+              <PlaySquare size={24} className="text-brand-teal" />
             </div>
-            <div className="space-y-3">
-              <h4 className="text-2xl font-black uppercase tracking-tighter">
-                Start your <span className="text-brand-teal">program</span>
-              </h4>
-              <p className="text-[11px] tracking-[0.2em] uppercase font-bold text-white/30 max-w-xs mx-auto leading-relaxed">
-                Browse the video library and tap the bookmark icon to add up to 5 priority workouts to your program.
+            <div className="flex-1 text-center md:text-left space-y-1">
+              <h4 className="text-lg font-black uppercase tracking-tight text-white">Start your program</h4>
+              <p className="text-[10px] uppercase font-bold text-white/40 tracking-widest leading-relaxed">
+                Browse the library and tap the bookmark icon to prioritize up to 5 workouts for your daily routine.
               </p>
             </div>
-            <div className="flex gap-4 justify-center px-8 flex-wrap">
-              <button
-                onClick={() => { window.location.hash = '#/videos'; }}
-                className="px-8 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center gap-2"
-              >
-                <VideoIcon size={14} /> Browse Videos
-              </button>
-            </div>
+            <button
+              onClick={() => { window.location.hash = '#/videos'; }}
+              className="px-8 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 w-full md:w-auto"
+            >
+              <VideoIcon size={14} /> Browse Videos
+            </button>
           </div>
-        ) : (
-          <>
-            {filteredBookmarked.length > 0 && (
-              <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
-                    <div className="w-6 h-6 bg-brand-teal/20 rounded-lg flex items-center justify-center">
-                      <Bookmark size={12} className="text-brand-teal" />
-                    </div>
-                    Bookmarked Videos
-                    <span className="text-[10px] font-black text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded-lg">
-                      {bookmarkedVideos.length} / 5
-                    </span>
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        )}
+
+        <div className="space-y-5">
+          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
+              <div className="w-8 h-8 bg-brand-teal/20 rounded-xl flex items-center justify-center">
+                <Bookmark size={14} className="text-brand-teal" />
+              </div>
+              Bookmarked Priority
+              <span className="text-[10px] font-black text-brand-teal bg-brand-teal/10 px-3 py-1 rounded-lg border border-brand-teal/20">
+                {bookmarkedVideos.length} / 5
+              </span>
+            </h3>
+          </div>
+
+          {filteredBookmarked.length === 0 ? (
+            <div className="py-16 text-center rounded-[2rem] border border-dashed border-white/10 bg-white/[0.02] flex flex-col items-center justify-center">
+              <Bookmark size={32} className="text-white/10 mb-4" />
+              <p className="text-[10px] uppercase font-bold text-white/40 tracking-widest">No bookmarked workouts</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   <AnimatePresence mode="popLayout">
                     {filteredBookmarked.map(video => (
                 <motion.div
@@ -536,23 +538,29 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
               ))}
                   </AnimatePresence>
                 </div>
-              </div>
-            )}
+          )}
+        </div>
 
-            {filteredLiked.length > 0 && (
-              <div className="space-y-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
-                    <div className="w-6 h-6 bg-brand-coral/20 rounded-lg flex items-center justify-center">
-                      <Heart size={12} className="text-brand-coral" fill="currentColor" />
-                    </div>
-                    Liked Videos
-                    <span className="text-[10px] font-black text-brand-coral bg-brand-coral/10 px-2 py-0.5 rounded-lg">
-                      {likedVideos.length}
-                    </span>
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="space-y-5">
+          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-3">
+              <div className="w-8 h-8 bg-brand-coral/20 rounded-xl flex items-center justify-center">
+                <Heart size={14} className="text-brand-coral" fill="currentColor" />
+              </div>
+              Liked Videos
+              <span className="text-[10px] font-black text-brand-coral bg-brand-coral/10 px-3 py-1 rounded-lg border border-brand-coral/20">
+                {likedVideos.length}
+              </span>
+            </h3>
+          </div>
+
+          {filteredLiked.length === 0 ? (
+            <div className="py-16 text-center rounded-[2rem] border border-dashed border-white/10 bg-white/[0.02] flex flex-col items-center justify-center">
+              <Heart size={32} className="text-white/10 mb-4" />
+              <p className="text-[10px] uppercase font-bold text-white/40 tracking-widest">No liked videos yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                   <AnimatePresence mode="popLayout">
                     {filteredLiked.map(video => (
                       <motion.div
@@ -609,10 +617,8 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
                     ))}
                   </AnimatePresence>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+          )}
+        </div>
       </div>      {/* SUGGESTED VIDEOS */}
       {filteredAvailable.length > 0 && (
         <div className="space-y-5">
