@@ -300,28 +300,24 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
 
   const handleSaveProduct = async (data: Partial<any>) => {
     try {
-      // Map ShopProduct fields → DB column names
+      // Map ShopProduct fields → DB column names matching public.products
       const dbRow: Record<string, any> = {
         name:             data.name,
         description:      data.description || null,
         price:            data.price || 0,
-        // category is stored as category_id in the DB
-        category_id:      data.category || data.category_id || null,
-        // featured_image is the primary image
-        featured_image:   data.images?.[0] || data.featured_image || null,
+        category:         data.category || 'Apparel',
         images:           data.images || [],
         video_url:        data.video_url || null,
         external_link:    data.external_link || null,
         is_recommended:   data.is_recommended ?? false,
-        // status maps to is_active boolean
-        status:           data.is_active !== false ? 'active' : 'draft',
+        is_active:        data.is_active ?? true,
         visibility:       data.visibility || 'general',
-        // New fields
-        sizes:            data.sizes || [],
-        inventory_count:  data.quantity ?? data.inventory_count ?? 0,
-        gender:           data.gender || null,
         updated_at:       new Date().toISOString(),
       };
+      
+      // We do not send sizes, quantity, gender yet, because the database does not have those columns
+      // and it will crash the Supabase insert/update.
+
 
       if (data.id) {
         const { error } = await supabase.from('products').update(dbRow).eq('id', data.id);
