@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -3880,229 +3880,317 @@ const Services = () => {
 
 const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'error') => void }) => {
   const { user } = useAuth();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const [allRequests, setAllRequests] = useState<any[]>([]);
+  const [myRequests, setMyRequests] = useState<any[]>([]);
+  
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
   const [selectedService, setSelectedService] = useState('Stretching');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [bookingStep, setBookingStep] = useState(1);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchBookings = async () => {
-      const { data, error } = await supabase.from('bookings').select('*').eq('service_type', 'flex_mob');
-      if (data) setBookings(data as Booking[]);
-      if (error) console.error('Error fetching bookings:', error);
-    };
-    fetchBookings();
-  }, []);
-
-  const handleBookingRequest = async () => {
-    if (!user) {
-      showToast('Please login to request a booking', 'error');
-      return;
-    }
-
-    try {
-      const response = await fetch('/.netlify/functions/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'service',
-          serviceName: selectedService,
-          priceAmount: 150,
-          selectedDate: selectedDate,
-          selectedTime: selectedSlot || '10:00 AM',
-          userId: user.id,
-          userEmail: user.email
-        })
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        showToast(data.error || data.errorMessage || data.message || 'Failed to initialize checkout payload from server.', 'error');
-      }
-    } catch (error: any) {
-      console.error('Error creating booking checkout:', error);
-      showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
-    }
-  };
+  const [serviceMessage, setServiceMessage] = useState('');
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const services = ['Massages', 'Stretching', 'Physical Therapy'];
   const timeSlots = ['09:00 AM', '10:30 AM', '01:00 PM', '02:30 PM', '04:00 PM', '05:30 PM'];
 
-  return (
-    <div className="pt-40 pb-32 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
-          <div className="space-y-12">
-            <header className="space-y-6">
-              <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Recovery & Mobility</span>
-              <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Flex Mob <span className="text-brand-coral">305</span></h1>
-              <p className="text-white/60 text-lg font-light leading-relaxed">
-                Specializing in professional assisted stretching and muscle recovery designed to support athletes and optimize performance.
-              </p>
-            </header>
+  useEffect(() => {
+    const fetchRequests = async () => {
+      const { data, error } = await supabase.from('service_requests')
+          .select('*')
+          .eq('service_subtype', 'FlexMob305');
+      if (data) {
+        setAllRequests(data);
+        if (user) {
+          setMyRequests(data.filter((r: any) => r.user_id === user.id));
+        }
+      }
+    };
+    fetchRequests();
+  }, [user]);
 
-            <div className="space-y-8">
-              <h3 className="text-2xl font-bold uppercase tracking-tighter">Our Services</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {services.map(s => (
-                  <div key={s} className={`p-6 border rounded-2xl transition-all cursor-pointer ${selectedService === s ? 'border-brand-coral bg-brand-coral/10' : 'border-white/5 bg-white/5 hover:border-white/20'}`} onClick={() => setSelectedService(s)}>
-                    <p className="text-sm font-bold uppercase tracking-widest text-center">{s}</p>
-                  </div>
-                ))}
-              </div>
+  const handleAddService = async () => {
+    if (!user) {
+      showToast('Please login to request a session.', 'error');
+      return;
+    }
+    if (!selectedDay) {
+      showToast('Please select a date.', 'error');
+      return;
+    }
+    if (!selectedSlot) {
+      showToast('Please select a time slot.', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const getFormattedTime = (timeSlot: string) => {
+        const map: Record<string, string> = {
+          '09:00 AM': '09:00:00', '10:30 AM': '10:30:00', '01:00 PM': '13:00:00',
+          '02:30 PM': '14:30:00', '04:00 PM': '16:00:00', '05:30 PM': '17:30:00'
+        };
+        return map[timeSlot] || '12:00:00';
+      };
+
+      const formattedSlot = getFormattedTime(selectedSlot);
+      const isTaken = allRequests.some(r => r.requested_date === selectedDay && r.requested_time === formattedSlot && r.status !== 'denied');
+      
+      if (isTaken) {
+         showToast('Error: Slot was just reserved by another user.', 'error');
+         setIsSubmitting(false);
+         return;
+      }
+
+      const { data, error } = await supabase.from('service_requests').insert({
+        user_id: user.id,
+        service_type: selectedService,
+        service_subtype: 'FlexMob305',
+        requested_date: selectedDay,
+        requested_time: formattedSlot,
+        status: 'pending',
+        notes: \Message: \\
+      }).select().single();
+
+      if (error) throw error;
+      if (data) {
+        setAllRequests(prev => [...prev, data]);
+        setMyRequests(prev => [...prev, data]);
+      }
+      showToast('Service Request Submitted! Awaiting admin confirmation.', 'success');
+      setServiceMessage('');
+      setSelectedSlot('');
+      setSelectedDay(null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to request service.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const days: (Date | null)[] = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= lastDate; i++) days.push(new Date(year, month, i));
+    return days;
+  };
+
+  const isSameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
+  const getRequestsForDay = (dayStr: string, requestsArray: any[]) => requestsArray.filter(r => r.requested_date === dayStr && r.status !== 'denied');
+
+  const getFormattedTime = (timeSlot: string) => {
+    const map: Record<string, string> = {
+      '09:00 AM': '09:00:00', '10:30 AM': '10:30:00', '01:00 PM': '13:00:00',
+      '02:30 PM': '14:30:00', '04:00 PM': '16:00:00', '05:30 PM': '17:30:00'
+    };
+    return map[timeSlot] || '12:00:00';
+  };
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const days = getDaysInMonth(currentDate);
+  const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  return (
+    <div className="pt-40 pb-32 px-6 fade-in">
+      <div className="max-w-7xl mx-auto space-y-12">
+        <header className="space-y-6 text-center max-w-3xl mx-auto">
+          <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Recovery & Mobility</span>
+          <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Flex Mob <span className="text-brand-coral">305</span></h1>
+          <p className="text-white/60 text-lg font-light leading-relaxed">
+            Specializing in professional assisted stretching and muscle recovery designed to support athletes and optimize performance.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 text-left">
+          <div className="xl:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+                className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white hover:text-black transition-all"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <h3 className="text-2xl font-black uppercase tracking-tighter">{monthLabel}</h3>
+              <button
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+                className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white hover:text-black transition-all"
+              >
+                <ChevronRight size={18} />
+              </button>
             </div>
 
-            <div className="card-gradient p-10 space-y-8 rounded-[3rem] border-white/10">
-              <div className="flex items-center gap-4 border-b border-white/5 pb-6">
-                 <Calendar className="text-brand-coral" size={20} />
-                 <h3 className="text-2xl font-black uppercase tracking-tighter">Initiate Request</h3>
-              </div>
-              <p className="text-sm text-white/40 uppercase tracking-widest font-black">Select your recovery protocol and access frequency to begin the scheduling sync.</p>
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="btn-primary w-full bg-brand-coral hover:bg-brand-coral/80 py-6 text-[10px] uppercase tracking-[0.5em] font-black shadow-glow-coral"
-              >
-                Open Booking Matrix
-              </button>
+            <div className="hidden md:grid grid-cols-7 gap-2 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} className="py-3 text-center text-white/20 text-[9px] uppercase font-black tracking-widest border-b border-white/5">
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 md:gap-2 max-h-[60vh] md:max-h-none overflow-y-auto md:overflow-visible">
+              {days.map((date, idx) => {
+                if (!date) return <div key={idx} className="hidden md:block h-20 md:h-28 rounded-xl" />;
+
+                const dayStr = date.toISOString().split('T')[0];
+                const dayAllRequests = getRequestsForDay(dayStr, allRequests);
+                const dayMyRequests = getRequestsForDay(dayStr, myRequests);
+                
+                const isToday = isSameDay(date, today);
+                const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const isSelected = selectedDay === dayStr;
+                
+                const fullyBooked = dayAllRequests.length >= timeSlots.length;
+                
+                return (
+                  <motion.div
+                    key={idx}
+                    whileHover={{ scale: isPast ? 1 : 1.04 }}
+                    whileTap={{ scale: isPast ? 1 : 0.97 }}
+                    onClick={() => { if (!isPast && !fullyBooked) { setSelectedDay(dayStr); setSelectedSlot(''); } }}
+                    className={\h-22 md:h-28 p-2 md:p-3 border rounded-xl flex flex-col \ transition-all relative overflow-hidden \\}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={\	ext-xs md:text-sm font-black font-mono flex items-center gap-2 \\}>
+                        <span className="md:hidden uppercase text-[9px] tracking-widest">{date.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                        {date.getDate()}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 md:mt-auto space-y-1">
+                      {dayMyRequests.length > 0 ? (
+                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase truncate bg-brand-coral/20 text-brand-coral">
+                            <Check size={8} /> Your Booking
+                         </div>
+                      ) : dayAllRequests.length > 0 && !isPast && !fullyBooked ? (
+                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase truncate bg-white/10 text-white/40">
+                             {timeSlots.length - dayAllRequests.length} slots left
+                         </div>
+                      ) : null}
+                      
+                      {fullyBooked && !isPast && (
+                         <div className="text-[8px] font-black uppercase text-red-500 mt-1">Sold out</div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
-          <AnimatePresence>
-            {isModalOpen && (
-              <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/95 backdrop-blur-2xl">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 30 }}
-                  className="card-gradient w-full max-w-2xl p-16 space-y-12 rounded-[4rem] border border-brand-coral/30 shadow-2xl relative"
+          <div className="xl:col-span-1 border-t md:border-t-0 border-white/5 pt-6 md:pt-0">
+            <AnimatePresence mode="wait">
+              {selectedDay ? (
+                <motion.div
+                  key={selectedDay}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="card-gradient rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl"
                 >
-                  <button onClick={() => { setIsModalOpen(false); setBookingStep(1); }} className="absolute top-10 right-10 text-white/20 hover:text-white"><X size={28} /></button>
-                  
-                  {bookingStep === 1 && (
-                    <div className="space-y-10">
-                      <div className="text-center space-y-4">
-                        <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Step 1 / 3: Availability</span>
-                        <h3 className="text-3xl font-black uppercase tracking-tighter">Sync <span className="text-brand-coral">Calendar</span></h3>
-                      </div>
-                      
-                      <div className="space-y-6">
-                        <div className="p-8 bg-white/5 border border-white/10 rounded-3xl">
-                           <input 
-                             type="date" 
-                             value={selectedDate}
-                             onChange={(e) => setSelectedDate(e.target.value)}
-                             className="w-full bg-transparent border-none text-2xl font-black text-center text-white focus:ring-0 outline-none"
-                           />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center">
-                              <span className="text-[10px] uppercase tracking-widest text-white/20 font-black mb-2">Availability</span>
-                              <span className="text-xl font-black text-brand-teal uppercase tracking-tighter text-center">Protocol Open</span>
-                           </div>
-                           <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center">
-                              <span className="text-[10px] uppercase tracking-widest text-white/20 font-black mb-2">Location</span>
-                              <span className="text-xl font-black text-white uppercase tracking-tighter text-center">Miami HQ</span>
-                           </div>
-                        </div>
-                      </div>
-
-                      <button onClick={() => setBookingStep(2)} className="btn-primary w-full bg-brand-coral py-6 text-[10px] uppercase tracking-[0.5em] font-black">Lock Date & Proceed</button>
-                    </div>
-                  )}
-
-                  {bookingStep === 2 && (
-                    <div className="space-y-10">
-                      <div className="text-center space-y-4">
-                        <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Step 2 / 3: Window</span>
-                        <h3 className="text-3xl font-black uppercase tracking-tighter">Select <span className="text-brand-coral">Time Slot</span></h3>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {timeSlots.map(slot => (
-                          <button 
-                            key={slot}
-                            onClick={() => setSelectedSlot(slot)}
-                            className={`p-6 rounded-2xl border transition-all text-center ${
-                              selectedSlot === slot ? 'bg-brand-coral/20 border-brand-coral text-brand-coral shadow-glow-coral' : 'bg-white/5 border-white/10 text-white/40 hover:border-white/20'
-                            }`}
-                          >
-                            <span className="text-xs font-black uppercase tracking-widest">{slot}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="flex gap-4">
-                        <button onClick={() => setBookingStep(3)} disabled={!selectedSlot} className="flex-1 btn-primary bg-brand-coral py-6 text-[10px] uppercase tracking-[0.5em] font-black">Sync window</button>
-                        <button onClick={() => setBookingStep(1)} className="px-10 py-6 border border-white/10 text-white/40 text-[10px] uppercase tracking-[0.5em] font-black rounded-2xl">Back</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {bookingStep === 3 && (
-                    <div className="space-y-10">
-                      <div className="text-center space-y-4">
-                        <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em]">Step 3 / 3: Authorization</span>
-                        <h3 className="text-3xl font-black uppercase tracking-tighter">Finalize <span className="text-brand-coral">Protocol</span></h3>
-                      </div>
-                      
-                      <div className="p-8 bg-white/5 border border-white/10 rounded-3xl space-y-6">
-                        <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                           <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Service</span>
-                           <span className="text-sm font-black uppercase text-brand-coral">{selectedService}</span>
-                        </div>
-                        <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                           <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Appointment</span>
-                           <span className="text-sm font-black uppercase">{selectedDate}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                           <span className="text-[10px] uppercase tracking-widest text-white/20 font-black">Time Slot</span>
-                           <span className="text-sm font-black uppercase">{selectedSlot}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <button onClick={handleBookingRequest} className="flex-1 btn-primary bg-brand-coral py-6 text-[10px] uppercase tracking-[0.5em] font-black">Initiate Sync</button>
-                        <button onClick={() => setBookingStep(2)} className="px-10 py-6 border border-white/10 text-white/40 text-[10px] uppercase tracking-[0.5em] font-black rounded-2xl">Back</button>
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
-
-          <div className="space-y-12">
-            <div className="card-gradient p-10 space-y-8">
-              <h3 className="text-2xl font-bold uppercase tracking-tighter">Booking Calendar</h3>
-              <div className="space-y-4">
-                {bookings.length === 0 ? (
-                  <p className="text-white/40 text-sm italic">No bookings scheduled yet.</p>
-                ) : (
-                  bookings.map(booking => (
-                    <div key={booking.id} className="flex items-center justify-between p-4 border border-white/5 rounded-xl bg-white/5">
+                  <div className={\p-6 border-b border-white/5 \\}>
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold uppercase tracking-tighter">{booking.service_name}</p>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{booking.date} at {booking.time}</p>
+                        <p className="text-[9px] uppercase tracking-[0.4em] font-black text-brand-coral">
+                          Initiate Request
+                        </p>
+                        <h4 className="text-xl font-black uppercase tracking-tighter mt-1">
+                          {new Date(selectedDay + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'long' })}
+                        </h4>
                       </div>
-                      <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded-full ${
-                        booking.status === 'approved' ? 'bg-brand-teal/20 text-brand-teal' :
-                        booking.status === 'pending' ? 'bg-brand-coral/20 text-brand-coral' :
-                        'bg-white/10 text-white/40'
-                      }`}>
-                        {booking.status}
-                      </span>
+                      <button onClick={() => { setSelectedDay(null); setSelectedSlot(''); }} className="p-2 text-white/20 hover:text-white transition-colors">
+                        <X size={18} />
+                      </button>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
+                  </div>
 
-            <div className="aspect-video rounded-3xl overflow-hidden">
-              <img src="https://picsum.photos/seed/flexmob-lifestyle/1000/600" className="w-full h-full object-cover grayscale" referrerPolicy="no-referrer" />
-            </div>
+                  <div className="p-6 space-y-6">
+                     <div className="space-y-4">
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Protocol</label>
+                          <div className="grid grid-cols-1 gap-2">
+                             {services.map(s => (
+                                <button key={s} onClick={() => setSelectedService(s)} className={\py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border \\}>
+                                   {s}
+                                </button>
+                             ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Available Time Windows</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {timeSlots.map(t => {
+                               const dbTime = getFormattedTime(t);
+                               const isTaken = allRequests.some(r => r.requested_date === selectedDay && r.requested_time === dbTime && r.status !== 'denied');
+                               const isMine = myRequests.some(r => r.requested_date === selectedDay && r.requested_time === dbTime && r.status !== 'denied');
+
+                               if (isMine) {
+                                  return (
+                                     <button key={t} disabled className="py-3 rounded-xl text-[10px] font-bold border border-brand-coral/40 bg-brand-coral/10 text-brand-coral opacity-80 cursor-not-allowed flex items-center justify-center gap-1">
+                                        <Check size={12}/> Confirmed
+                                     </button>
+                                  )
+                               }
+                               if (isTaken) {
+                                  return (
+                                     <button key={t} disabled className="py-3 rounded-xl text-[10px] font-bold border border-white/5 bg-white/5 text-white/20 line-through cursor-not-allowed">
+                                        {t.split(' ')[0]} Full
+                                     </button>
+                                  )
+                               }
+                               return (
+                                  <button key={t} onClick={() => setSelectedSlot(t)} className={\py-3 rounded-xl text-[10px] font-bold border transition-all \\}>
+                                    {t}
+                                  </button>
+                               )
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Focus Area / Notes (Optional)</label>
+                          <textarea rows={2} placeholder="Briefly describe your focus area..." value={serviceMessage} onChange={e => setServiceMessage(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:border-brand-coral outline-none transition-all placeholder-white/20 resize-none -mb-2" />
+                        </div>
+                     </div>
+
+                     {!user && (
+                        <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
+                           <AlertCircle size={14} /> You must be logged in to book.
+                        </div>
+                     )}
+
+                     <button onClick={handleAddService} disabled={isSubmitting || !selectedSlot || !user} className="w-full py-4 bg-brand-coral text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-coral transition-all flex items-center justify-center gap-2 disabled:opacity-40">
+                        {isSubmitting ? 'Syncing...' : <>Request Slot Sync <ArrowRight size={14} /></>}
+                     </button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="default"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="card-gradient rounded-[2.5rem] border border-dashed border-white/10 p-10 text-center space-y-6"
+                >
+                  <Calendar size={40} className="text-white/10 mx-auto" />
+                  <div>
+                    <h4 className="text-lg font-black uppercase tracking-tight text-white/30">Select a Date</h4>
+                    <p className="text-[10px] uppercase tracking-widest text-white/20 font-bold mt-2 leading-relaxed">
+                      Click any available day on the calendar to secure your recovery service window.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
