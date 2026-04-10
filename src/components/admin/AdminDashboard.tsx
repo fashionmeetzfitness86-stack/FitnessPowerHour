@@ -429,17 +429,32 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
          showToast('Request updated successfully', 'success');
       } else {
          const { data, error } = await supabase.from('service_requests').insert({
-            user_id: req.user_id,
+            user_id: req.user_id || null,
+            guest_name: req.guest_name || null,
+            guest_email: req.guest_email || null,
+            guest_phone: req.guest_phone || null,
+            amount_paid: req.amount_paid || 0,
             service_type: req.service_type,
-            service_subtype: 'Manual Booking',
+            service_subtype: req.service_subtype || 'Manual Booking',
             requested_date: req.requested_date || new Date().toISOString().split('T')[0],
             requested_time: req.requested_time || '12:00:00',
-            status: req.status || 'confirmed',
+            status: req.status || 'approved',
             notes: req.notes || 'Admin generated appointment'
          }).select().single();
          if (error) throw error;
          setServiceRequests(prev => [data, ...prev]);
-         showToast('Manual booking created', 'success');
+         showToast(`Request confirmed. Confirmation email simulated to: ${req.guest_email || 'Attached User Email'}.`, 'success');
+
+         // Send notification if it's a registered user
+         if (req.user_id) {
+           await supabase.from('notifications').insert({
+             user_id: req.user_id,
+             type: 'system',
+             title: 'New Service Booked',
+             message: `An admin booked you for ${req.service_subtype || req.service_type} on ${req.requested_date} at ${req.requested_time}.`,
+             created_at: new Date().toISOString()
+           });
+         }
       }
     } catch(err) {
       showToast('Failed to save service request', 'error');

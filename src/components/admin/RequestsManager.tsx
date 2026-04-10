@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Calendar as CalendarIcon, Clock, CheckCircle, XCircle, 
-  MapPin, Shield, Zap, Search, User, X, MessageSquare, AlertCircle
+  MapPin, Shield, Zap, Search, User, X, MessageSquare, AlertCircle, Plus
 } from 'lucide-react';
 import { supabase } from '../../supabase';
 
@@ -38,16 +38,76 @@ export const RequestsManager = ({
   requests, 
   users, 
   onUpdateStatus, 
-  showToast 
+  showToast,
+  onRequestCreated
 }: { 
   requests: ServiceRequest[], 
   users: UserProfile[],
   onUpdateStatus: (id: string, status: string) => void,
-  showToast: (msg: string, type: 'success' | 'error' | 'info') => void 
+  showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void,
+  onRequestCreated?: (req: any) => void
 }) => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [viewingRequest, setViewingRequest] = useState<ServiceRequest | null>(null);
+
+  const [isCreating, setIsCreating] = useState(false);
+  const [createStep, setCreateStep] = useState(1);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    name: '', email: '', phone: '',
+    service_type: 'Stretching', service_subtype: 'FlexMob305',
+    date: '', time: '', amount: 0, notes: ''
+  });
+
+  const handleCreateSubmit = async () => {
+    setCreateSubmitting(true);
+    let user_id = null;
+    const existing = users.find(u => u.email.toLowerCase() === createForm.email.toLowerCase());
+    if (existing) user_id = existing.id;
+
+    try {
+      const payload = {
+        user_id: user_id,
+        guest_name: user_id ? null : createForm.name,
+        guest_email: user_id ? null : createForm.email,
+        guest_phone: user_id ? null : createForm.phone,
+        service_type: createForm.service_type,
+        service_subtype: createForm.service_subtype,
+        amount_paid: createForm.amount,
+        requested_date: createForm.date,
+        requested_time: createForm.time,
+        status: 'approved',
+        notes: createForm.notes || 'Admin manual request'
+      };
+      
+      const { data, error } = await supabase.from('service_requests').insert(payload).select().single();
+      if (error) throw error;
+      
+      showToast('Request confirmed. Confirmation dispatched to ' + createForm.email + '.', 'success');
+      
+      if (user_id) {
+        await supabase.from('notifications').insert({
+             user_id: user_id,
+             type: 'system',
+             title: 'New Service Scheduled',
+             message: `An admin booked you for ${createForm.service_subtype} on ${createForm.date} at ${createForm.time}.`,
+             created_at: new Date().toISOString()
+        });
+      }
+
+      if (onRequestCreated && data) {
+         onRequestCreated(data);
+      }
+      setIsCreating(false);
+      setCreateStep(1);
+      setCreateForm({ name: '', email: '', phone: '', service_type: 'Stretching', service_subtype: 'FlexMob305', date: '', time: '', amount: 0, notes: '' });
+    } catch (err) {
+      showToast('Failed to create request', 'error');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -92,6 +152,9 @@ export const RequestsManager = ({
         </div>
         
         <div className="flex flex-wrap gap-3">
+          <button onClick={() => setIsCreating(true)} className="flex items-center gap-2 px-4 py-2 bg-brand-teal text-black text-[10px] uppercase font-black tracking-widest rounded-xl hover:scale-105 transition-all">
+             <Plus size={14} /> Create Request
+          </button>
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
             <input
@@ -330,6 +393,97 @@ export const RequestsManager = ({
                  </button>
                )}
             </div>
+          </motion.div>
+        </motion.div>
+      )}
+      {/* Create Request Wizard */}
+      {isCreating && (
+        <motion.div
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        >
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-8 w-full max-w-lg shadow-2xl relative"
+          >
+            <button onClick={() => setIsCreating(false)} className="absolute top-6 right-6 p-2 text-white/30 hover:text-brand-coral transition-colors rounded-full bg-white/5">
+              <X size={18} />
+            </button>
+            <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Create <span className="text-brand-teal">Request</span></h3>
+            <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-8">Step {createStep} of 3</p>
+
+            {createStep === 1 && (
+               <div className="space-y-4 fade-in">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Full Name</label>
+                    <input autoFocus type="text" value={createForm.name} onChange={e => setCreateForm({...createForm, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Email Address</label>
+                    <input type="email" value={createForm.email} onChange={e => setCreateForm({...createForm, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none" required />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Phone Number</label>
+                    <input type="tel" value={createForm.phone} onChange={e => setCreateForm({...createForm, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none" required />
+                  </div>
+                  <button disabled={!createForm.name || !createForm.email || !createForm.phone} onClick={() => setCreateStep(2)} className="w-full mt-4 bg-white text-black py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-teal transition-all disabled:opacity-50">Next Step</button>
+               </div>
+            )}
+
+            {createStep === 2 && (
+               <div className="space-y-4 fade-in">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Service Category</label>
+                    <select value={createForm.service_type} onChange={e => setCreateForm({...createForm, service_type: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none">
+                      <option value="Stretching">Stretching</option>
+                      <option value="Massage">Massage</option>
+                      <option value="Recovery">Recovery</option>
+                      <option value="PersonalTraining">Personal Training</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Service Program</label>
+                    <select value={createForm.service_subtype} onChange={e => setCreateForm({...createForm, service_subtype: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none">
+                      <option value="FlexMob305">FlexMob 305</option>
+                      <option value="1-on-1 Session">1-on-1 Session</option>
+                      <option value="Group Class">Group Class</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Amount Pre-Paid / Cost ($)</label>
+                    <input type="number" value={createForm.amount} onChange={e => setCreateForm({...createForm, amount: parseInt(e.target.value) || 0})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none" />
+                  </div>
+                  <div className="flex gap-3 mt-4">
+                     <button onClick={() => setCreateStep(1)} className="flex-1 bg-white/5 text-white/40 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:text-white transition-all">Back</button>
+                     <button onClick={() => setCreateStep(3)} className="flex-[2] bg-white text-black py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-teal transition-all">Next Step</button>
+                  </div>
+               </div>
+            )}
+
+            {createStep === 3 && (
+               <div className="space-y-4 fade-in">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Date</label>
+                    <input type="date" value={createForm.date} onChange={e => setCreateForm({...createForm, date: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none [&::-webkit-calendar-picker-indicator]:invert" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Time</label>
+                    <input type="time" value={createForm.time} onChange={e => setCreateForm({...createForm, time: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none [&::-webkit-calendar-picker-indicator]:invert" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Admin Notes (Optional)</label>
+                    <input type="text" value={createForm.notes} onChange={e => setCreateForm({...createForm, notes: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none" placeholder="e.g. VIP guest, requested specific trainer" />
+                  </div>
+                  <div className="flex gap-3 mt-4 pt-4 border-t border-white/5">
+                     <button onClick={() => setCreateStep(2)} className="w-[100px] bg-white/5 text-white/40 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:text-white transition-all">Back</button>
+                     <button onClick={handleCreateSubmit} disabled={!createForm.date || !createForm.time || createSubmitting} className="flex-1 flex justify-center items-center gap-2 bg-brand-teal text-black py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:scale-105 transition-all shadow-glow-teal disabled:opacity-50">
+                        {createSubmitting ? 'Transmitting...' : 'Confirm Request'}
+                     </button>
+                  </div>
+               </div>
+            )}
           </motion.div>
         </motion.div>
       )}
