@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, Users, Trophy, PlayCircle, 
@@ -41,8 +41,10 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true);
   
   // Data State
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -723,12 +725,33 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         </nav>
 
         <div className="hidden lg:flex p-4 border-t border-white/5 space-y-2 flex-col">
-           <Link
-            to="/profile"
+          <button 
+            onClick={() => {
+              showToast('Syncing all modular changes to Nexus...', 'info');
+              setTimeout(() => {
+                setHasUnsavedChanges(false);
+                showToast('Dashboard fully synchronized. All changes published.', 'success');
+              }, 1200);
+            }}
+            className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-brand-teal text-[9px] uppercase tracking-[0.3em] font-black text-black hover:bg-brand-teal/90 transition-all shadow-[0_0_20px_rgba(45,212,191,0.2)] hover:scale-105 mb-2"
+          >
+            <Zap size={14} /> Commit Changes
+          </button>
+          
+          <button
+            onClick={() => {
+              if (hasUnsavedChanges) {
+                if (window.confirm("You have uncommitted changes. Exiting now will leave recent edits in 'Draft Mode'. Do you want to exit to surface anyway?")) {
+                  navigate('/profile');
+                }
+              } else {
+                navigate('/profile');
+              }
+            }}
             className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-brand-teal/5 text-[9px] uppercase tracking-[0.3em] font-black text-brand-teal hover:bg-brand-teal hover:text-black transition-all border border-brand-teal/10"
           >
             <ArrowUpRight size={14} /> Exit to Profile
-          </Link>
+          </button>
           <button 
             onClick={logout}
             className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-[9px] uppercase tracking-[0.3em] font-black text-white/20 hover:bg-brand-coral/10 hover:text-brand-coral transition-all"

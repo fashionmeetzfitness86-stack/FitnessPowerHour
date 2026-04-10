@@ -3052,14 +3052,16 @@ const Store = () => {
 
   const filteredProducts = useMemo(() => {
     let filtered = dbProducts;
+    // ensure we don't crash from old mock formats
     if (activeTab !== 'All') {
-      filtered = filtered.filter(p => p.category_id === activeTab.toLowerCase());
+      const tabKey = activeTab.toLowerCase();
+      filtered = filtered.filter(p => p.category_id?.toLowerCase() === tabKey || p.category?.toLowerCase() === tabKey);
     }
     if (activeCollection !== 'All') {
-      filtered = filtered.filter(p => p.brand_id === activeCollection);
+      filtered = filtered.filter(p => (p.brand_id || 'FMF Lifestyle Collection') === activeCollection);
     }
     return filtered;
-  }, [activeTab, activeCollection]);
+  }, [dbProducts, activeTab, activeCollection]);
 
   return (
     <div className="pt-40 pb-32 px-6">
@@ -3137,7 +3139,7 @@ const Store = () => {
               onClick={() => handleQuickView(product)}
             >
               <div className="relative aspect-[3/4] overflow-hidden rounded-2xl mb-6">
-                <img src={product.featured_image} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" referrerPolicy="no-referrer" />
+                <img src={product.featured_image || (product.images && product.images[0])} alt={product.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-brand-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button className="bg-white text-brand-black px-8 py-4 rounded-full flex items-center gap-3 transform translate-y-4 group-hover:translate-y-0 transition-all font-bold text-[10px] uppercase tracking-widest shadow-2xl">
                     <ShoppingBag size={16} />
@@ -3145,14 +3147,14 @@ const Store = () => {
                   </button>
                 </div>
                 <div className="absolute top-4 left-4">
-                  <span className="bg-brand-black/60 backdrop-blur-md text-[9px] uppercase tracking-widest px-2 py-1 rounded">{product.brand_id}</span>
+                  <span className="bg-brand-black/60 backdrop-blur-md text-[9px] uppercase tracking-widest px-2 py-1 rounded">{product.brand_id || 'FMF Lifestyle Collection'}</span>
                 </div>
               </div>
               <div className="flex flex-col space-y-2">
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="text-lg font-bold uppercase tracking-tight group-hover:text-brand-teal transition-colors">{product.name}</h3>
-                    <p className="text-white/40 text-xs uppercase tracking-widest">{product.category_id}</p>
+                    <p className="text-white/40 text-xs uppercase tracking-widest">{product.category_id || product.category}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Retail Price</div>
@@ -3188,7 +3190,7 @@ const Store = () => {
               {recentlyViewed.map((p: Product) => (
                 <div key={p.id} className="card-gradient p-6 space-y-6 group cursor-pointer" onClick={() => navigate(`/shop/product/${p.id}`)}>
                   <div className="aspect-[4/5] rounded-2xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
-                    <img src={p.featured_image} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={p.featured_image || (p.images && p.images[0])} alt={p.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                   <div>
                     <h4 className="font-bold uppercase tracking-tighter">{p.name}</h4>

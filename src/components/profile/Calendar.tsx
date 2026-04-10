@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, X, Activity, UserPlus, ChevronLeft, ChevronRight, 
@@ -10,6 +11,7 @@ import { supabase } from '../../supabase';
 type DayPanelMode = 'view' | 'add_workout' | 'add_service';
 
 export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: any }) => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sessions, setSessions] = useState<CalendarSession[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
@@ -398,10 +400,10 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                         <Dumbbell size={16} /> Add Workout
                       </button>
                       <button
-                        onClick={() => setPanelMode('add_service')}
+                        onClick={() => navigate('/services')}
                         className="py-4 bg-brand-teal text-black font-black uppercase text-[9px] tracking-[0.2em] rounded-2xl hover:shadow-glow-teal transition-all flex flex-col items-center justify-center gap-2"
                       >
-                        <UserPlus size={16} /> Add Service
+                        <UserPlus size={16} /> Book Service
                       </button>
                     </div>
                   </div>
@@ -439,46 +441,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                   </div>
                 )}
 
-                {/* ADD SERVICE MODE */}
-                {panelMode === 'add_service' && (
-                  <div className="p-6 space-y-6">
-                    <div className="space-y-2">
-                      <h5 className="text-lg font-black uppercase tracking-tighter">Request <span className="text-brand-teal">Service</span></h5>
-                      <p className="text-[9px] text-brand-teal uppercase tracking-widest font-bold">Book an expert session</p>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Type</label>
-                        <select value={serviceType} onChange={e => setServiceType(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:border-brand-teal outline-none transition-all font-bold appearance-none">
-                            <option value="Personal Training">Personal Training</option>
-                            <option value="Assisted Stretching">Assisted Stretching</option>
-                            <option value="Recovery Session">Recovery Session</option>
-                            <option value="Nutrition Consultation">Nutrition Consultation</option>
-                        </select>
-                      </div>
-                        <div>
-                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Fixed Time Slot</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM', '7:00 PM'].map(t => (
-                              <button key={t} onClick={() => setSelectedTime(t)} className={`py-3 rounded-xl text-[9px] font-bold border transition-all ${selectedTime === t ? 'bg-brand-teal text-black border-brand-teal' : 'bg-white/5 border-white/5 hover:bg-white/10 text-white/50'}`}>{t}</button>
-                            ))}
-                          </div>
-                        </div>
-                      <div>
-                        <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Notes for Coach (Optional)</label>
-                        <textarea rows={2} placeholder="Any specific focus for this session?" value={serviceMessage} onChange={e => setServiceMessage(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:border-brand-teal outline-none transition-all placeholder-white/20 resize-none -mb-2" />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button onClick={() => setPanelMode('view')} className="w-1/3 py-4 bg-white/5 border border-white/10 text-white/60 font-black uppercase text-[9px] tracking-widest rounded-2xl hover:bg-white/10 transition-all">Back</button>
-                      <button onClick={handleAddService} disabled={isSubmitting} className="w-2/3 py-4 bg-brand-teal text-black font-black uppercase text-[9px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 disabled:opacity-40">
-                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <><ArrowRight size={14} /> Send Request</>}
-                      </button>
-                    </div>
-                  </div>
-                )}
+                {/* ADD WORKOUT MODE */}
               </motion.div>
             ) : (
               <motion.div
