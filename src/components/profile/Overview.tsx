@@ -228,7 +228,6 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   if (!user.height?.trim()) missingFields.push('Height');
   if (!user.weight?.trim()) missingFields.push('Weight');
   if (!user.city?.trim()) missingFields.push('City');
-  if (!user.address?.trim()) missingFields.push('Address');
   if (!user.short_bio?.trim()) missingFields.push('Athletic Intel/Bio');
   const isProfileIncomplete = missingFields.length > 0;
   const missedYesterday = !lastCheckin || (lastCheckin.toDateString() !== yesterday.toDateString() && !hasCheckedIn);

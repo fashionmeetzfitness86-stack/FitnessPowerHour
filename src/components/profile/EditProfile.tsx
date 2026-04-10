@@ -389,7 +389,7 @@ export const EditProfile = ({ user, showToast }: { user: UserProfile, showToast:
                   <input type="text" name="country" value={formData.country || ''} onChange={handleChange} className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Physical Address <span className="text-brand-coral">*</span></label>
+                  <label className="text-[9px] uppercase tracking-widest text-white/40 font-bold ml-2">Physical Address</label>
                   <input type="text" name="address" value={formData.address || ''} onChange={handleChange} placeholder="Street address, apartment, suite, etc." className="w-full bg-black/20 border border-white/10 rounded-[1.5rem] px-5 py-4 text-sm focus:border-brand-teal transition-all outline-none" />
                 </div>
               </div>
