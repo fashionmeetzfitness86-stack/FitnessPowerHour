@@ -68,6 +68,8 @@ export const Progress = ({ user, showToast }: { user: UserProfile; showToast: (m
   const [editNotes, setEditNotes]         = useState('');
   const [search, setSearch]               = useState('');
   const [typeFilter, setTypeFilter]       = useState('all');
+  const [activeView, setActiveView]       = useState<'log' | 'gallery'>('log');
+  const [galleryPhoto, setGalleryPhoto]   = useState<Session | null>(null);
 
   const isAdmin = user.role === 'admin' || user.role === 'super_admin';
 
@@ -186,6 +188,11 @@ export const Progress = ({ user, showToast }: { user: UserProfile; showToast: (m
     }
   };
 
+  // ── Derived Gallery items (sessions with check-in photos) ──────────────────
+  const galleryItems = sessions
+    .filter(s => s.check_in_image)
+    .sort((a, b) => new Date(b.session_date || b.created_at || '').getTime() - new Date(a.session_date || a.created_at || '').getTime());
+
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 fade-in">
@@ -213,7 +220,78 @@ export const Progress = ({ user, showToast }: { user: UserProfile; showToast: (m
         ))}
       </div>
 
+      {/* VIEW TOGGLE */}
+      <div className="flex gap-2 p-1.5 bg-white/5 border border-white/10 rounded-2xl w-fit">
+        {([{ id: 'log', label: 'Activity Log' }, { id: 'gallery', label: `Photo Gallery${galleryItems.length > 0 ? ` (${galleryItems.length})` : ''}` }] as const).map(v => (
+          <button
+            key={v.id}
+            onClick={() => setActiveView(v.id)}
+            className={`px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${
+              activeView === v.id ? 'bg-brand-teal text-black shadow-glow-teal' : 'text-white/40 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {/* PHOTO GALLERY VIEW */}
+      {activeView === 'gallery' && (
+        <div className="space-y-6">
+          {galleryItems.length === 0 ? (
+            <div className="py-32 text-center card-gradient rounded-[3rem] border-2 border-dashed border-white/5">
+              <Image size={48} className="mx-auto text-white/5 mb-4" />
+              <p className="text-[10px] uppercase tracking-widest text-white/20 font-black mb-2">No check-in photos yet</p>
+              <p className="text-[9px] text-white/10 uppercase tracking-widest">Photos you take during check-ins will appear here to track your progress</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tighter flex items-center gap-2">
+                    <Camera size={20} className="text-brand-coral" /> Visual Progress
+                  </h3>
+                  <p className="text-[10px] uppercase tracking-widest text-white/30 font-bold mt-1">
+                    {galleryItems.length} check-in photo{galleryItems.length !== 1 ? 's' : ''} — your transformation timeline
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {galleryItems.map((item, i) => (
+                  <motion.button
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: i * 0.04 }}
+                    onClick={() => setGalleryPhoto(item)}
+                    className="group relative rounded-[1.5rem] overflow-hidden border border-white/10 hover:border-brand-teal/40 transition-all aspect-square"
+                  >
+                    <img
+                      src={item.check_in_image!}
+                      alt={`Check-in ${item.session_date}`}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-white">
+                        {item.session_date ? new Date(item.session_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                      </p>
+                      <p className="text-[8px] text-white/50 uppercase tracking-widest">{item.title || 'Check-In'}</p>
+                    </div>
+                    {/* Position badge */}
+                    <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-lg">
+                      <span className="text-[8px] font-black text-white/60">#{galleryItems.length - i}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* ACTIVITY LOG + CHECK-IN */}
+      {activeView === 'log' && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Activity Log (left 2/3) */}
@@ -341,6 +419,40 @@ export const Progress = ({ user, showToast }: { user: UserProfile; showToast: (m
           </button>
         </div>
       </div>
+      )}
+
+      {/* ── GALLERY LIGHTBOX ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {galleryPhoto && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl"
+            onClick={() => setGalleryPhoto(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="relative max-w-2xl w-full"
+            >
+              <button
+                onClick={() => setGalleryPhoto(null)}
+                className="absolute -top-12 right-0 p-2 text-white/40 hover:text-white transition-all"
+              >
+                <X size={24} />
+              </button>
+              <div className="rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
+                <img src={galleryPhoto.check_in_image!} alt="Check-in" className="w-full max-h-[70vh] object-contain bg-black" />
+              </div>
+              <div className="mt-4 text-center space-y-1">
+                <p className="font-black text-lg uppercase tracking-tighter">{galleryPhoto.title || 'Check-In'}</p>
+                <p className="text-[10px] uppercase tracking-widest text-white/30 font-bold">
+                  {galleryPhoto.session_date ? new Date(galleryPhoto.session_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── DETAIL MODAL ──────────────────────────────────────────────────────── */}
       <AnimatePresence>
