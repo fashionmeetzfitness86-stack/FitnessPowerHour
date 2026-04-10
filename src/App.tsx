@@ -4883,118 +4883,6 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   );
 };
 
-const OrderHistory = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-
-  if (!user) {
-    useEffect(() => {
-      navigate('/membership?mode=login');
-    }, [navigate]);
-    return null;
-  }
-
-  const orders = user.orderHistory || [];
-
-  return (
-    <div className="pt-40 pb-32 px-6 min-h-screen">
-      <div className="max-w-4xl mx-auto">
-        <header className="mb-16 space-y-4">
-          <Link to="/profile" className="text-brand-teal text-[10px] uppercase tracking-widest flex items-center gap-2 hover:gap-4 transition-all">
-            <ArrowRight size={14} className="rotate-180" /> Back to Profile
-          </Link>
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-brand-coral/20 rounded-full flex items-center justify-center text-brand-coral">
-              <ShoppingBag size={32} />
-            </div>
-            <div>
-              <h1 className="text-4xl md:text-6xl font-bold uppercase tracking-tighter">Order <span className="text-brand-coral">History</span></h1>
-              <p className="text-white/40 uppercase tracking-widest text-xs">View and track your past purchases</p>
-            </div>
-          </div>
-        </header>
-
-        <div className="space-y-6">
-          {orders.length > 0 ? (
-            orders.map((order: any) => (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                key={order.id} 
-                className="card-gradient p-8 flex flex-col md:flex-row justify-between gap-8 hover:border-brand-teal/30 transition-all group"
-              >
-                <div className="space-y-6 flex-grow">
-                  <div className="flex items-center justify-between md:justify-start md:gap-8">
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase tracking-widest text-white/20">Order ID</p>
-                      <p className="text-sm font-bold uppercase tracking-widest text-white">{order.id}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] uppercase tracking-widest text-white/20">Date Placed</p>
-                      <p className="text-sm text-white/60 uppercase tracking-widest">{new Date(order.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <p className="text-[10px] uppercase tracking-widest text-white/20">Items Purchased</p>
-                    <div className="flex flex-wrap gap-3">
-                      {order.items.map((item: string, i: number) => (
-                        <div key={i} className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] uppercase tracking-widest text-white/80 group-hover:border-brand-teal/20 transition-colors">
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-row md:flex-col justify-between items-end gap-6 md:min-w-[150px] border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-8">
-                  <div className="space-y-1 text-right">
-                    <p className="text-[10px] uppercase tracking-widest text-white/20">Status</p>
-                    <span className={`inline-block px-3 py-1 rounded-full text-[9px] uppercase tracking-widest font-bold ${
-                      order.status === 'Delivered' ? 'bg-brand-teal/20 text-brand-teal' : 'bg-brand-coral/20 text-brand-coral'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[10px] uppercase tracking-widest text-white/20">Total Amount</p>
-                    <p className="text-2xl font-bold text-white">${order.total.toFixed(2)}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="card-gradient p-20 text-center space-y-8">
-              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/20">
-                <ShoppingBag size={40} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold uppercase tracking-tight">No Orders Yet</h3>
-                <p className="text-white/40 text-xs uppercase tracking-widest">Your purchase history will appear here once you've made a purchase.</p>
-              </div>
-              <Link to="/store" className="btn-primary inline-block px-12">
-                Visit the FMF Store
-              </Link>
-            </div>
-          )}
-        </div>
-
-        <footer className="mt-20 p-10 bg-brand-teal/5 border border-brand-teal/10 rounded-3xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 justify-between">
-            <div className="space-y-2">
-              <h4 className="text-sm font-bold uppercase tracking-widest text-brand-teal">Need Assistance?</h4>
-              <p className="text-[10px] text-white/40 uppercase tracking-widest">Our support team is available 24/7 for order inquiries.</p>
-            </div>
-            <button className="px-8 py-4 border border-brand-teal/30 text-brand-teal text-[10px] uppercase tracking-widest font-bold hover:bg-brand-teal hover:text-black transition-all">
-              Contact Support
-            </button>
-          </div>
-        </footer>
-      </div>
-    </div>
-  );
-};
-
 const ProfileGuard = () => {
   const navigate = useNavigate();
   const [waited, setWaited] = useState(false);
@@ -6188,7 +6076,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
                   <ProfileGuard />
                 )
               } />
-              <Route path="/order-history" element={<OrderHistory />} />
+              <Route path="/order-history" element={<Navigate to="/profile#orders" replace />} />
               <Route path="/recovery" element={<Recovery />} />
               <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
               <Route path="/about" element={<About />} />
