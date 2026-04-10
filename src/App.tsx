@@ -677,13 +677,18 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setUser({ ...user, favorites: newFavorites }); // Optimistic update
 
-      await supabase.from('profiles').update({ favorites: newFavorites }).eq('id', session.user.id);
+      const { error } = await supabase.from('profiles').update({ favorites: newFavorites }).eq('id', session.user.id);
+      if (error) {
+        // Revert optimistic update
+        setUser(user);
+        throw error;
+      }
       fetchUser(session.user.id);
       
       return { success: true, message: isFavorited ? 'Removed from liked videos.' : 'Video liked and added to My Program.' };
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      return { success: false, message: 'Failed to update liked videos.' };
+      return { success: false, message: "Failed to update liked videos. Please check if the 'favorites' column exists." };
     }
   };
 
@@ -711,13 +716,18 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setUser({ ...user, bookmarks: newBookmarks }); // Optimistic update
 
-      await supabase.from('profiles').update({ bookmarks: newBookmarks }).eq('id', session.user.id);
+      const { error } = await supabase.from('profiles').update({ bookmarks: newBookmarks }).eq('id', session.user.id);
+      if (error) {
+        // Revert optimistic update
+        setUser(user);
+        throw error;
+      }
       fetchUser(session.user.id);
       
       return { success: true, message: isBookmarked ? 'Video removed from My Program.' : 'Video bookmarked and added to My Program.' };
     } catch (error) {
       console.error('Error toggling bookmark:', error);
-      return { success: false, message: 'Failed to update bookmarks.' };
+      return { success: false, message: "Failed to update bookmarks. Please check if the 'bookmarks' column exists." };
     }
   };
 
@@ -3916,6 +3926,11 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
   const [selectedService, setSelectedService] = useState('Stretching');
   const [serviceMessage, setServiceMessage] = useState('');
   
+  const [contactPreference, setContactPreference] = useState('Email');
+  const contactOptions = ['Email', 'Phone Call', 'Text Message', 'In-Person at Studio'];
+  
+  const hasActiveMembership = !!(user && (user.tier === 'Basic' || user.membership_status === 'active' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete'));
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const services = ['Massages', 'Stretching', 'Physical Therapy'];
@@ -3976,7 +3991,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
         requested_date: selectedDay,
         requested_time: formattedSlot,
         status: 'pending',
-        notes: 'Message: ' + serviceMessage
+        notes: (hasActiveMembership ? '' : `[Contact Preference: ${contactPreference}] `) + 'Message: ' + serviceMessage
       }).select().single();
 
       if (error) throw error;
@@ -4189,9 +4204,21 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                         </div>
                      </div>
 
-                     {!user && (
+                     {!user ? (
                         <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
                            <AlertCircle size={14} /> You must be logged in to book.
+                        </div>
+                     ) : !hasActiveMembership && (
+                        <div className="space-y-4">
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Admin Contact Preference</label>
+                          <div className="grid grid-cols-2 gap-2">
+                             {contactOptions.map(opt => (
+                                <button key={opt} onClick={() => setContactPreference(opt)} className={`py-3 px-2 rounded-xl text-[10px] font-bold transition-all border ${contactPreference === opt ? 'bg-brand-coral/10 border-brand-coral text-brand-coral' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
+                                   {opt}
+                                </button>
+                             ))}
+                          </div>
+                          <p className="text-[8px] text-white/40 uppercase tracking-widest leading-relaxed">As a free user, an admin will contact you to confirm and process payment for this request.</p>
                         </div>
                      )}
 
@@ -4226,114 +4253,338 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
 
 const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' | 'error') => void }) => {
   const { user } = useAuth();
-  const [sessions, setSessions] = useState<Booking[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  const [allRequests, setAllRequests] = useState<any[]>([]);
+  const [myRequests, setMyRequests] = useState<any[]>([]);
+  
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
+  const [selectedService, setSelectedService] = useState('1-on-1 Training');
+  const [serviceMessage, setServiceMessage] = useState('');
+  
+  const [contactPreference, setContactPreference] = useState('Email');
+  const contactOptions = ['Email', 'Phone Call', 'Text Message', 'In-Person at Studio'];
+  
+  const hasActiveMembership = !!(user && (user.tier === 'Basic' || user.membership_status === 'active' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete'));
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const services = ['1-on-1 Training', 'Small Group Training'];
+  const timeSlots = ['06:00 AM', '07:30 AM', '09:00 AM', '12:00 PM', '04:00 PM', '05:30 PM'];
+  const MAX_PARTICIPANTS_PER_SLOT = 5;
 
   useEffect(() => {
-    const fetchSessions = async () => {
-      const { data, error } = await supabase.from('bookings').select('*').eq('service_type', 'personal_training');
-      if (data) setSessions(data as Booking[]);
-      if (error) console.error('Error fetching sessions:', error);
-    };
-    fetchSessions();
-  }, []);
-
-  const handleRequest = async () => {
-    if (!user) {
-      showToast('Please login to request a session', 'error');
-      return;
-    }
-
-    // Check if class is full (max 5)
-    const existingAtTime = sessions.filter(s => s.date === selectedDate && s.status === 'approved');
-    if (existingAtTime.length >= 5) {
-      showToast('This session is full', 'error');
-      return;
-    }
-
-    try {
-      const response = await fetch('/.netlify/functions/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'service',
-          serviceName: 'Personal Training Session',
-          priceAmount: 120,
-          selectedDate: selectedDate,
-          selectedTime: '09:00 AM', // Hardcoded for simplified example
-          userId: user.id,
-          userEmail: user.email
-        })
-      });
-      const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        showToast(data.error || data.errorMessage || data.message || 'Failed to initialize checkout payload from server.', 'error');
+    const fetchRequests = async () => {
+      const { data, error } = await supabase.from('service_requests')
+          .select('*')
+          .eq('service_subtype', 'PersonalTraining');
+      if (data) {
+        setAllRequests(data);
+        if (user) {
+          setMyRequests(data.filter((r: any) => r.user_id === user.id));
+        }
       }
-    } catch (error: any) {
-      console.error('Error creating booking checkout:', error);
-      showToast(error?.message || 'Checkout protocol failed to sync via network.', 'error');
+    };
+    fetchRequests();
+  }, [user]);
+
+  const handleAddService = async () => {
+    if (!user) {
+      showToast('Please login to request a session.', 'error');
+      return;
+    }
+    if (!selectedDay) {
+      showToast('Please select a date.', 'error');
+      return;
+    }
+    if (!selectedSlot) {
+      showToast('Please select a time slot.', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const getFormattedTime = (timeSlot: string) => {
+        const map: Record<string, string> = {
+          '06:00 AM': '06:00:00', '07:30 AM': '07:30:00', '09:00 AM': '09:00:00',
+          '12:00 PM': '12:00:00', '04:00 PM': '16:00:00', '05:30 PM': '17:30:00'
+        };
+        return map[timeSlot] || '12:00:00';
+      };
+
+      const formattedSlot = getFormattedTime(selectedSlot);
+      const slotRequests = allRequests.filter(r => r.requested_date === selectedDay && r.requested_time === formattedSlot && r.status !== 'denied' && r.status !== 'cancelled');
+      
+      if (slotRequests.length >= MAX_PARTICIPANTS_PER_SLOT) {
+         showToast('Error: Slot is already full.', 'error');
+         setIsSubmitting(false);
+         return;
+      }
+
+      const { data, error } = await supabase.from('service_requests').insert({
+        user_id: user.id,
+        service_type: selectedService,
+        service_subtype: 'PersonalTraining',
+        requested_date: selectedDay,
+        requested_time: formattedSlot,
+        status: 'pending',
+        notes: (hasActiveMembership ? '' : `[Contact Preference: ${contactPreference}] `) + 'Message: ' + serviceMessage
+      }).select().single();
+
+      if (error) throw error;
+      if (data) {
+        setAllRequests(prev => [...prev, data]);
+        setMyRequests(prev => [...prev, data]);
+      }
+      showToast('Service Request Submitted! Awaiting admin confirmation.', 'success');
+      setServiceMessage('');
+      setSelectedSlot('');
+      setSelectedDay(null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to request service.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="pt-40 pb-32 px-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24">
-          <div className="space-y-12">
-            <header className="space-y-6">
-              <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Studio Training</span>
-              <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Personal <span className="text-brand-teal">Training</span></h1>
-              <p className="text-white/60 text-lg font-light leading-relaxed">
-                Elite functional training sessions in our private studio. Maximum 5 participants per session for personalized attention.
-              </p>
-            </header>
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const days: (Date | null)[] = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let i = 1; i <= lastDate; i++) days.push(new Date(year, month, i));
+    return days;
+  };
 
-            <div className="card-gradient p-10 space-y-8">
-              <h3 className="text-2xl font-bold uppercase tracking-tighter">Book a Session</h3>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-white/40">Select Date</label>
-                  <input 
-                    type="date" 
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-brand-teal outline-none transition-all"
-                  />
+  const isSameDay = (d1: Date, d2: Date) =>
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate();
+
+  const getRequestsForDay = (dayStr: string, requestsArray: any[]) => requestsArray.filter(r => r.requested_date === dayStr && r.status !== 'denied' && r.status !== 'cancelled');
+
+  const getFormattedTime = (timeSlot: string) => {
+    const map: Record<string, string> = {
+      '06:00 AM': '06:00:00', '07:30 AM': '07:30:00', '09:00 AM': '09:00:00',
+      '12:00 PM': '12:00:00', '04:00 PM': '16:00:00', '05:30 PM': '17:30:00'
+    };
+    return map[timeSlot] || '12:00:00';
+  };
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const days = getDaysInMonth(currentDate);
+  const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  return (
+    <div className="pt-40 pb-32 px-6 fade-in">
+      <div className="max-w-7xl mx-auto space-y-12">
+        <header className="space-y-6 text-center max-w-3xl mx-auto">
+          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Studio Training</span>
+          <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Personal <span className="text-brand-teal">Training</span></h1>
+          <p className="text-white/60 text-lg font-light leading-relaxed">
+            Elite functional training sessions in our private studio. Maximum 5 participants per session for personalized attention.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 text-left">
+          <div className="xl:col-span-2 space-y-6">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
+                className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white hover:text-black transition-all"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <h3 className="text-2xl font-black uppercase tracking-tighter">{monthLabel}</h3>
+              <button
+                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
+                className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white hover:text-black transition-all"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="hidden md:grid grid-cols-7 gap-2 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} className="py-3 text-center text-white/20 text-[9px] uppercase font-black tracking-widest border-b border-white/5">
+                  {d}
                 </div>
-                <button onClick={handleRequest} className="btn-primary w-full">Request Session</button>
-              </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-3 md:gap-2 max-h-[60vh] md:max-h-none overflow-y-auto md:overflow-visible">
+              {days.map((date, idx) => {
+                if (!date) return <div key={idx} className="hidden md:block h-20 md:h-28 rounded-xl" />;
+
+                const dayStr = date.toISOString().split('T')[0];
+                const dayAllRequests = getRequestsForDay(dayStr, allRequests);
+                const dayMyRequests = getRequestsForDay(dayStr, myRequests);
+                
+                const isToday = isSameDay(date, today);
+                const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const isSelected = selectedDay === dayStr;
+                
+                // fullyBooked: if all slots have 5 participants
+                const fullyBooked = timeSlots.every(t => dayAllRequests.filter(r => r.requested_time === getFormattedTime(t)).length >= MAX_PARTICIPANTS_PER_SLOT);
+                
+                return (
+                  <motion.div
+                    key={idx}
+                    whileHover={{ scale: isPast ? 1 : 1.04 }}
+                    whileTap={{ scale: isPast ? 1 : 0.97 }}
+                    onClick={() => { if (!isPast && !fullyBooked) { setSelectedDay(dayStr); setSelectedSlot(''); } }}
+                    className={`h-22 md:h-28 p-2 md:p-3 border rounded-xl flex flex-col ${isPast || fullyBooked ? 'cursor-not-allowed' : 'cursor-pointer'} transition-all relative overflow-hidden ${isSelected ? 'bg-brand-teal/10 border-brand-teal shadow-[0_0_20px_rgba(45,212,191,0.15)]' : isToday && !fullyBooked ? 'bg-brand-teal/5 border-brand-teal/40' : fullyBooked && !isPast ? 'bg-red-500/5 border-red-500/20 opacity-50' : isPast ? 'bg-white/[0.01] border-white/[0.02] opacity-30' : 'bg-white/[0.03] border-white/5 hover:border-white/20'}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs md:text-sm font-black font-mono flex items-center gap-2 ${isSelected ? 'text-brand-teal' : isToday && !fullyBooked ? 'text-brand-teal' : isPast ? 'text-white/20' : 'text-white/50'}`}>
+                        <span className="md:hidden uppercase text-[9px] tracking-widest">{date.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                        {date.getDate()}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 md:mt-auto space-y-1">
+                      {dayMyRequests.length > 0 ? (
+                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase truncate bg-brand-teal/20 text-brand-teal">
+                            <Check size={8} /> Your Booking
+                         </div>
+                      ) : dayAllRequests.length > 0 && !isPast && !fullyBooked ? (
+                         <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase truncate bg-white/10 text-white/40">
+                             {timeSlots.length - dayAllRequests.filter(r => r.requested_time !== null).reduce((acc: string[], curr: any) => acc.includes(curr.requested_time) ? acc : [...acc, curr.requested_time], []).filter((time: string) => dayAllRequests.filter((r) => r.requested_time === time).length >= MAX_PARTICIPANTS_PER_SLOT).length} slots left
+                         </div>
+                      ) : null}
+                      
+                      {fullyBooked && !isPast && (
+                         <div className="text-[8px] font-black uppercase text-red-500 mt-1">Sold out</div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="space-y-12">
-            <div className="card-gradient p-10 space-y-8">
-              <h3 className="text-2xl font-bold uppercase tracking-tighter">Upcoming Sessions</h3>
-              <div className="space-y-4">
-                {sessions.length === 0 ? (
-                  <p className="text-white/40 text-sm italic">No sessions scheduled.</p>
-                ) : (
-                  sessions.map(session => (
-                    <div key={session.id} className="flex items-center justify-between p-4 border border-white/5 rounded-xl bg-white/5">
+          <div className="xl:col-span-1 border-t md:border-t-0 border-white/5 pt-6 md:pt-0">
+            <AnimatePresence mode="wait">
+              {selectedDay ? (
+                <motion.div
+                  key={selectedDay}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="card-gradient rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl"
+                >
+                  <div className={`p-6 border-b border-white/5 ${selectedDay === todayStr ? 'bg-brand-teal/5' : 'bg-white/[0.02]'}`}>
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-bold uppercase tracking-tighter">{session.date}</p>
-                        <p className="text-[10px] text-white/40 uppercase tracking-widest">{session.time}</p>
+                        <p className="text-[9px] uppercase tracking-[0.4em] font-black text-brand-teal">
+                          Initiate Request
+                        </p>
+                        <h4 className="text-xl font-black uppercase tracking-tighter mt-1">
+                          {new Date(selectedDay + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'long' })}
+                        </h4>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className={`text-[8px] uppercase tracking-widest px-2 py-1 rounded-full ${
-                          session.status === 'approved' ? 'bg-brand-teal/20 text-brand-teal' :
-                          session.status === 'pending' ? 'bg-brand-coral/20 text-brand-coral' :
-                          'bg-white/10 text-white/40'
-                        }`}>
-                          {session.status}
-                        </span>
-                      </div>
+                      <button onClick={() => { setSelectedDay(null); setSelectedSlot(''); }} className="p-2 text-white/20 hover:text-white transition-colors">
+                        <X size={18} />
+                      </button>
                     </div>
-                  ))
-                )}
-              </div>
-            </div>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                     <div className="space-y-4">
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Protocol</label>
+                          <div className="grid grid-cols-1 gap-2">
+                             {services.map(s => (
+                                <button key={s} onClick={() => setSelectedService(s)} className={`py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border ${selectedService === s ? 'bg-brand-teal/10 border-brand-teal text-brand-teal' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
+                                   {s}
+                                </button>
+                             ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Available Time Windows</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {timeSlots.map(t => {
+                               const dbTime = getFormattedTime(t);
+                               const slotRequests = allRequests.filter(r => r.requested_date === selectedDay && r.requested_time === dbTime && r.status !== 'denied' && r.status !== 'cancelled');
+                               const isTaken = slotRequests.length >= MAX_PARTICIPANTS_PER_SLOT;
+                               const isMine = myRequests.some(r => r.requested_date === selectedDay && r.requested_time === dbTime && r.status !== 'denied' && r.status !== 'cancelled');
+
+                               if (isMine) {
+                                  return (
+                                     <button key={t} disabled className="py-3 rounded-xl text-[10px] font-bold border border-brand-teal/40 bg-brand-teal/10 text-brand-teal opacity-80 cursor-not-allowed flex items-center justify-center gap-1">
+                                        <Check size={12}/> Confirmed
+                                     </button>
+                                  )
+                               }
+                               if (isTaken) {
+                                  return (
+                                     <button key={t} disabled className="py-3 rounded-xl text-[10px] font-bold border border-white/5 bg-white/5 text-white/20 line-through cursor-not-allowed">
+                                        {t.split(' ')[0]} Full
+                                     </button>
+                                  )
+                               }
+                               return (
+                                  <button key={t} onClick={() => setSelectedSlot(t)} className={`py-3 rounded-xl text-[10px] font-bold border transition-all ${selectedSlot === t ? 'bg-brand-teal text-black border-brand-teal shadow-[0_0_15px_rgba(45,212,191,0.3)]' : 'bg-white/10 border-transparent hover:bg-white/20 text-white'}`}>
+                                    {t}
+                                    <span className="block text-[8px] opacity-70 mt-0.5">{MAX_PARTICIPANTS_PER_SLOT - slotRequests.length} spots left</span>
+                                  </button>
+                               )
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Focus Area / Notes (Optional)</label>
+                          <textarea rows={2} placeholder="Briefly describe your fitness goals..." value={serviceMessage} onChange={e => setServiceMessage(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-sm text-white focus:border-brand-teal outline-none transition-all placeholder-white/20 resize-none -mb-2" />
+                        </div>
+                     </div>
+
+                     {!user ? (
+                        <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500 text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
+                           <AlertCircle size={14} /> You must be logged in to book.
+                        </div>
+                     ) : !hasActiveMembership && (
+                        <div className="space-y-4">
+                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Admin Contact Preference</label>
+                          <div className="grid grid-cols-2 gap-2">
+                             {contactOptions.map(opt => (
+                                <button key={opt} onClick={() => setContactPreference(opt)} className={`py-3 px-2 rounded-xl text-[10px] font-bold transition-all border ${contactPreference === opt ? 'bg-brand-teal/10 border-brand-teal text-brand-teal' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
+                                   {opt}
+                                </button>
+                             ))}
+                          </div>
+                          <p className="text-[8px] text-white/40 uppercase tracking-widest leading-relaxed">As a free user, an admin will contact you to confirm and process payment for this request.</p>
+                        </div>
+                     )}
+
+                     <button onClick={handleAddService} disabled={isSubmitting || !selectedSlot || !user} className="w-full py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-teal transition-all flex items-center justify-center gap-2 disabled:opacity-40">
+                        {isSubmitting ? 'Syncing...' : <>Request Slot Sync <ArrowRight size={14} /></>}
+                     </button>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="default"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="card-gradient rounded-[2.5rem] border border-dashed border-white/10 p-10 text-center space-y-6"
+                >
+                  <Calendar size={40} className="text-white/10 mx-auto" />
+                  <div>
+                    <h4 className="text-lg font-black uppercase tracking-tight text-white/30">Select a Date</h4>
+                    <p className="text-[10px] uppercase tracking-widest text-white/20 font-bold mt-2 leading-relaxed">
+                      Click any available day on the calendar to secure your training service window.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

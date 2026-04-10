@@ -40,7 +40,7 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
       const lowerFilter = quickFilter.toLowerCase();
       result = result.filter(v => 
         (v.level?.toLowerCase() === lowerFilter) || 
-        (v.category?.toLowerCase() === lowerFilter)
+        (v.category?.toLowerCase()?.includes(lowerFilter))
       );
     }
 
@@ -177,11 +177,16 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
                  </>
              )}
              {bulkTopBar === 'category' && (
-                 <div className="flex gap-2">
-                     <select onChange={e => handleBulkCategory(e.target.value)} className="bg-black text-white text-xs px-3 py-1 outline-none border border-white/10 rounded">
-                         <option value="">Select Category...</option>
-                         {simpleCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                     </select>
+                 <div className="flex gap-2 bg-black px-2 py-1 border border-white/10 rounded overflow-x-auto max-w-[50vw]">
+                     {simpleCategories.map(c => (
+                        <button 
+                            key={c}
+                            onClick={() => handleBulkCategory(c)}
+                            className="bg-white/5 hover:bg-white/20 text-white text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded transition-colors whitespace-nowrap"
+                        >
+                            + {c}
+                        </button>
+                     ))}
                      <button onClick={() => setBulkTopBar('default')} className="text-white/50 hover:text-white px-2"><X size={16}/></button>
                  </div>
              )}
@@ -267,7 +272,9 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
                 <div className="flex flex-wrap gap-2 mt-auto mb-5">
                     <span className="px-2 py-1 bg-white/5 border border-white/10 text-white/60 text-[9px] font-bold uppercase tracking-widest rounded">{video.duration || '0 MIN'}</span>
                     <span className="px-2 py-1 bg-white/5 border border-white/10 text-brand-coral text-[9px] font-bold uppercase tracking-widest rounded">{video.level || 'Beginner'}</span>
-                    <span className="px-2 py-1 bg-white/5 border border-white/10 text-brand-teal text-[9px] font-bold uppercase tracking-widest rounded">{video.category || 'General'}</span>
+                    {(video.category || 'General').split(',').map(cat => cat.trim()).filter(Boolean).map((cat, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-white/5 border border-white/10 text-brand-teal text-[9px] font-bold uppercase tracking-widest rounded">{cat}</span>
+                    ))}
                 </div>
 
                 {/* Direct Card Actions */}
@@ -378,28 +385,54 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6 pt-2">
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Category</label>
-                                <select
-                                    value={editingVideo.category || 'General'}
-                                    onChange={e => setEditingVideo({ ...editingVideo, category: e.target.value })}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-xs outline-none focus:border-brand-teal text-white/80 transition-all appearance-none uppercase tracking-widest font-bold"
-                                >
-                                    {simpleCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
+                        <div className="space-y-3 pt-2">
+                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Categories (Multi-Select)</label>
+                            <div className="flex flex-wrap gap-2 bg-white/5 p-2 rounded-xl border border-white/10">
+                                {simpleCategories.map(c => {
+                                    const cats = (editingVideo.category || '').split(',').map(s=>s.trim()).filter(Boolean);
+                                    const isSelected = cats.includes(c);
+                                    return (
+                                        <button 
+                                            key={c}
+                                            onClick={() => {
+                                                let newCats = [...cats];
+                                                if (isSelected) newCats = newCats.filter(x => x !== c);
+                                                else newCats.push(c);
+                                                if (newCats.length === 0) newCats = ['General'];
+                                                setEditingVideo({ ...editingVideo, category: newCats.join(', ') });
+                                            }}
+                                            className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all border ${
+                                                isSelected 
+                                                ? 'bg-brand-teal text-black border-brand-teal shadow-[0_0_10px_rgba(45,212,191,0.2)]' 
+                                                : 'bg-transparent text-white/40 border-transparent hover:text-white hover:bg-white/5'
+                                            }`}
+                                        >
+                                            {c}
+                                        </button>
+                                    );
+                                })}
                             </div>
+                        </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Visibility</label>
-                                <select
-                                    value={editingVideo.is_premium ? 'members' : 'general'}
-                                    onChange={e => setEditingVideo({ ...editingVideo, is_premium: e.target.value === 'members' })}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-xs outline-none focus:border-brand-teal text-brand-coral transition-all appearance-none uppercase tracking-widest font-bold"
+                        <div className="space-y-2">
+                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Visibility</label>
+                            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                                <button 
+                                    onClick={() => setEditingVideo({ ...editingVideo, is_premium: false })} 
+                                    className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                        !editingVideo.is_premium ? 'bg-brand-coral text-black shadow-sm' : 'text-white/40 hover:text-white'
+                                    }`}
                                 >
-                                    <option value="general">General Access</option>
-                                    <option value="members">Members Only</option>
-                                </select>
+                                    General Access
+                                </button>
+                                <button 
+                                    onClick={() => setEditingVideo({ ...editingVideo, is_premium: true })} 
+                                    className={`flex-1 py-3 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                        editingVideo.is_premium ? 'bg-brand-coral text-black shadow-sm' : 'text-white/40 hover:text-white'
+                                    }`}
+                                >
+                                    Members Only
+                                </button>
                             </div>
                         </div>
 

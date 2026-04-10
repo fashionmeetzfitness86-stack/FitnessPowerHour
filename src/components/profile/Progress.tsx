@@ -524,17 +524,31 @@ export const Progress = ({ user, showToast }: { user: UserProfile; showToast: (m
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase tracking-widest text-white/30 font-black">Status</label>
                   <div className="flex gap-2 flex-wrap">
-                    {Object.entries(STATUS_CONFIG).map(([key, conf]) => (
-                      <button
-                        key={key}
-                        onClick={() => setEditStatus(key)}
-                        className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
-                          editStatus === key ? conf.color + ' scale-105' : 'bg-white/5 border-white/10 text-white/30 hover:border-white/30'
-                        }`}
-                      >
-                        {conf.label}
-                      </button>
-                    ))}
+                    {Object.entries(STATUS_CONFIG).map(([key, conf]) => {
+                      const isCurrentStatus = editStatus === key;
+                      // Determine if user can select this status.
+                      // Admin can select anything. Non-admin can only select their *current* status or "cancelled".
+                      const canSelect = isAdmin || key === 'cancelled' || isCurrentStatus;
+                      
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => canSelect && setEditStatus(key)}
+                          disabled={!canSelect}
+                          className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${
+                            isCurrentStatus 
+                              ? conf.color + ' scale-105' 
+                              : 'bg-white/5 border-white/10 text-white/30'
+                          } ${
+                            canSelect 
+                              ? 'hover:border-white/30 cursor-pointer' 
+                              : 'opacity-40 cursor-not-allowed'
+                          }`}
+                        >
+                          {conf.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 

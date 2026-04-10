@@ -16,3 +16,12 @@ BEGIN
 END $$;
 
 -- Notice: 'username', 'full_name', and 'profile_image' remain correctly managed on the 'profiles' base table.
+  
+-- 3. Ensure bookmark and favorite columns exist on profiles  
+DO   
+BEGIN  
+    BEGIN ALTER TABLE public.profiles ADD COLUMN bookmarks JSONB DEFAULT '[]'::jsonb; EXCEPTION WHEN duplicate_column THEN END;  
+    BEGIN ALTER TABLE public.profiles ADD COLUMN favorites JSONB DEFAULT '[]'::jsonb; EXCEPTION WHEN duplicate_column THEN END;  
+    BEGIN ALTER TABLE public.profiles ADD COLUMN last_checkin TEXT; EXCEPTION WHEN duplicate_column THEN END;  
+    BEGIN ALTER TABLE public.profiles ADD COLUMN streak_count INTEGER DEFAULT 0; EXCEPTION WHEN duplicate_column THEN END;  
+END ; 
