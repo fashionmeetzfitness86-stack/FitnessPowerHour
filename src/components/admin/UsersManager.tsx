@@ -1,10 +1,10 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  User, Search, Shield, ShieldCheck, ShieldAlert,
-  CreditCard, Ban, Trash2, Edit2, X, Check,
-  Mail, Phone, ChevronDown, Crown, UserCheck, AlertTriangle,
-  ToggleLeft, ToggleRight, CheckCircle, XCircle, Zap, Clock, Flame, Dumbbell, Target, HeartPulse, Activity
+  User, Search, Shield, ShieldCheck,
+  CreditCard, Ban, Trash2, X,
+  Mail, Phone, Crown, UserCheck, AlertTriangle,
+  CheckCircle, XCircle, Zap, Clock, Flame, Dumbbell, Target, HeartPulse, Activity
 } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
@@ -70,12 +70,12 @@ export const UsersManager = ({
   const handleSuspend = async (u: UserProfile) => {
     const nextStatus = u.status === 'suspended' ? 'active' : 'suspended';
     await handleUpdate(u.id, { status: nextStatus });
-    if (showToast) showToast(\User \\, 'success');
+    if (showToast) showToast('User ' + (nextStatus === 'suspended' ? 'suspended' : 'reactivated'), 'success');
   };
 
   const handleDelete = async (u: UserProfile) => {
     try {
-      const { error } = await supabase.auth.admin.deleteUser(u.id).catch(() => ({ error: null })) as any;
+      await supabase.auth.admin.deleteUser(u.id).catch(() => ({ error: null }));
       await supabase.from('profiles').delete().eq('id', u.id);
       setDeletingUser(null);
       if (showToast) showToast('User removed from platform', 'success');
@@ -89,6 +89,7 @@ export const UsersManager = ({
 
   return (
     <div className="space-y-6 fade-in">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/5 border border-white/10 p-6 rounded-[2rem]">
         <div>
           <h2 className="text-3xl font-black uppercase tracking-tighter">User <span className="text-brand-teal">Control</span></h2>
@@ -96,27 +97,26 @@ export const UsersManager = ({
             {filteredUsers.length} of {users.length} users
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-            <input
-              type="text"
-              placeholder="Search name or email..."
-              className="w-full sm:w-56 bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:border-brand-teal outline-none"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-            />
-          </div>
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+          <input
+            type="text"
+            placeholder="Search name or email..."
+            className="w-full sm:w-56 bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:border-brand-teal outline-none"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
+      {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <div className="flex bg-black/40 border border-white/10 p-1 rounded-xl gap-1">
           {roleLabels.map(r => (
             <button
               key={r}
               onClick={() => setRoleFilter(r)}
-              className={\px-3 py-1.5 text-[9px] uppercase tracking-widest font-black rounded-lg transition-all \\}
+              className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black rounded-lg transition-all ${roleFilter === r ? 'bg-brand-teal text-black' : 'text-white/40 hover:text-white'}`}
             >
               {r === 'all' ? 'All Roles' : ROLE_CONFIG[r]?.label || r}
             </button>
@@ -127,7 +127,7 @@ export const UsersManager = ({
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={\px-3 py-1.5 text-[9px] uppercase tracking-widest font-black rounded-lg transition-all \\}
+              className={`px-3 py-1.5 text-[9px] uppercase tracking-widest font-black rounded-lg transition-all ${statusFilter === s ? 'bg-white/20 text-white' : 'text-white/40 hover:text-white'}`}
             >
               {s}
             </button>
@@ -135,6 +135,7 @@ export const UsersManager = ({
         </div>
       </div>
 
+      {/* Table */}
       <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -153,11 +154,13 @@ export const UsersManager = ({
               const isSaving = savingId === u.id;
               const isSuspended = u.status === 'suspended';
               return (
-                <tr key={u.id} className={\hover:bg-white/5 transition-colors \\}>
+                <tr key={u.id} className={`hover:bg-white/5 transition-colors ${isSuspended ? 'opacity-50' : ''}`}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-brand-teal/10 border border-brand-teal/20 rounded-full flex items-center justify-center text-xs font-black text-brand-teal overflow-hidden relative">
-                         {u.profile_image ? <img src={u.profile_image} className="w-full h-full object-cover" /> : (u.full_name || u.email || 'U')[0].toUpperCase()}
+                      <div className="w-9 h-9 bg-brand-teal/10 border border-brand-teal/20 rounded-full flex items-center justify-center text-xs font-black text-brand-teal overflow-hidden">
+                        {u.profile_image
+                          ? <img src={u.profile_image} className="w-full h-full object-cover" alt="" />
+                          : (u.full_name || u.email || 'U')[0].toUpperCase()}
                       </div>
                       <div>
                         <p className="text-sm font-black">{u.full_name || 'No Name'}</p>
@@ -170,7 +173,7 @@ export const UsersManager = ({
                       value={role}
                       disabled={isSaving}
                       onChange={e => handleUpdate(u.id, { role: e.target.value as any })}
-                      className={\	ext-[10px] font-black uppercase tracking-widest rounded-lg px-3 py-1.5 border outline-none cursor-pointer \\}
+                      className={`text-[10px] font-black uppercase tracking-widest rounded-lg px-3 py-1.5 border outline-none cursor-pointer ${roleConf.color}`}
                     >
                       <option value="user">User</option>
                       <option value="athlete">Athlete</option>
@@ -190,7 +193,11 @@ export const UsersManager = ({
                     </select>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={\inline-block px-2 py-1 rounded text-[10px] font-black uppercase \\}>
+                    <span className={`inline-block px-2 py-1 rounded text-[10px] font-black uppercase ${
+                      isSuspended
+                        ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                        : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                    }`}>
                       {isSuspended ? 'Suspended' : 'Active'}
                     </span>
                   </td>
@@ -206,7 +213,7 @@ export const UsersManager = ({
                       <button
                         onClick={() => handleSuspend(u)}
                         title={isSuspended ? 'Reactivate' : 'Suspend'}
-                        className={\p-2 rounded-lg transition-all \ hover:text-black\}
+                        className={`p-2 rounded-lg transition-all hover:text-black ${isSuspended ? 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400' : 'bg-amber-500/10 hover:bg-amber-500 text-amber-400'}`}
                       >
                         <Ban size={13} />
                       </button>
@@ -229,6 +236,7 @@ export const UsersManager = ({
         )}
       </div>
 
+      {/* Profile Modal */}
       <AnimatePresence>
         {viewingUser && (
           <motion.div
@@ -243,144 +251,175 @@ export const UsersManager = ({
             >
               <div className="absolute top-[-20%] right-[-10%] w-[30rem] h-[30rem] bg-brand-teal/10 blur-[100px] rounded-full pointer-events-none" />
               <div className="absolute bottom-[-10%] left-[-10%] w-[20rem] h-[20rem] bg-brand-coral/5 blur-[100px] rounded-full pointer-events-none" />
-              
+
               <div className="flex items-center justify-between relative z-10 pb-4 border-b border-white/5">
                 <h3 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
-                  <Shield size={24} className="text-brand-teal" /> 
+                  <Shield size={24} className="text-brand-teal" />
                   Intel <span className="text-brand-coral">Profile</span>
                 </h3>
-                <button onClick={() => setViewingUser(null)} className="p-2 bg-white/5 hover:bg-white/20 rounded-full text-white/40 hover:text-white transition-all"><X size={20} /></button>
+                <button onClick={() => setViewingUser(null)} className="p-2 bg-white/5 hover:bg-white/20 rounded-full text-white/40 hover:text-white transition-all">
+                  <X size={20} />
+                </button>
               </div>
 
+              {/* Hero Row */}
               <div className="flex items-start gap-8 relative z-10 bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
-                <div className="w-32 h-32 bg-brand-teal/5 border border-brand-teal/20 rounded-2xl flex items-center justify-center text-5xl font-black text-brand-teal shrink-0 relative overflow-hidden group">
+                <div className="w-32 h-32 bg-brand-teal/5 border border-brand-teal/20 rounded-2xl flex items-center justify-center text-5xl font-black text-brand-teal shrink-0 relative overflow-hidden">
                   <div className="absolute inset-0 bg-brand-teal/10 animate-pulse pointer-events-none" />
-                  {viewingUser.profile_image ? (
-                    <img src={viewingUser.profile_image} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    (viewingUser.full_name || viewingUser.email || 'U')[0].toUpperCase()
-                  )}
+                  {viewingUser.profile_image
+                    ? <img src={viewingUser.profile_image} alt="Avatar" className="w-full h-full object-cover" />
+                    : (viewingUser.full_name || viewingUser.email || 'U')[0].toUpperCase()}
                   {viewingUser.country && (
-                     <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded-[4px] text-[8px] uppercase tracking-widest font-black text-white backdrop-blur flex items-center justify-center border border-white/10">
-                        {viewingUser.country}
-                     </div>
+                    <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-[8px] uppercase tracking-widest font-black text-white border border-white/10">
+                      {viewingUser.country}
+                    </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-tight truncate text-white">{viewingUser.full_name || 'Anonymous User'}</h2>
-                  <div className="flex items-center gap-3 mt-1 mb-4">
-                     <p className="text-xs text-white/60 font-mono flex items-center gap-1.5"><Mail size={12} className="text-brand-teal"/> {viewingUser.email}</p>
-                     {viewingUser.phone && <p className="text-xs text-white/60 font-mono flex items-center gap-1.5 border-l border-white/10 pl-3"><Phone size={12} className="text-brand-teal"/> {viewingUser.phone}</p>}
+                  <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-tight truncate text-white">
+                    {viewingUser.full_name || 'Anonymous User'}
+                  </h2>
+                  <div className="flex items-center gap-3 mt-1 mb-4 flex-wrap">
+                    <p className="text-xs text-white/60 font-mono flex items-center gap-1.5">
+                      <Mail size={12} className="text-brand-teal" /> {viewingUser.email}
+                    </p>
+                    {viewingUser.phone && (
+                      <p className="text-xs text-white/60 font-mono flex items-center gap-1.5 border-l border-white/10 pl-3">
+                        <Phone size={12} className="text-brand-teal" /> {viewingUser.phone}
+                      </p>
+                    )}
                   </div>
-                  
                   <div className="flex flex-wrap gap-2">
-                     <span className={\inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border \\}>
-                     {viewingUser.status === 'active' ? <CheckCircle size={10} /> : <XCircle size={10} />}
-                     {viewingUser.status || 'active'}
-                     </span>
-                     {(viewingUser.age || viewingUser.city) && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-white/60">
-                           {viewingUser.age ? \\ Y/O\ : 'AGE N/A'} {viewingUser.city ? \ / \\ : ''}
-                        </span>
-                     )}
-                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-brand-coral/10 border-brand-coral/20 text-brand-coral">
-                        <Flame size={10} /> {(viewingUser as any).streak_count || 0} Day Streak
-                     </span>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                      viewingUser.status === 'active'
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                        : 'bg-red-500/10 border-red-500/20 text-red-500'
+                    }`}>
+                      {viewingUser.status === 'active' ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                      {viewingUser.status || 'active'}
+                    </span>
+                    {(viewingUser.age || viewingUser.city) && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-white/60">
+                        {viewingUser.age ? `${viewingUser.age} Y/O` : 'AGE N/A'}
+                        {viewingUser.city ? ` / ${viewingUser.city}` : ''}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-brand-coral/10 border-brand-coral/20 text-brand-coral">
+                      <Flame size={10} /> {(viewingUser as any).streak_count || 0} Day Streak
+                    </span>
                   </div>
-
                   {viewingUser.short_bio && (
-                     <div className="mt-4 p-4 bg-black/40 border border-white/5 rounded-xl">
-                        <p className="text-[10px] uppercase tracking-widest text-white/30 font-black mb-1">Athlete Bio / Goal</p>
-                        <p className="text-xs text-white/70 italic leading-relaxed">"{viewingUser.short_bio}"</p>
-                     </div>
+                    <div className="mt-4 p-4 bg-black/40 border border-white/5 rounded-xl">
+                      <p className="text-[10px] uppercase tracking-widest text-white/30 font-black mb-1">Bio / Goal</p>
+                      <p className="text-xs text-white/70 italic leading-relaxed">"{viewingUser.short_bio}"</p>
+                    </div>
                   )}
                 </div>
               </div>
 
+              {/* Tabs */}
               <div className="flex border-b border-white/10 relative z-10 gap-6 px-2">
-                 {['overview', 'metrics'].map(tab => (
-                    <button 
-                       key={tab} 
-                       onClick={() => setActiveTab(tab as any)}
-                       className={\pb-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative \\}
-                    >
-                       {tab === 'overview' ? 'Account Base' : 'Athletic Intel'}
-                       {activeTab === tab && <motion.div layoutId="activetab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-teal rounded-t-full shadow-[0_0_10px_rgba(45,212,191,0.5)]" />}
-                    </button>
-                 ))}
+                {(['overview', 'metrics'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`pb-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === tab ? 'text-brand-teal' : 'text-white/30 hover:text-white/60'}`}
+                  >
+                    {tab === 'overview' ? 'Account Base' : 'Athletic Intel'}
+                    {activeTab === tab && (
+                      <motion.div layoutId="activetab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-teal rounded-t-full shadow-[0_0_10px_rgba(45,212,191,0.5)]" />
+                    )}
+                  </button>
+                ))}
               </div>
 
+              {/* Tab Content */}
               <div className="relative z-10">
-                 {activeTab === 'overview' && (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-in">
-                       {[
-                         { label: 'Platform Role', value: viewingUser.role || 'user', icon: Crown },
-                         { label: 'Access Tier', value: viewingUser.tier || 'Free', icon: Zap },
-                         { label: 'Membership Status', value: (viewingUser as any).membership_status || '—', icon: CreditCard },
-                         { label: 'Platform Joined', value: viewingUser.signup_date ? new Date(viewingUser.signup_date).toLocaleDateString() : '—', icon: Clock },
-                         { label: 'Stripe Sub ID', value: viewingUser.stripe_subscription_id || 'N/A', icon: CreditCard },
-                         { label: 'Last Check-In', value: viewingUser.last_checkin || 'Never', icon: Activity },
-                       ].map(item => (
-                         <div key={item.label} className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05] flex flex-col justify-between hover:bg-white/[0.05] transition-colors">
-                           <p className="text-[8px] uppercase tracking-widest text-white/40 font-bold mb-3 flex items-center gap-1.5">
-                             <item.icon size={10} className="text-white/30" /> {item.label}
-                           </p>
-                           <p className="text-sm font-black text-white truncate pr-2" title={item.value}>{item.value}</p>
-                         </div>
-                       ))}
-                    </div>
-                 )}
+                {activeTab === 'overview' && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Platform Role', value: viewingUser.role || 'user', icon: Crown },
+                      { label: 'Access Tier', value: viewingUser.tier || 'Free', icon: Zap },
+                      { label: 'Membership', value: (viewingUser as any).membership_status || '—', icon: CreditCard },
+                      { label: 'Joined', value: viewingUser.signup_date ? new Date(viewingUser.signup_date).toLocaleDateString() : '—', icon: Clock },
+                      { label: 'Stripe Sub ID', value: viewingUser.stripe_subscription_id || 'N/A', icon: CreditCard },
+                      { label: 'Last Check-In', value: viewingUser.last_checkin || 'Never', icon: Activity },
+                    ].map(item => (
+                      <div key={item.label} className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05] hover:bg-white/[0.05] transition-colors">
+                        <p className="text-[8px] uppercase tracking-widest text-white/40 font-bold mb-3 flex items-center gap-1.5">
+                          <item.icon size={10} className="text-white/30" /> {item.label}
+                        </p>
+                        <p className="text-sm font-black text-white truncate" title={item.value}>{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                 {activeTab === 'metrics' && (
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-                       <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05]">
-                          <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2"><Target size={12}/> Physicals</p>
-                          <div className="space-y-3 border-l-2 border-white/5 pl-3">
-                             <div><span className="text-[9px] uppercase text-white/40 font-bold block">Height</span><span className="text-xs font-black">{viewingUser.height || '—'}</span></div>
-                             <div><span className="text-[9px] uppercase text-white/40 font-bold block">Weight</span><span className="text-xs font-black">{viewingUser.weight || '—'}</span></div>
-                          </div>
-                       </div>
-                       <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05]">
-                          <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2"><Dumbbell size={12}/> Training Model</p>
-                          <div className="space-y-3 border-l-2 border-white/5 pl-3">
-                             <div><span className="text-[9px] uppercase text-white/40 font-bold block">Level</span><span className="text-xs font-black text-brand-coral uppercase tracking-widest">{viewingUser.fitness_level || '—'}</span></div>
-                             <div><span className="text-[9px] uppercase text-white/40 font-bold block">Style</span><span className="text-xs font-black uppercase tracking-widest">{viewingUser.workout_style || '—'}</span></div>
-                          </div>
-                       </div>
-                       <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05] col-span-2 lg:col-span-1">
-                          <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2"><HeartPulse size={12}/> Limitations & Goals</p>
-                          <div className="space-y-3 border-l-2 border-white/5 pl-3">
-                             <div><span className="text-[9px] uppercase text-white/40 font-bold block">Injuries / Limits</span><span className="text-xs font-black text-red-400">{viewingUser.limitations_or_injuries || 'None Disclosed'}</span></div>
-                             <div><span className="text-[9px] uppercase text-white/40 font-bold block">Core Goal</span><span className="text-xs font-black">{viewingUser.training_goals || '—'}</span></div>
-                          </div>
-                       </div>
-                       <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05] col-span-2 md:col-span-3">
-                          <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2"><Clock size={12}/> Schedule Preferences</p>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                             <div><span className="text-[9px] uppercase text-white/40 font-bold block">Time</span><span className="text-xs font-black uppercase tracking-widest">{viewingUser.preferred_workout_time || '—'}</span></div>
-                             <div className="col-span-3"><span className="text-[9px] uppercase text-white/40 font-bold block mb-1">Days Focus</span>
-                                <div className="flex flex-wrap gap-1">
-                                   {viewingUser.preferred_workout_days?.length ? viewingUser.preferred_workout_days.map(d => (
-                                      <span key={d} className="px-2 py-1 bg-white/5 border border-white/5 rounded text-[8px] uppercase tracking-widest font-black">{d}</span>
-                                   )) : <span className="text-[10px] font-black uppercase tracking-widest text-white/40">—</span>}
-                                </div>
-                             </div>
-                          </div>
-                       </div>
+                {activeTab === 'metrics' && (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05]">
+                      <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2">
+                        <Target size={12} /> Physicals
+                      </p>
+                      <div className="space-y-3 border-l-2 border-white/5 pl-3">
+                        <div><span className="text-[9px] uppercase text-white/40 font-bold block">Height</span><span className="text-xs font-black">{viewingUser.height || '—'}</span></div>
+                        <div><span className="text-[9px] uppercase text-white/40 font-bold block">Weight</span><span className="text-xs font-black">{viewingUser.weight || '—'}</span></div>
+                      </div>
                     </div>
-                 )}
+                    <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05]">
+                      <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2">
+                        <Dumbbell size={12} /> Training Model
+                      </p>
+                      <div className="space-y-3 border-l-2 border-white/5 pl-3">
+                        <div><span className="text-[9px] uppercase text-white/40 font-bold block">Level</span><span className="text-xs font-black text-brand-coral uppercase tracking-widest">{viewingUser.fitness_level || '—'}</span></div>
+                        <div><span className="text-[9px] uppercase text-white/40 font-bold block">Style</span><span className="text-xs font-black">{viewingUser.workout_style || '—'}</span></div>
+                      </div>
+                    </div>
+                    <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05] col-span-2 lg:col-span-1">
+                      <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2">
+                        <HeartPulse size={12} /> Limitations & Goals
+                      </p>
+                      <div className="space-y-3 border-l-2 border-white/5 pl-3">
+                        <div><span className="text-[9px] uppercase text-white/40 font-bold block">Injuries / Limits</span><span className="text-xs font-black text-red-400">{viewingUser.limitations_or_injuries || 'None Disclosed'}</span></div>
+                        <div><span className="text-[9px] uppercase text-white/40 font-bold block">Core Goal</span><span className="text-xs font-black">{viewingUser.training_goals || '—'}</span></div>
+                      </div>
+                    </div>
+                    <div className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05] col-span-2 md:col-span-3">
+                      <p className="text-[9px] uppercase tracking-widest text-brand-teal font-black mb-4 flex items-center gap-2">
+                        <Clock size={12} /> Schedule Preferences
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <span className="text-[9px] uppercase text-white/40 font-bold block">Time</span>
+                          <span className="text-xs font-black uppercase tracking-widest">{viewingUser.preferred_workout_time || '—'}</span>
+                        </div>
+                        <div className="col-span-3">
+                          <span className="text-[9px] uppercase text-white/40 font-bold block mb-1">Days Focus</span>
+                          <div className="flex flex-wrap gap-1">
+                            {viewingUser.preferred_workout_days?.length
+                              ? viewingUser.preferred_workout_days.map(d => (
+                                  <span key={d} className="px-2 py-1 bg-white/5 border border-white/5 rounded text-[8px] uppercase tracking-widest font-black">{d}</span>
+                                ))
+                              : <span className="text-[10px] font-black uppercase tracking-widest text-white/40">—</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
+              {/* Actions */}
               <div className="flex gap-4 pt-6 border-t border-white/5 relative z-10">
                 <button
                   onClick={() => { handleSuspend(viewingUser); setViewingUser(null); }}
-                  className="flex-1 py-4 bg-amber-500/10 hover:bg-amber-500 border border-amber-500/20 hover:border-amber-500 text-amber-500 hover:text-black font-black uppercase text-[10px] tracking-widest rounded-2xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.05)]"
+                  className="flex-1 py-4 bg-amber-500/10 hover:bg-amber-500 border border-amber-500/20 hover:border-amber-500 text-amber-500 hover:text-black font-black uppercase text-[10px] tracking-widest rounded-2xl transition-all"
                 >
                   {viewingUser.status === 'suspended' ? 'Reactivate User' : 'Suspend Account'}
                 </button>
                 <button
                   onClick={() => { setDeletingUser(viewingUser); setViewingUser(null); }}
-                  className="flex-1 py-4 bg-red-500/10 hover:bg-red-500 border border-red-500/20 hover:border-red-500 text-red-500 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-2xl transition-all shadow-[0_0_15px_rgba(239,68,68,0.05)]"
+                  className="flex-1 py-4 bg-red-500/10 hover:bg-red-500 border border-red-500/20 hover:border-red-500 text-red-500 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-2xl transition-all"
                 >
                   Delete Profile Forever
                 </button>
@@ -390,6 +429,7 @@ export const UsersManager = ({
         )}
       </AnimatePresence>
 
+      {/* Delete Confirm */}
       <AnimatePresence>
         {deletingUser && (
           <motion.div
@@ -401,16 +441,16 @@ export const UsersManager = ({
               className="bg-[#0a0a0a] border border-red-500/30 rounded-[2.5rem] p-10 w-full max-w-md text-center space-y-8"
             >
               <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(239,68,68,0.2)]">
-                 <AlertTriangle size={36} className="text-red-500" />
+                <AlertTriangle size={36} className="text-red-500" />
               </div>
               <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter">Terminate intel?</h3>
+                <h3 className="text-2xl font-black uppercase tracking-tighter">Terminate Profile?</h3>
                 <p className="text-white/50 text-sm mt-3 font-mono border border-white/5 bg-white/5 py-2 px-4 rounded-xl inline-block">{deletingUser.email}</p>
-                <p className="text-red-400/80 text-[10px] uppercase font-bold tracking-widest mt-4 bg-red-500/5 py-2 px-3 rounded-lg inline-block">This action permanently deletes all history.</p>
+                <p className="text-red-400/80 text-[10px] uppercase font-bold tracking-widest mt-4 block">This action permanently deletes all history.</p>
               </div>
               <div className="flex gap-3">
-                <button onClick={() => setDeletingUser(null)} className="flex-1 py-4 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-white/10 transition-all">Cancel Base</button>
-                <button onClick={() => handleDelete(deletingUser)} className="flex-1 py-4 bg-red-500 text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-red-600 transition-all shadow-[0_0_15px_rgba(239,68,68,0.4)]">Execute</button>
+                <button onClick={() => setDeletingUser(null)} className="flex-1 py-4 bg-white/5 border border-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-white/10 transition-all">Cancel</button>
+                <button onClick={() => handleDelete(deletingUser)} className="flex-1 py-4 bg-red-500 text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-red-600 transition-all">Execute</button>
               </div>
             </motion.div>
           </motion.div>

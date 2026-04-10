@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -3950,7 +3950,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
         requested_date: selectedDay,
         requested_time: formattedSlot,
         status: 'pending',
-        notes: \Message: \\
+        notes: 'Message: ' + serviceMessage
       }).select().single();
 
       if (error) throw error;
@@ -4057,10 +4057,10 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                     whileHover={{ scale: isPast ? 1 : 1.04 }}
                     whileTap={{ scale: isPast ? 1 : 0.97 }}
                     onClick={() => { if (!isPast && !fullyBooked) { setSelectedDay(dayStr); setSelectedSlot(''); } }}
-                    className={\h-22 md:h-28 p-2 md:p-3 border rounded-xl flex flex-col \ transition-all relative overflow-hidden \\}
+                    className={`h-22 md:h-28 p-2 md:p-3 border rounded-xl flex flex-col ${isPast || fullyBooked ? 'cursor-not-allowed' : 'cursor-pointer'} transition-all relative overflow-hidden ${isSelected ? 'bg-brand-coral/10 border-brand-coral shadow-[0_0_20px_rgba(255,107,107,0.15)]' : isToday && !fullyBooked ? 'bg-brand-teal/5 border-brand-teal/40' : fullyBooked && !isPast ? 'bg-red-500/5 border-red-500/20 opacity-50' : isPast ? 'bg-white/[0.01] border-white/[0.02] opacity-30' : 'bg-white/[0.03] border-white/5 hover:border-white/20'}`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={\	ext-xs md:text-sm font-black font-mono flex items-center gap-2 \\}>
+                      <span className={`text-xs md:text-sm font-black font-mono flex items-center gap-2 ${isSelected ? 'text-brand-coral' : isToday && !fullyBooked ? 'text-brand-teal' : isPast ? 'text-white/20' : 'text-white/50'}`}>
                         <span className="md:hidden uppercase text-[9px] tracking-widest">{date.toLocaleDateString('en-US', { weekday: 'short' })}</span>
                         {date.getDate()}
                       </span>
@@ -4097,7 +4097,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                   exit={{ opacity: 0, x: 20 }}
                   className="card-gradient rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl"
                 >
-                  <div className={\p-6 border-b border-white/5 \\}>
+                  <div className={`p-6 border-b border-white/5 ${selectedDay === todayStr ? 'bg-brand-teal/5' : 'bg-white/[0.02]'}`}>
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[9px] uppercase tracking-[0.4em] font-black text-brand-coral">
@@ -4119,7 +4119,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                           <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Protocol</label>
                           <div className="grid grid-cols-1 gap-2">
                              {services.map(s => (
-                                <button key={s} onClick={() => setSelectedService(s)} className={\py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border \\}>
+                                <button key={s} onClick={() => setSelectedService(s)} className={`py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border ${selectedService === s ? 'bg-brand-coral/10 border-brand-coral text-brand-coral' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
                                    {s}
                                 </button>
                              ))}
@@ -4149,7 +4149,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                                   )
                                }
                                return (
-                                  <button key={t} onClick={() => setSelectedSlot(t)} className={\py-3 rounded-xl text-[10px] font-bold border transition-all \\}>
+                                  <button key={t} onClick={() => setSelectedSlot(t)} className={`py-3 rounded-xl text-[10px] font-bold border transition-all ${selectedSlot === t ? 'bg-brand-coral text-black border-brand-coral shadow-[0_0_15px_rgba(255,107,107,0.3)]' : 'bg-white/10 border-transparent hover:bg-white/20 text-white'}`}>
                                     {t}
                                   </button>
                                )
@@ -5189,7 +5189,7 @@ const Philosophy = () => {
               <p className="text-2xl italic font-light text-white/80 leading-tight">
                 "We don't just build muscles. We build the character required to use them with purpose."
               </p>
-              <p cl— Michael Leggett</p>
+              <p className="text-sm font-bold uppercase tracking-widest text-white/40 mt-4">— Michael Leggett</p>
             </div>
           </div>
           <div className="relative aspect-square rounded-3xl overflow-hidden">
