@@ -642,6 +642,22 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onDeletePost={handleDeletePost} 
         />
       );
+      case 'requests': return (
+        <RequestsManager 
+          requests={serviceRequests} 
+          users={users}
+          onUpdateStatus={async (id, status) => {
+             const prevStatus = serviceRequests.find(r => r.id === id)?.status;
+             await supabase.from('service_requests').update({ status }).eq('id', id);
+             setServiceRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+             showToast(`Client synced. Status updated to ${status}.`, 'success');
+             if (prevStatus === 'pending' && status === 'approved') {
+               logActivity('APPROVE_REQUEST', 'service_requests', id, { status });
+             }
+          }}
+          showToast={showToast}
+        />
+      );
       case 'orders': return (
         <OrderManager 
           orders={orders} 
