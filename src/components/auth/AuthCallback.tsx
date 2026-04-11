@@ -30,10 +30,9 @@ export const AuthCallback = () => {
 
   const handleCallback = async () => {
     try {
-      // 1. Check for PKCE code in search params
-      const code = searchParams.get('code');
       const errorParam = searchParams.get('error');
       const errorDescription = searchParams.get('error_description');
+      const code = searchParams.get('code');
 
       // Handle explicit error from Supabase redirect
       if (errorParam) {
@@ -48,13 +47,35 @@ export const AuthCallback = () => {
         return;
       }
 
-      // 2. PKCE flow – exchange authorization code for session
+      // 1. Implicit flow — tokens are in URL hash, Supabase auto-detects them
+      //    Give detectSessionInUrl a moment to process
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (session) {
+        setStatus('success');
+        // Sign out so they go through login fresh (confirms email, clean UX)
+        await supabase.auth.signOut();
+        setTimeout(() => {
+          navigate('/membership?confirmed=true', { replace: true });
+        }, 2500);
+        return;
+      }
+
+      // 2. PKCE fallback — exchange code for session (when opened in same browser)
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
-          if (error.message.toLowerCase().includes('expired') || error.message.toLowerCase().includes('invalid')) {
+          // PKCE verifier not found (different browser/webview) — redirect them to
+          // just log in. Their email IS confirmed at this point.
+          if (error.message.toLowerCase().includes('pkce') || error.message.toLowerCase().includes('verifier')) {
+            setStatus('error');
+            setErrorMessage(
+              'Your email has been confirmed! However, you opened this link in a different browser. Please go to login and sign in with your credentials.'
+            );
+          } else if (error.message.toLowerCase().includes('expired') || error.message.toLowerCase().includes('invalid')) {
             setStatus('expired');
-            setErrorMessage('Your confirmation link has expired or is invalid. Please request a new one.');
+            setErrorMessage('Your confirmation link has expired or was already used. Please request a new one.');
           } else {
             setStatus('error');
             setErrorMessage(error.message);
@@ -62,60 +83,17 @@ export const AuthCallback = () => {
           return;
         }
 
-        // Code exchanged successfully — email is confirmed
         setStatus('success');
-
-        // Sign out so the user logs in with their credentials (clean UX)
         await supabase.auth.signOut();
-
-        // Redirect to login with confirmed=true after a brief success animation
         setTimeout(() => {
           navigate('/membership?confirmed=true', { replace: true });
         }, 2500);
         return;
       }
 
-      // 3. Implicit flow (legacy fallback) — tokens in URL hash
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-
-      if (accessToken && refreshToken) {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        });
-
-        if (error) {
-          setStatus('error');
-          setErrorMessage(error.message);
-          return;
-        }
-
-        setStatus('success');
-        await supabase.auth.signOut();
-
-        setTimeout(() => {
-          navigate('/membership?confirmed=true', { replace: true });
-        }, 2500);
-        return;
-      }
-
-      // 4. No code or tokens found — Supabase might auto-detect session via detectSessionInUrl
-      // Wait briefly, then check session status
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session) {
-        setStatus('success');
-        await supabase.auth.signOut();
-        setTimeout(() => {
-          navigate('/membership?confirmed=true', { replace: true });
-        }, 2500);
-      } else {
-        setStatus('error');
-        setErrorMessage('No confirmation data found. The link may have been used already.');
-      }
+      // 3. No code, no tokens, no session — link already used or invalid
+      setStatus('error');
+      setErrorMessage('No confirmation data found. Your link may have already been used, or it expired. Please go to login.');
 
     } catch (err: any) {
       console.error('Auth callback error:', err);
