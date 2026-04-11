@@ -31,6 +31,7 @@ import { NotificationManager } from './NotificationManager';
 import { RequestsManager } from './RequestsManager';
 import { RetreatManager } from './RetreatManager';
 import { AthletesManager } from './AthletesManager';
+import { AthleteApplicationsManager } from './AthleteApplicationsManager';
 import { ShopManager } from './ShopManager';
 import { CheckInsManager } from './CheckInsManager';
 
@@ -504,6 +505,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'retreats', label: 'Retreats', icon: MapPin },
     { id: 'community', label: 'Community', icon: MessageSquare },
     { id: 'athletes', label: 'Athletes', icon: Trophy },
+    { id: 'athlete-applications', label: 'Applications', icon: UserPlus },
     { id: 'shop', label: 'Shop', icon: ShoppingBag },
     { id: 'orders', label: 'Orders', icon: PackageIcon },
     { id: 'users', label: 'Users', icon: Users },
@@ -637,6 +639,9 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
             showToast('Athlete removed', 'success');
           }}
         />
+      );
+      case 'athlete-applications': return (
+        <AthleteApplicationsManager showToast={showToast} />
       );
       case 'shop': return (
         <ShopManager 

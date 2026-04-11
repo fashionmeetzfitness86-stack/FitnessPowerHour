@@ -28,6 +28,7 @@ import {
   LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award, Shield, Bookmark
 } from 'lucide-react';
 import { AthletesDirectory } from './components/athletes/AthletesDirectory';
+import { AthleteApplicationPage } from './components/athletes/AthleteApplicationPage';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
 import { 
   Video, 
@@ -6708,6 +6709,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
               <Route path="/program" element={<ProgramPage />} />
               <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
+              <Route path="/athlete-application" element={<AthleteApplicationPage showToast={showToast} />} />
               <Route path="/videos" element={<VideoLibrary showToast={showToast} />} />
               <Route path="/video/:id" element={<VideoDetail showToast={showToast} />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
