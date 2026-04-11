@@ -548,8 +548,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           requests={serviceRequests} 
           users={users}
           onUpdateStatus={handleUpdateRequestStatus} 
-          onSchedule={handleScheduleRequest}
-          onSaveRequest={handleSaveRequest}
           showToast={showToast} 
         />
       );

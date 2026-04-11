@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
     await resend.emails.send({
       from: FROM,
       to: [email],
-      subject: approved ? 'You've Been Approved as an FMF Athlete! 🎉' : 'Your FMF Athlete Application Update',
+      subject: approved ? "You've Been Approved as an FMF Athlete! 🎉" : 'Your FMF Athlete Application Update',
       html: approved ? `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; background: #000; color: #fff; padding: 40px 30px; border-radius: 16px;">
           <h1 style="color: #4df0d4; font-size: 28px; text-transform: uppercase; letter-spacing: 2px;">Fashion Meetz Fitness</h1>

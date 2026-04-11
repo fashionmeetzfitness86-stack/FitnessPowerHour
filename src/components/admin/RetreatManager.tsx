@@ -27,10 +27,10 @@ const emptyRetreat = (): Partial<Retreat> => ({
   description: '',
   location: '',
   price: '0' as any,
-  capacity: 10,
+  
   visibility_status: 'draft' as any,
   is_sold_out: false,
-  requirements: '',
+  
   start_date: '',
   end_date: '',
   cover_image: '',

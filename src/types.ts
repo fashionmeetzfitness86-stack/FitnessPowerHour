@@ -372,8 +372,6 @@ export interface UserProfile {
   stripe_subscription_id?: string;
   payment_method_brand?: string;   // e.g. "visa"
   payment_method_last4?: string;   // e.g. "4242"
-  membership_status?: 'active' | 'inactive' | 'past_due' | 'canceling';
-
   favorites?: string[];
   bookmarks?: string[];
   streak_count?: number;

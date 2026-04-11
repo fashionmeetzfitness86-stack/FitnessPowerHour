@@ -25,7 +25,7 @@ import {
   Filter, Search, User, Quote, Plus, Minus, Upload, Link2, Send, Bell, Trash2,
   Youtube, ExternalLink, Share2, Trophy, Check, Users, Power, Ban, Layout, Globe,
   Edit2, Truck, Eye, Printer, UserPlus, UserMinus, MoreHorizontal,
-  LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award, Shield, Bookmark
+  LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award, Shield, Bookmark, CheckCircle
 } from 'lucide-react';
 import { AthletesDirectory } from './components/athletes/AthletesDirectory';
 import { AthleteApplicationPage } from './components/athletes/AthleteApplicationPage';

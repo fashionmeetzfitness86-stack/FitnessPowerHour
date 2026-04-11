@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ClipboardList, Search, Check, X, ChevronDown,
-  Package, Truck, Clock, CheckCircle, XCircle, RotateCcw
+  Package, Truck, Clock, CheckCircle, XCircle, RotateCcw, Eye
 } from 'lucide-react';
 import { Order, UserProfile } from '../../types';
 
@@ -53,7 +53,7 @@ export const OrderManager = ({ orders, users, onUpdateStatus }: OrderManagerProp
   };
 
   const totalRevenue = orders
-    .filter(o => o.status === 'paid' || o.status === 'completed')
+    .filter(o => o.status === 'paid' || o.status === 'shipped')
     .reduce((acc, o) => acc + (o.total_amount || 0), 0);
 
   return (
@@ -146,7 +146,7 @@ export const OrderManager = ({ orders, users, onUpdateStatus }: OrderManagerProp
                         <Eye size={13} />
                       </button>
                       {/* Quick complete */}
-                      {o.status !== 'completed' && o.status !== 'cancelled' && (
+                      {o.status !== 'shipped' && o.status !== 'cancelled' && (
                         <button
                           onClick={() => handleStatusChange(o.id, 'completed')}
                           className="p-1.5 bg-emerald-500/10 hover:bg-emerald-500 rounded-lg text-emerald-400 hover:text-white transition-all"
@@ -156,7 +156,7 @@ export const OrderManager = ({ orders, users, onUpdateStatus }: OrderManagerProp
                         </button>
                       )}
                       {/* Revert to pending */}
-                      {(o.status === 'completed' || o.status === 'cancelled') && (
+                      {(o.status === 'shipped' || o.status === 'cancelled') && (
                         <button
                           onClick={() => handleStatusChange(o.id, 'pending')}
                           className="p-1.5 bg-amber-500/10 hover:bg-amber-500 rounded-lg text-amber-400 hover:text-black transition-all"

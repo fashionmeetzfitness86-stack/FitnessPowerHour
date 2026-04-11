@@ -36,7 +36,7 @@ async function syncMembershipRecord(
   subscription: Stripe.Subscription,
   paymentDetails: Record<string, any> | null
 ) {
-  const periodEnd = subscription.current_period_end; // UNIX timestamp
+  const periodEnd = (subscription as any).current_period_end; // UNIX timestamp
   const nextBillingDate = new Date(periodEnd * 1000).toISOString();
 
   const upsertPayload: Record<string, any> = {
@@ -412,7 +412,7 @@ export default async (req: Request) => {
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
-        const subscriptionId = invoice.subscription as string;
+        const subscriptionId = (invoice as any).subscription as string;
 
         if (!subscriptionId) break;
 
@@ -427,7 +427,7 @@ export default async (req: Request) => {
           expand: ['default_payment_method']
         });
         const paymentDetails = await getPaymentMethodDetails(stripe, subscription);
-        const nextBillingDate = new Date(subscription.current_period_end * 1000).toISOString();
+        const nextBillingDate = new Date((subscription as any).current_period_end * 1000).toISOString();
 
         // Update profiles
         const profileUpdate: Record<string, any> = {
