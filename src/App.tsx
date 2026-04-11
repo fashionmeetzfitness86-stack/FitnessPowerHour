@@ -484,6 +484,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let realtimeChannel: any = null;
+    let notifChannel: any = null;
 
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -491,21 +492,23 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
         await fetchUser(session.user.id);
         fetchNotifications(session.user.id);
 
-        // ——— Realtime: Re-fetch profile whenever the webhook updates tier/membership_status ———
+        // ——— Realtime: Re-fetch profile on any profile update ———
         realtimeChannel = supabase
           .channel(`profile-sync-${session.user.id}`)
           .on(
             'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'profiles',
-              filter: `id=eq.${session.user.id}`
-            },
-            (_payload) => {
-              console.log('[Realtime] Profile updated — refreshing user state');
-              fetchUser(session.user.id);
-            }
+            { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${session.user.id}` },
+            (_payload) => { fetchUser(session.user.id); }
+          )
+          .subscribe();
+
+        // ——— Realtime: Re-fetch notifications on any INSERT (live bell updates) ———
+        notifChannel = supabase
+          .channel(`notif-live-${session.user.id}`)
+          .on(
+            'postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${session.user.id}` },
+            (_payload) => { fetchNotifications(session.user.id); }
           )
           .subscribe();
       }
@@ -521,16 +524,15 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setUser(null);
         setNotifications([]);
-        if (realtimeChannel) {
-          supabase.removeChannel(realtimeChannel);
-          realtimeChannel = null;
-        }
+        if (realtimeChannel) { supabase.removeChannel(realtimeChannel); realtimeChannel = null; }
+        if (notifChannel) { supabase.removeChannel(notifChannel); notifChannel = null; }
       }
     });
 
     return () => {
       subscription.unsubscribe();
       if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+      if (notifChannel) supabase.removeChannel(notifChannel);
     };
   }, []);
 
@@ -624,8 +626,9 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const addNotification = async (notif: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      // Don't notify yourself
-      if (notif.user_id === session?.user?.id) return;
+      // Only skip self-notifications for social types — system/milestone notifications should always fire
+      const socialTypes = ['like', 'comment', 'follow', 'mention'];
+      if (socialTypes.includes(notif.type) && notif.user_id === session?.user?.id) return;
 
       await supabase.from('notifications').insert({
         ...notif,
@@ -900,7 +903,7 @@ const NotificationBell = () => {
               <div className="p-4 border-b border-white/5 flex justify-between items-center">
                 <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-white/60">Notifications</h3>
                 {unreadCount > 0 && (
-                  <button 
+                  <button
                     onClick={() => clearNotifications()}
                     className="text-[8px] uppercase tracking-widest text-brand-teal hover:text-white transition-colors"
                   >
@@ -914,16 +917,20 @@ const NotificationBell = () => {
                     <Bell size={24} className="mx-auto text-white/10" />
                     <p className="text-[10px] uppercase tracking-widest text-white/20">No notifications yet</p>
                   </div>
-                ) : (
-                  notifications.map((notif) => (
-                    <div 
+                ) : notifications.map((notif) => {
+                  const route = (notif as any).metadata?.route || '';
+                  return (
+                    <div
                       key={notif.id}
                       onClick={() => {
                         markAsRead(notif.id);
-                        window.location.hash = (notif as any).metadata?.route || '#/profile';
                         setIsOpen(false);
+                        if (route) {
+                          const cleanRoute = route.startsWith('/') ? route : '/' + route;
+                          window.location.href = window.location.origin + window.location.pathname + '#' + cleanRoute;
+                        }
                       }}
-                      className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer ${!(notif as any).is_read ? 'bg-brand-teal/5' : ''}`}
+                      className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors ${route ? 'cursor-pointer' : 'cursor-default'} ${!(notif as any).is_read ? 'bg-brand-teal/5' : ''}`}
                     >
                       <div className="flex gap-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${notif.type === 'milestone' || notif.type === 'system' ? 'bg-brand-teal/20 text-brand-teal' : 'bg-brand-coral/20 text-brand-coral'}`}>
@@ -941,8 +948,8 @@ const NotificationBell = () => {
                         )}
                       </div>
                     </div>
-                  ))
-                )}
+                  );
+                })}
               </div>
             </motion.div>
           </>
@@ -992,7 +999,7 @@ const Navbar = () => {
   ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
-    { name: 'Athletes', path: '/athletes', comingSoon: true },
+    { name: 'Athletes', path: '/athletes' },
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },

@@ -195,19 +195,21 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
       )}
 
       {/* Tier Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tiers.map((tier) => {
           const isCurrent = currentTierName === tier.name;
           const isSelected = selectedTier === tier.name;
           const ac = a(tier.accent);
           const Icon = tier.icon;
+          // Free tier can always be selected — no cooldown needed for a free downgrade
+          const canSelectTier = tier.name === 'Free' ? true : canChange;
 
           return (
             <motion.div
               key={tier.name}
-              whileHover={!isCurrent && canChange ? { scale: 1.02, y: -4 } : {}}
+              whileHover={!isCurrent && canSelectTier ? { scale: 1.02, y: -4 } : {}}
               onClick={() => {
-                if (isCurrent || !canChange) return;
+                if (isCurrent || !canSelectTier) return;
                 setSelectedTier(isSelected ? null : tier.name);
               }}
               className={`relative flex flex-col p-7 rounded-[2rem] border transition-all duration-300 ${
@@ -215,7 +217,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
                   ? `${ac.border} ${ac.bg}`
                   : isSelected
                   ? `${ac.border} bg-white/5 cursor-pointer`
-                  : canChange
+                  : canSelectTier
                   ? 'border-white/10 bg-white/[0.02] hover:border-white/25 cursor-pointer'
                   : 'border-white/5 bg-black/20 opacity-60 cursor-not-allowed'
               }`}
@@ -259,15 +261,15 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
 
               {/* CTA */}
               <button
-                disabled={isCurrent || !canChange}
+                disabled={isCurrent || !canSelectTier}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!isCurrent && canChange) setSelectedTier(tier.name);
+                  if (!isCurrent && canSelectTier) setSelectedTier(tier.name);
                 }}
                 className={`w-full py-3 text-[10px] uppercase font-black tracking-widest rounded-xl transition-all ${
                   isCurrent
                     ? `${ac.bg} ${ac.text} border ${ac.border} cursor-default`
-                    : !canChange
+                    : !canSelectTier
                     ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
                     : `${ac.btn} shadow-lg`
                 }`}

@@ -160,7 +160,10 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
             </div>
             <div>
               <h2 className="text-xl font-bold uppercase tracking-tight">{user.full_name || 'Member'}</h2>
-              <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1 mb-2">{isMember ? 'Basic Tier' : 'General Access'}</p>
+              <p className="text-[10px] text-brand-teal uppercase tracking-widest font-bold mt-1 mb-2">
+                {user?.role === 'admin' || user?.role === 'super_admin' ? 'Admin' :
+                 user?.tier === 'Basic' || user?.membership_status === 'active' ? 'Basic Tier' : 'Free Plan'}
+              </p>
               {user.training_goals && user.workout_style && (
                  <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-white/10 text-center">
                     <span className="text-[8px] text-white/40 uppercase tracking-widest font-bold">Protocol Objective</span>

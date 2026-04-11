@@ -247,7 +247,7 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
             </div>
           </div>
           <button onClick={() => navigate('settings')} className="px-8 py-4 bg-amber-500 text-black text-[10px] uppercase font-black tracking-[0.2em] rounded-xl hover:scale-105 active:scale-95 transition-all whitespace-nowrap shadow-xl">
-            Update Matrix
+            Update Profile
           </button>
         </div>
       )}
