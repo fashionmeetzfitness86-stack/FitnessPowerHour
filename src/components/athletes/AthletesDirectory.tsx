@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
-import { Play, ArrowLeft, Send } from 'lucide-react';
+import { Play, ArrowLeft, Send, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface AthleteProfile {
@@ -173,39 +173,21 @@ export const AthletesDirectory = ({ showToast }: { showToast: (msg: string, type
           </p>
         </header>
 
-        {athletes.length === 0 ? (
-          <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/5">
-            <p className="text-white/40 uppercase tracking-widest">No athletes are currently accepting clients.</p>
+        <div className="text-center py-32 bg-white/5 rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-brand-teal/5 opacity-20 blur-3xl"></div>
+          <div className="relative z-10 flex flex-col items-center gap-6">
+            <div className="w-20 h-20 bg-brand-teal/10 rounded-full flex items-center justify-center border border-brand-teal/20 mb-4 animate-pulse">
+              <Users size={32} className="text-brand-teal" />
+            </div>
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">Coming <span className="text-brand-teal">Soon</span></h2>
+            <p className="text-white/40 uppercase tracking-widest text-xs max-w-md mx-auto leading-relaxed">
+              We are finalizing our initial roster of elite FMF Athletes. The global directory will open shortly.
+            </p>
+            <Link to="/" className="mt-8 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all">
+              Return Home
+            </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {athletes.map((athlete) => (
-              <div key={athlete.id} className="card-gradient rounded-3xl overflow-hidden border border-white/5 hover:border-brand-teal/30 transition-all group flex flex-col">
-                <div className="h-64 overflow-hidden relative">
-                  <img 
-                    src={athlete.user?.profile_image || 'https://picsum.photos/400'} 
-                    alt={athlete.user?.full_name} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 grayscale group-hover:grayscale-0"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/50 to-transparent opacity-80" />
-                  <div className="absolute bottom-4 left-6">
-                    <h3 className="text-2xl font-black uppercase tracking-tighter">{athlete.user?.full_name}</h3>
-                    <p className="text-[10px] font-bold tracking-widest text-brand-teal uppercase">{athlete.specialty}</p>
-                  </div>
-                </div>
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
-                  <p className="text-sm text-white/50 line-clamp-2">{athlete.short_description}</p>
-                  <button 
-                    onClick={() => setSelectedAthlete(athlete)}
-                    className="w-full py-4 text-[10px] uppercase tracking-widest font-bold border border-white/10 rounded-xl hover:bg-brand-teal hover:text-black hover:border-brand-teal transition-all"
-                  >
-                    View Profile
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

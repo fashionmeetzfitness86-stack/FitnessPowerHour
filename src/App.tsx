@@ -999,7 +999,7 @@ const Navbar = () => {
   ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
-    { name: 'Athletes', path: '/athletes' },
+    { name: 'Athletes', path: '/athletes', comingSoon: true },
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },
