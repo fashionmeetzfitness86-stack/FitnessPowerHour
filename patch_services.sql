@@ -1,0 +1,1 @@
+ALTER TABLE service_requests ALTER COLUMN user_id DROP NOT NULL; ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS guest_name text; ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS guest_email text; ALTER TABLE service_requests ADD COLUMN IF NOT EXISTS guest_phone text; 
