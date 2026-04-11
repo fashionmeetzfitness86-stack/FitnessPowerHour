@@ -119,7 +119,7 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
       const res = await fetch('/.netlify/functions/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'membership', tier: selectedTier, userId: user.id, userEmail: user.email })
+        body: JSON.stringify({ type: 'membership', tier: selectedTier, userId: user.id, userEmail: user.email, successUrl: `${window.location.origin}/#/profile?payment=success&tier=${encodeURIComponent(selectedTier)}` })
       });
       const data = await res.json();
       if (data.url) window.location.href = data.url;

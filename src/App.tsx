@@ -5486,24 +5486,34 @@ const PaymentSuccessModal = ({ tier, onClose }: { tier: string | null; onClose: 
 );
 
 const Profile = ({ user, logout, updateTier, showToast }: { user: UserProfile; logout: () => void; updateTier: (tier: string) => void; showToast: (msg: string, type?: 'success' | 'error') => void }) => {
-  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>(() => {
-    // HashRouter: hash is "#/profile?payment=success&tier=Basic"
-    const hash = window.location.hash || '';
-    const queryString = hash.split('?')[1] || '';
-    const params = new URLSearchParams(queryString);
-    if (params.get('payment') === 'success') {
-      return { show: true, tier: params.get('tier') };
-    }
-    return { show: false, tier: null };
-  });
+  const location = useLocation();
+  const [paymentSuccess, setPaymentSuccess] = useState<{ show: boolean; tier: string | null }>({ show: false, tier: null });
 
   useEffect(() => {
-    if (paymentSuccess.show) {
-      if (paymentSuccess.tier) updateTier(paymentSuccess.tier);
-      // Clean URL without triggering React Router re-render
+    // Check ALL possible param locations for HashRouter compatibility
+    const routerParams = new URLSearchParams(location.search);
+    const hashParams = new URLSearchParams((window.location.hash || '').split('?')[1] || '');
+    const windowParams = new URLSearchParams(window.location.search);
+
+    const payment = routerParams.get('payment') || hashParams.get('payment') || windowParams.get('payment');
+    const tier = routerParams.get('tier') || hashParams.get('tier') || windowParams.get('tier');
+
+    console.log('[FPH] payment check:', { payment, tier, locationSearch: location.search, hash: window.location.hash });
+
+    if (payment === 'success') {
+      setPaymentSuccess({ show: true, tier });
+      if (tier) updateTier(tier);
       window.history.replaceState(null, '', window.location.pathname + '#/profile');
+      return;
     }
-  }, []);
+
+    const stored = sessionStorage.getItem('fph_payment_success');
+    if (stored) {
+      sessionStorage.removeItem('fph_payment_success');
+      setPaymentSuccess({ show: true, tier: stored === 'true' ? null : stored });
+      if (stored !== 'true') updateTier(stored);
+    }
+  }, [location]);
 
   return (
     <>
