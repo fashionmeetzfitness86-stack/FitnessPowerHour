@@ -103,12 +103,24 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       return (
         <div className="flex flex-col items-center justify-center p-16 text-center card-gradient rounded-[3rem] border border-brand-teal/20 shadow-2xl space-y-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-brand-teal/5 blur-3xl rounded-full" />
+          {/* Close X — always allow user to go back to Overview */}
+          <button
+            onClick={() => setActiveTab('overview')}
+            className="absolute top-6 right-6 p-2 text-white/30 hover:text-white transition-colors z-10"
+          >
+            <X size={20} />
+          </button>
           <Shield size={48} className="text-brand-teal animate-pulse relative z-10" />
           <h2 className="text-3xl lg:text-5xl font-bold uppercase tracking-tighter relative z-10">Premium <span className="text-brand-teal">Required</span></h2>
           <p className="text-white/50 text-sm max-w-sm relative z-10">This dashboard section requires an active FMF membership to access tracking and scheduling tools.</p>
-          <button onClick={() => setActiveTab('membership')} className="mt-4 px-8 py-4 bg-brand-teal text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-xl hover:scale-105 transition-all relative z-10 shadow-glow-teal">
-            Upgrade Membership
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 relative z-10">
+            <button onClick={() => setActiveTab('overview')} className="px-6 py-3 border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 transition-all">
+              Back to Overview
+            </button>
+            <button onClick={() => setActiveTab('membership')} className="px-6 py-3 bg-brand-teal text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-xl hover:scale-105 transition-all shadow-glow-teal">
+              Upgrade Membership
+            </button>
+          </div>
         </div>
       );
     }
