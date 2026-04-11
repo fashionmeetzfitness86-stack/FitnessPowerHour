@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Check, Lock, Loader2, X, Zap, Crown } from 'lucide-react';
+import { Shield, Check, Lock, Loader2, X, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
@@ -37,21 +37,6 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
         'Public challenges & streaks'
       ]
     },
-    {
-      name: 'Pro',
-      price: '$39.99',
-      period: 'per month',
-      accent: 'gold',
-      icon: Crown,
-      features: [
-        'Everything in Basic',
-        '1-on-1 training sessions',
-        'Priority service requests',
-        'Retreat early access',
-        'Athlete directory listing',
-        'Exclusive Pro content'
-      ]
-    }
   ];
 
   const [membership, setMembership] = useState<any>(null);
@@ -84,16 +69,14 @@ export const MembershipManager = ({ user, updateTier, showToast }: { user: UserP
   // Map tier to a canonical name — default to Free
   const rawTier = (user.tier || '').toLowerCase().trim();
   const currentTierName = (() => {
-    if (rawTier === 'pro') return 'Pro';
     if (rawTier === 'basic') return 'Basic';
     return 'Free';
   })();
 
-  type AccentKey = 'teal' | 'coral' | 'gold';
+  type AccentKey = 'teal' | 'coral';
   const ACCENTS: Record<AccentKey, { border: string; bg: string; text: string; btn: string; dot: string }> = {
-    teal:  { border: 'border-brand-teal/50',  bg: 'bg-brand-teal/10',  text: 'text-brand-teal',  btn: 'bg-brand-teal text-black hover:opacity-90',              dot: 'bg-brand-teal' },
-    coral: { border: 'border-brand-coral/50', bg: 'bg-brand-coral/10', text: 'text-brand-coral', btn: 'bg-brand-coral text-black hover:opacity-90',             dot: 'bg-brand-coral' },
-    gold:  { border: 'border-amber-400/50',   bg: 'bg-amber-400/10',   text: 'text-amber-400',   btn: 'bg-amber-400 text-black hover:opacity-90',              dot: 'bg-amber-400' },
+    teal:  { border: 'border-brand-teal/50',  bg: 'bg-brand-teal/10',  text: 'text-brand-teal',  btn: 'bg-brand-teal text-black hover:opacity-90',  dot: 'bg-brand-teal' },
+    coral: { border: 'border-brand-coral/50', bg: 'bg-brand-coral/10', text: 'text-brand-coral', btn: 'bg-brand-coral text-black hover:opacity-90', dot: 'bg-brand-coral' },
   };
 
   const a = (accent: string) => ACCENTS[accent as AccentKey] || ACCENTS.teal;
