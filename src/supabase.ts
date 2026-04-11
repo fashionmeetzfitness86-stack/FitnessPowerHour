@@ -5,10 +5,11 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Enable session detection from URL (required for email confirmation flow)
+    // Detect session tokens from URL (required for email confirmation flow)
     detectSessionInUrl: true,
-    // Use PKCE flow for enhanced security (authorization code exchange)
-    flowType: 'pkce',
+    // Implicit flow: tokens arrive in the URL hash — works across all browsers
+    // and mobile in-app WebViews unlike PKCE which requires same-browser session.
+    flowType: 'implicit',
     // Persist session in localStorage so users stay logged in
     persistSession: true,
     // Auto-refresh tokens before they expire
