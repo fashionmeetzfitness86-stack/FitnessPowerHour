@@ -18,6 +18,7 @@ import { AuthCallback } from './components/auth/AuthCallback';
 
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
+import { RefundPolicy } from './components/legal/RefundPolicy';
 import { FreeAccessGate } from './components/FreeAccessGate';
 import { useSiteContent } from './hooks/useSiteContent';
 import { 
@@ -1319,6 +1320,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
           <li><Link to="/contact" className="hover:text-white">Contact Us</Link></li>
           <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
           <li><Link to="/terms" className="hover:text-white">Terms of Service</Link></li>
+          <li><Link to="/refund" className="hover:text-white">Refund Policy</Link></li>
         </ul>
       </div>
 
@@ -6840,6 +6842,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/refund" element={<RefundPolicy />} />
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="/admin/dashboard" element={
                 user && (user.role === 'admin' || user.role === 'super_admin') ? (
