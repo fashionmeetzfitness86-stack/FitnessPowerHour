@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   User, Search, Shield, ShieldCheck,
-  CreditCard, Ban, Trash2, X,
+  CreditCard, Ban, Trash2, X, Edit2,
   Mail, Phone, Crown, UserCheck, AlertTriangle,
   CheckCircle, XCircle, Zap, Clock, Flame, Dumbbell, Target, HeartPulse, Activity
 } from 'lucide-react';
@@ -44,6 +44,8 @@ export const UsersManager = ({
   const [deletingUser, setDeletingUser] = useState<UserProfile | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'metrics'>('overview');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
 
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
@@ -204,7 +206,12 @@ export const UsersManager = ({
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => { setViewingUser(u); setActiveTab('overview'); }}
+                        onClick={() => { 
+                          setViewingUser(u); 
+                          setActiveTab('overview'); 
+                          setIsEditing(false);
+                          setEditForm({ full_name: u.full_name, phone: u.phone, city: u.city, country: u.country, short_bio: u.short_bio });
+                        }}
                         title="View profile"
                         className="p-2 bg-white/5 hover:bg-white/10 rounded-lg text-white/40 hover:text-white transition-all"
                       >
@@ -257,9 +264,32 @@ export const UsersManager = ({
                   <Shield size={24} className="text-brand-teal" />
                   Intel <span className="text-brand-coral">Profile</span>
                 </h3>
-                <button onClick={() => setViewingUser(null)} className="p-2 bg-white/5 hover:bg-white/20 rounded-full text-white/40 hover:text-white transition-all">
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-3">
+                  {isEditing ? (
+                    <button 
+                      onClick={async () => {
+                        await handleUpdate(viewingUser.id, editForm);
+                        setViewingUser({ ...viewingUser, ...editForm });
+                        setIsEditing(false);
+                        if (showToast) showToast('Profile updated!', 'success');
+                      }}
+                      disabled={savingId === viewingUser.id}
+                      className="px-4 py-2 bg-brand-teal text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:scale-105 transition-transform"
+                    >
+                      {savingId === viewingUser.id ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="px-4 py-2 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-full transition-colors flex items-center gap-2"
+                    >
+                      <Edit2 size={12} /> Edit
+                    </button>
+                  )}
+                  <button onClick={() => setViewingUser(null)} className="p-2 bg-white/5 hover:bg-white/20 rounded-full text-white/40 hover:text-white transition-all">
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               {/* Hero Row */}
@@ -275,18 +305,38 @@ export const UsersManager = ({
                     </div>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-tight truncate text-white">
-                    {viewingUser.full_name || 'Anonymous User'}
-                  </h2>
+                <div className="flex-1 min-w-0 space-y-3">
+                  {isEditing ? (
+                    <input 
+                      type="text" 
+                      value={editForm.full_name || ''} 
+                      onChange={e => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="Full Name"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-black outline-none focus:border-brand-teal"
+                    />
+                  ) : (
+                    <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-tight truncate text-white">
+                      {viewingUser.full_name || 'Anonymous User'}
+                    </h2>
+                  )}
                   <div className="flex items-center gap-3 mt-1 mb-4 flex-wrap">
                     <p className="text-xs text-white/60 font-mono flex items-center gap-1.5">
                       <Mail size={12} className="text-brand-teal" /> {viewingUser.email}
                     </p>
-                    {viewingUser.phone && (
-                      <p className="text-xs text-white/60 font-mono flex items-center gap-1.5 border-l border-white/10 pl-3">
-                        <Phone size={12} className="text-brand-teal" /> {viewingUser.phone}
-                      </p>
+                    {isEditing ? (
+                      <input 
+                        type="tel"
+                        value={editForm.phone || ''}
+                        onChange={e => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="Phone Number"
+                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-teal"
+                      />
+                    ) : (
+                      viewingUser.phone && (
+                        <p className="text-xs text-white/60 font-mono flex items-center gap-1.5 border-l border-white/10 pl-3">
+                          <Phone size={12} className="text-brand-teal" /> {viewingUser.phone}
+                        </p>
+                      )
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -298,20 +348,40 @@ export const UsersManager = ({
                       {viewingUser.status === 'active' ? <CheckCircle size={10} /> : <XCircle size={10} />}
                       {viewingUser.status || 'active'}
                     </span>
-                    {(viewingUser.age || viewingUser.city) && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-white/5 border-white/10 text-white/60">
-                        {viewingUser.age ? `${viewingUser.age} Y/O` : 'AGE N/A'}
-                        {viewingUser.city ? ` / ${viewingUser.city}` : ''}
-                      </span>
+                    {(isEditing || viewingUser.age || viewingUser.city || viewingUser.country) && (
+                      <div className="inline-flex items-center gap-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-white/5 border border-white/10 text-white/60">
+                        {isEditing ? (
+                          <div className="flex items-center divide-x divide-white/10">
+                            <input type="text" placeholder="City" value={editForm.city || ''} onChange={e => setEditForm(prev => ({ ...prev, city: e.target.value }))} className="bg-transparent px-3 py-1.5 outline-none max-w-[80px]" />
+                            <input type="text" placeholder="Country" value={editForm.country || ''} onChange={e => setEditForm(prev => ({ ...prev, country: e.target.value }))} className="bg-transparent px-3 py-1.5 outline-none max-w-[80px]" />
+                          </div>
+                        ) : (
+                          <span className="px-3 py-1.5">
+                            {viewingUser.age ? `${viewingUser.age} Y/O` : 'AGE N/A'}
+                            {viewingUser.city ? ` / ${viewingUser.city}` : ''}
+                            {viewingUser.country ? `, ${viewingUser.country}` : ''}
+                          </span>
+                        )}
+                      </div>
                     )}
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-brand-coral/10 border-brand-coral/20 text-brand-coral">
                       <Flame size={10} /> {(viewingUser as any).streak_count || 0} Day Streak
                     </span>
                   </div>
-                  {viewingUser.short_bio && (
+                  {(isEditing || viewingUser.short_bio) && (
                     <div className="mt-4 p-4 bg-black/40 border border-white/5 rounded-xl">
-                      <p className="text-[10px] uppercase tracking-widest text-white/30 font-black mb-1">Bio / Goal</p>
-                      <p className="text-xs text-white/70 italic leading-relaxed">"{viewingUser.short_bio}"</p>
+                      <p className="text-[10px] uppercase tracking-widest text-white/30 font-black mb-2">Bio / Goal</p>
+                      {isEditing ? (
+                        <textarea 
+                          rows={3}
+                          value={editForm.short_bio || ''}
+                          onChange={e => setEditForm(prev => ({ ...prev, short_bio: e.target.value }))}
+                          placeholder="User bio..."
+                          className="w-full bg-transparent border border-white/10 rounded-lg p-3 text-xs outline-none focus:border-brand-teal resize-none"
+                        />
+                      ) : (
+                        <p className="text-xs text-white/70 italic leading-relaxed">"{viewingUser.short_bio}"</p>
+                      )}
                     </div>
                   )}
                 </div>
