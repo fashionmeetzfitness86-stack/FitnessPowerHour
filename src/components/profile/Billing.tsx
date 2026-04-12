@@ -107,6 +107,34 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
     }
   };
 
+  const handleStartMembership = async () => {
+    try {
+      setPortalLoading(true);
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'membership',
+          tier: 'Basic',
+          userId: user.id,
+          userEmail: user.email,
+          successUrl: window.location.href.split('#')[0] + '#/profile?payment=success&tier=Basic',
+          cancelUrl: window.location.href
+        })
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        showToast(data.message || data.error || 'Failed to initialize checkout.', 'error');
+      }
+    } catch (err) {
+      showToast('Error redirecting to Stripe checkout.', 'error');
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
   // Determine display values — prefer membership table, fall back to profile
   const effectiveStatus = membership?.status || (user.membership_status as string) || 'inactive';
   const isActive = effectiveStatus === 'active' || effectiveStatus === 'trialing';
@@ -293,10 +321,15 @@ export const Billing = ({ user, showToast }: { user: UserProfile, showToast: any
                   </button>
                 ) : (
                   <button
-                    onClick={() => { window.location.hash = '#/membership'; }}
-                    className="w-full py-5 bg-brand-teal text-black hover:shadow-glow-teal transition-all text-xs uppercase font-black tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3"
+                    onClick={handleStartMembership}
+                    disabled={portalLoading}
+                    className="w-full py-5 bg-brand-teal text-black hover:shadow-glow-teal transition-all text-xs uppercase font-black tracking-[0.2em] rounded-2xl flex items-center justify-center gap-3 disabled:opacity-50"
                   >
-                    Start Membership <ArrowRight size={16} />
+                    {portalLoading ? (
+                      <><Loader2 size={16} className="animate-spin" /> Starting...</>
+                    ) : (
+                      <>Start Membership <ArrowRight size={16} /></>
+                    )}
                   </button>
                 )}
 
