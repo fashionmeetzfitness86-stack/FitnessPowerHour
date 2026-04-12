@@ -23,6 +23,74 @@ import { CommunityAccessTab } from './CommunityAccessTab';
 
 import { OnboardingFlow } from './OnboardingFlow';
 
+const LockedServiceRequests = ({ user, showToast }: any) => {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.from('service_requests').select('*').eq('user_id', user.id).then(({ data }) => {
+      if (data) setRequests(data);
+    });
+  }, [user.id]);
+
+  const handleCancel = async (id: string) => {
+    const { error } = await supabase.from('service_requests').delete().eq('id', id);
+    if (!error) {
+       setRequests(p => p.filter(r => r.id !== id));
+       showToast('Service canceled successfully.', 'success');
+       setSelectedRequest(null);
+    } else {
+       showToast('Failed to cancel.', 'error');
+    }
+  }
+
+  if (requests.length === 0) return null;
+
+  return (
+    <div className="mt-12 w-full max-w-lg mx-auto relative z-10">
+      <h3 className="text-[10px] uppercase tracking-widest font-black text-brand-teal text-center mb-4">Your Booked Services</h3>
+      <div className="space-y-3">
+        {requests.map(req => (
+          <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-4 bg-black/40 backdrop-blur-sm border border-brand-teal/20 rounded-2xl cursor-pointer hover:border-brand-teal transition-all flex items-center justify-between text-left">
+            <div>
+              <p className="text-xs font-black uppercase tracking-tight text-white">{req.service_type || 'Service'}</p>
+              <p className="text-[9px] uppercase tracking-widest text-white/40">{req.requested_date} @ {req.requested_time}</p>
+            </div>
+            <span className="text-[9px] uppercase font-bold text-brand-teal bg-brand-teal/10 px-3 py-1 rounded-full">{req.status}</span>
+          </div>
+        ))}
+      </div>
+      <AnimatePresence>
+        {selectedRequest && (
+           <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="fixed inset-0 z-[110] bg-black/80 flex items-center justify-center p-4">
+             <div className="card-gradient border border-white/10 p-8 rounded-3xl w-full max-w-sm space-y-6 text-left">
+               <h3 className="text-xl font-black uppercase tracking-tighter">Booking Details</h3>
+               <div className="space-y-4">
+                 <div>
+                   <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Service</p>
+                   <p className="text-sm font-black uppercase">{selectedRequest.service_type}</p>
+                 </div>
+                 <div>
+                   <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Date & Time</p>
+                   <p className="text-sm font-black uppercase">{selectedRequest.requested_date} @ {selectedRequest.requested_time}</p>
+                 </div>
+                 <div>
+                   <p className="text-[9px] text-white/40 uppercase tracking-widest font-bold">Status</p>
+                   <p className="text-sm font-black uppercase text-brand-teal">{selectedRequest.status}</p>
+                 </div>
+               </div>
+               <div className="flex gap-2 pt-4">
+                 <button onClick={() => setSelectedRequest(null)} className="flex-1 px-4 border border-white/10 text-white/60 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black hover:bg-white/5 transition-all">Close</button>
+                 <button onClick={() => handleCancel(selectedRequest.id)} className="flex-1 bg-brand-coral/10 text-brand-coral border border-brand-coral/20 rounded-xl py-3 text-[10px] uppercase tracking-widest font-black hover:bg-brand-coral hover:text-black transition-all">Cancel Booking</button>
+               </div>
+             </div>
+           </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -113,6 +181,10 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
           <button onClick={() => setActiveTab('membership')} className="mt-4 px-8 py-4 bg-brand-teal text-black font-black uppercase tracking-[0.2em] text-[10px] rounded-xl hover:scale-105 transition-all relative z-10 shadow-glow-teal">
             Upgrade Membership
           </button>
+          
+          {/* Allow free users to see their dynamically booked services if they bypass to the scheduler URL! */}
+          {activeTab === 'calendar' && <LockedServiceRequests user={user} showToast={showToast} />}
+          
         </div>
       );
     }
