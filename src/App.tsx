@@ -17,6 +17,7 @@ import { CommunityPage } from './components/community/CommunityPage';
 import { AuthCallback } from './components/auth/AuthCallback';
 
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
+import { TermsOfService } from './components/legal/TermsOfService';
 import { FreeAccessGate } from './components/FreeAccessGate';
 import { useSiteContent } from './hooks/useSiteContent';
 import { 
@@ -1317,7 +1318,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
           <li><Link to="/about" className="hover:text-white">Our Story</Link></li>
           <li><Link to="/contact" className="hover:text-white">Contact Us</Link></li>
           <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
-          <li><a href="#" className="hover:text-white">Terms of Service</a></li>
+          <li><Link to="/terms" className="hover:text-white">Terms of Service</Link></li>
         </ul>
       </div>
 
@@ -6818,6 +6819,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="/admin/dashboard" element={
                 user && (user.role === 'admin' || user.role === 'super_admin') ? (
