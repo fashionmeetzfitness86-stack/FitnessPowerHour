@@ -112,8 +112,16 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
              workoutsToday: workoutsToday || 0,
            });
         } else if (activeTab === 'users' && users.length === 0) {
-           const { data } = await supabase.from('profiles').select('*').limit(50);
+           const { data } = await supabase.from('profiles').select('*').limit(1000);
            if (data) setUsers(data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
+         } else if (activeTab === 'notifications' && (users.length === 0 || communities.length === 0)) {
+           // We need both users and communities for advanced notification targeting
+           const [uRes, cRes] = await Promise.all([
+             supabase.from('profiles').select('*').limit(2000),
+             supabase.from('communities').select('*').limit(50)
+           ]);
+           if (uRes.data) setUsers(uRes.data.map((u: any) => ({ ...u, full_name: u.name || u.full_name || u.email || 'Unknown' })));
+           if (cRes.data) setCommunities(cRes.data);
          } else if (activeTab === 'content' && videos.length === 0) {
            // Fetch videos; video_categories is optional — ignore if table doesn't exist
            const vRes = await supabase.from('videos').select('*').order('created_at', { ascending: false }).limit(100);
@@ -130,7 +138,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
            if (oRes.data) setOrders(oRes.data);
         } else if (activeTab === 'community' && communities.length === 0) {
            const [cRes, cmRes, pRes] = await Promise.all([
-             supabase.from('communities').select('*').limit(20),
+             supabase.from('communities').select('*').limit(50),
              supabase.from('community_members').select('*'),
              supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50)
            ]);
