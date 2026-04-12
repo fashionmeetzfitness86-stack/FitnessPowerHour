@@ -4098,11 +4098,6 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       return;
     }
 
-    if (!user && !showCheckout) {
-      setShowCheckout(true);
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const getFormattedTime = (timeSlot: string) => {
@@ -4123,7 +4118,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       }
 
       const activeServiceObj = serviceOptions.find(ref => ref.name === selectedService);
-      const amountPaid = !user ? activeServiceObj?.price : 0;
+      const amountPaid = activeServiceObj?.price || 0;
 
       const { data, error } = await supabase.from('service_requests').insert({
         user_id: user ? user.id : null,
@@ -4135,7 +4130,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
         service_subtype: 'FlexMob305',
         requested_date: selectedDay,
         requested_time: formattedSlot,
-        status: !user ? 'approved' : 'pending',
+        status: 'unpaid',
         notes: (hasActiveMembership ? '' : `[Contact Preference: ${contactPreference}] `) + (!user && (guestAge || guestGender) ? `[Age: ${guestAge || 'N/A'}, Gender: ${guestGender || 'N/A'}] ` : '') + 'Message: ' + serviceMessage
       }).select().single();
 
@@ -4145,13 +4140,30 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
         if (user) setMyRequests(prev => [...prev, data]);
       }
       
-      setBookingConfirmed({
-        date: selectedDay,
-        time: selectedSlot,
-        service: selectedService,
-        amount: amountPaid || 0,
-        email: user?.email || guestEmail,
+      // Route through connected stripe handler automatically
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'service',
+          serviceName: selectedService,
+          priceAmount: amountPaid,
+          selectedDate: selectedDay,
+          selectedTime: formattedSlot,
+          userId: user ? user.id : '',
+          userEmail: user ? user.email : guestEmail,
+          requestId: data.id,
+          successUrl: window.location.href.split('#')[0] + '#/profile?payment=success&type=service',
+          cancelUrl: window.location.href
+        })
       });
+
+      const checkoutData = await res.json();
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url;
+      } else {
+        throw new Error(checkoutData.error || 'Failed to initialize checkout session.');
+      }
 
       setServiceMessage('');
       setGuestName('');
@@ -4360,7 +4372,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                         </div>
                      </div>
 
-                     {!user ? (
+                     {!user && (
                         <div className="space-y-3 pt-4 border-t border-white/5">
                           <label className="text-[9px] uppercase tracking-widest font-black text-brand-coral block mb-3">Guest Contact Info</label>
                           <input type="text" placeholder="Full Name" value={guestName} onChange={e => setGuestName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:border-brand-coral outline-none transition-all" />
@@ -4375,36 +4387,13 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
                                 <option value="Other">Other</option>
                              </select>
                           </div>
-                          
-                          {showCheckout && (
-                             <div className="mt-4 p-4 border border-brand-coral/30 rounded-xl bg-brand-coral/5 space-y-4">
-                                <h5 className="text-[10px] font-black uppercase text-brand-coral tracking-widest flex items-center justify-between"><span>Payment Details</span> <span>${serviceOptions.find(o => o.name === selectedService)?.price}.00</span></h5>
-                                <input type="text" placeholder="Card Number (Mock Stripe Checkout)" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/50" />
-                                <div className="grid grid-cols-2 gap-2">
-                                  <input type="text" placeholder="MM/YY" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/50" />
-                                  <input type="text" placeholder="CVC" className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white/50" />
-                                </div>
-                             </div>
-                          )}
-                        </div>
-                     ) : !hasActiveMembership && (
-                        <div className="space-y-4 pt-4 border-t border-white/5">
-                          <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Admin Contact Preference</label>
-                          <div className="grid grid-cols-2 gap-2">
-                             {contactOptions.map(opt => (
-                                <button key={opt} onClick={() => setContactPreference(opt)} className={`py-3 px-2 rounded-xl text-[10px] font-bold transition-all border ${contactPreference === opt ? 'bg-brand-coral/10 border-brand-coral text-brand-coral' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
-                                   {opt}
-                                </button>
-                             ))}
-                          </div>
-                          <p className="text-[8px] text-white/40 uppercase tracking-widest leading-relaxed">As a free user, an admin will contact you to confirm and process payment for this request.</p>
                         </div>
                      )}
 
                      {!bookingConfirmed ? (
-                        <button onClick={handleAddService} disabled={isSubmitting || !selectedSlot || (!user && (!guestName || !guestEmail || !guestPhone))} className="w-full py-4 bg-brand-coral text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-glow-coral transition-all flex items-center justify-center gap-2 disabled:opacity-40">
-                           {isSubmitting ? 'Processing Booking...' : (!user && !showCheckout) ? 'Continue to Checkout' : (!user && showCheckout) ? `Pay $${serviceOptions.find(o => o.name === selectedService)?.price} & Book` : <>Request Slot Sync <ArrowRight size={14} /></>}
-                        </button>
+                         <button onClick={handleAddService} disabled={isSubmitting || !selectedSlot || (!user && (!guestName || !guestEmail || !guestPhone))} className="w-full py-4 bg-brand-coral text-black font-black uppercase text-[10px] tracking-widest rounded-2xl hover:shadow-[0_0_15px_rgba(255,107,107,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-40">
+                            {isSubmitting ? 'Redirecting to Checkout...' : `Pay $${serviceOptions.find(o => o.name === selectedService)?.price} & Book`}
+                         </button>
                      ) : (
                         <div className="mt-4 p-5 rounded-2xl border border-brand-coral/30 bg-brand-coral/5 space-y-4 relative overflow-hidden">
                           <div className="absolute top-0 right-0 p-8 opacity-5 text-brand-coral"><Check size={80} /></div>
@@ -4467,7 +4456,10 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const services = ['1-on-1 Training', 'Small Group Training'];
+  const serviceOptions = [
+    { name: '1-on-1 Training', price: 75 },
+    { name: 'Small Group Training', price: 250 }
+  ];
   const timeSlots = ['06:00 AM', '07:30 AM', '09:00 AM', '12:00 PM', '04:00 PM', '05:30 PM'];
   const MAX_PARTICIPANTS_PER_SLOT = 5;
 
@@ -4519,13 +4511,16 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
          return;
       }
 
+      const activeServiceObj = serviceOptions.find(ref => ref.name === selectedService);
+      const amountPaid = activeServiceObj?.price || 0;
+
       const { data, error } = await supabase.from('service_requests').insert({
         user_id: user.id,
         service_type: selectedService,
         service_subtype: 'PersonalTraining',
         requested_date: selectedDay,
         requested_time: formattedSlot,
-        status: 'pending',
+        status: 'unpaid',
         notes: (hasActiveMembership ? '' : `[Contact Preference: ${contactPreference}] `) + 'Message: ' + serviceMessage
       }).select().single();
 
@@ -4534,7 +4529,32 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
         setAllRequests(prev => [...prev, data]);
         setMyRequests(prev => [...prev, data]);
       }
-      showToast('Service Request Submitted! Awaiting admin confirmation.', 'success');
+
+      // Route through connected stripe handler automatically
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'service',
+          serviceName: selectedService,
+          priceAmount: amountPaid,
+          selectedDate: selectedDay,
+          selectedTime: formattedSlot,
+          userId: user.id,
+          userEmail: user.email,
+          requestId: data.id,
+          successUrl: window.location.href.split('#')[0] + '#/profile?payment=success&type=service',
+          cancelUrl: window.location.href
+        })
+      });
+
+      const checkoutData = await res.json();
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url;
+      } else {
+        throw new Error(checkoutData.error || 'Failed to initialize checkout session.');
+      }
+      
       setServiceMessage('');
       setSelectedSlot('');
       setSelectedDay(null);
@@ -4695,9 +4715,9 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
                         <div>
                           <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Protocol</label>
                           <div className="grid grid-cols-1 gap-2">
-                             {services.map(s => (
-                                <button key={s} onClick={() => setSelectedService(s)} className={`py-3 px-4 rounded-xl text-xs font-bold transition-all text-left border ${selectedService === s ? 'bg-brand-teal/10 border-brand-teal text-brand-teal' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
-                                   {s}
+                             {serviceOptions.map(s => (
+                                <button key={s.name} onClick={() => setSelectedService(s.name)} className={`py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-between border ${selectedService === s.name ? 'bg-brand-teal/10 border-brand-teal text-brand-teal' : 'bg-white/5 border-white/5 text-white/60 hover:bg-white/10'}`}>
+                                   <span>{s.name}</span><span className="opacity-60">${s.price}</span>
                                 </button>
                              ))}
                           </div>
