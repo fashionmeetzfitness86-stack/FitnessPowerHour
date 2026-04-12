@@ -26,7 +26,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
   const [selectedTime, setSelectedTime] = useState('');
   
   // Service State
-  const [serviceType, setServiceType] = useState('101 Personal Training');
+  const [serviceType, setServiceType] = useState('1-on-1 Personal Training');
   const [serviceMessage, setServiceMessage] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,10 +90,10 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
       };
 
       const SERVICE_PRICES: Record<string, number> = {
-        '101 Personal Training': 100,
-        'Small Group Training': 50,
+        '1-on-1 Personal Training': 75,
+        'Small Group Training': 250,
         'Massage': 120,
-        'Stretching': 60,
+        'Stretching': 180,
         'Recovery': 80
       };
 
@@ -483,10 +483,10 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                       <div>
                         <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Type</label>
                         <select value={serviceType} onChange={e => setServiceType(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs font-bold uppercase tracking-widest text-white focus:border-white/40 outline-none transition-all appearance-none cursor-pointer hover:bg-white/10">
-                          <option value="101 Personal Training" className="bg-brand-black">101 Personal Training ($100)</option>
-                          <option value="Small Group Training" className="bg-brand-black">Small Group Training ($50)</option>
+                          <option value="1-on-1 Personal Training" className="bg-brand-black">1-on-1 Personal Training ($75)</option>
+                          <option value="Small Group Training" className="bg-brand-black">Small Group Training ($250)</option>
                           <option value="Massage" className="bg-brand-black">Massage ($120)</option>
-                          <option value="Stretching" className="bg-brand-black">Stretching ($60)</option>
+                          <option value="Stretching" className="bg-brand-black">Stretching ($180)</option>
                           <option value="Recovery" className="bg-brand-black">Recovery ($80)</option>
                         </select>
                       </div>
