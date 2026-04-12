@@ -30,6 +30,7 @@ import {
 import { AthletesDirectory } from './components/athletes/AthletesDirectory';
 import { AthleteApplicationPage } from './components/athletes/AthleteApplicationPage';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Video, 
   VideoCategory,
@@ -955,77 +956,80 @@ const NotificationBell = () => {
         )}
       </AnimatePresence>
 
-      {/* Notification Detail Modal */}
-      <AnimatePresence>
-        {selectedNotif && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div 
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-              onClick={() => setSelectedNotif(null)} 
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-brand-black border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden z-[101]"
-            >
-              <div className="p-8 space-y-6">
-                <button 
-                  onClick={() => setSelectedNotif(null)}
-                  className="absolute top-6 right-6 text-white/30 hover:text-white transition-colors"
-                >
-                  <X size={20} />
-                </button>
-                
-                <div className="flex items-start gap-4 border-b border-white/5 pb-6">
-                   <div className={`w-12 h-12 rounded-full flex flex-shrink-0 items-center justify-center text-lg font-black ${selectedNotif.type === 'milestone' || selectedNotif.type === 'system' ? 'bg-brand-teal/20 text-brand-teal' : 'bg-brand-coral/20 text-brand-coral'}`}>
-                     {((selectedNotif as any).title || '?').charAt(0)}
-                   </div>
-                   <div>
-                     <h3 className="text-xl font-black uppercase tracking-tight leading-tight">{selectedNotif.title}</h3>
-                     <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1 font-bold">
-                       {new Date(selectedNotif.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                     </p>
-                   </div>
-                </div>
-
-                <div className="text-sm text-white/80 leading-relaxed font-medium whitespace-pre-wrap px-2 text-left">
-                  {selectedNotif.message}
-                </div>
-
-                <div className="pt-6 border-t border-white/5 flex flex-col justify-end gap-3">
-                  <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold text-center mb-1">FMF Notification System</p>
-                  
-                  {selectedNotif.metadata?.route && (
-                    <button
-                      onClick={() => {
-                        const route = selectedNotif.metadata.route;
-                        if (route.startsWith('http://') || route.startsWith('https://')) {
-                           window.open(route, '_blank');
-                        } else {
-                           const cleanRoute = route.startsWith('/') ? route : '/' + route;
-                           window.location.href = window.location.origin + window.location.pathname + '#' + cleanRoute;
-                        }
-                        setSelectedNotif(null);
-                      }}
-                      className="w-full flex items-center justify-center gap-2 py-4 bg-brand-teal text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all shadow-[0_0_20px_rgba(45,212,191,0.2)]"
-                    >
-                      <Link2 size={14} /> Open Attached Link
-                    </button>
-                  )}
-
-                  <button
+      {/* Notification Detail Modal using Portal to escape navbar stacking context constraints */}
+      {createPortal(
+        <AnimatePresence>
+          {selectedNotif && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <div 
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+                onClick={() => setSelectedNotif(null)} 
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-lg bg-brand-black border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden z-[10000]"
+              >
+                <div className="p-8 space-y-6">
+                  <button 
                     onClick={() => setSelectedNotif(null)}
-                    className="w-full py-4 bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all"
+                    className="absolute top-6 right-6 text-white/30 hover:text-white transition-colors"
                   >
-                    Close Message
+                    <X size={20} />
                   </button>
+                  
+                  <div className="flex items-start gap-4 border-b border-white/5 pb-6">
+                     <div className={`w-12 h-12 rounded-full flex flex-shrink-0 items-center justify-center text-lg font-black ${selectedNotif.type === 'milestone' || selectedNotif.type === 'system' ? 'bg-brand-teal/20 text-brand-teal' : 'bg-brand-coral/20 text-brand-coral'}`}>
+                       {((selectedNotif as any).title || '?').charAt(0)}
+                     </div>
+                     <div>
+                       <h3 className="text-xl font-black uppercase tracking-tight leading-tight">{selectedNotif.title}</h3>
+                       <p className="text-[10px] text-white/40 uppercase tracking-widest mt-1 font-bold">
+                         {new Date(selectedNotif.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                       </p>
+                     </div>
+                  </div>
+
+                  <div className="text-sm text-white/80 leading-relaxed font-medium whitespace-pre-wrap px-2 text-left">
+                    {selectedNotif.message}
+                  </div>
+
+                  <div className="pt-6 border-t border-white/5 flex flex-col justify-end gap-3">
+                    <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold text-center mb-1">FMF Notification System</p>
+                    
+                    {selectedNotif.metadata?.route && (
+                      <button
+                        onClick={() => {
+                          const route = selectedNotif.metadata.route;
+                          if (route.startsWith('http://') || route.startsWith('https://')) {
+                             window.open(route, '_blank');
+                          } else {
+                             const cleanRoute = route.startsWith('/') ? route : '/' + route;
+                             window.location.href = window.location.origin + window.location.pathname + '#' + cleanRoute;
+                          }
+                          setSelectedNotif(null);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-4 bg-brand-teal text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all shadow-[0_0_20px_rgba(45,212,191,0.2)]"
+                      >
+                        <Link2 size={14} /> Open Attached Link
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setSelectedNotif(null)}
+                      className="w-full py-4 bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all"
+                    >
+                      Close Message
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };
