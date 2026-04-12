@@ -456,6 +456,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                           <option value="Personal Training" className="bg-brand-black">Personal Training</option>
                           <option value="Nutrition Coaching" className="bg-brand-black">Nutrition Coaching</option>
                           <option value="Video Analysis" className="bg-brand-black">Video Analysis</option>
+                          <option value="Flex mob 305" className="bg-brand-black">Flex mob 305 (Massage / Stretching / Recovery)</option>
                         </select>
                       </div>
                       <div>
