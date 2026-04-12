@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS public.admin_broadcast_log (
   status TEXT DEFAULT 'sent',
   sent_count INTEGER DEFAULT 0,
   repeat_interval TEXT DEFAULT 'none',
+  metadata JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.admin_broadcast_log (
 ALTER TABLE public.admin_broadcast_log ENABLE ROW LEVEL SECURITY;
 
 -- Allow super admins full access to the admin_broadcast_log
+DROP POLICY IF EXISTS "Super Admins can manage broadcast logs" ON public.admin_broadcast_log;
 CREATE POLICY "Super Admins can manage broadcast logs"
 ON public.admin_broadcast_log
 FOR ALL

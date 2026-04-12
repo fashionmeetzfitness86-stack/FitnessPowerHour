@@ -16,7 +16,8 @@ interface DraftNotification {
   status: 'draft' | 'scheduled' | 'sent';
   created_at: string;
   sent_count?: number;
-  repeat_interval?: 'none' | '12h' | '24h' | 'weekly';
+  repeat_interval?: 'none' | '12h' | '24h' | '48h' | '7d';
+  metadata?: any;
 }
 
 export const NotificationManager = ({ users = [], groups = [], showToast }: any) => {
@@ -29,6 +30,8 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
   const [recipientValue, setRecipientValue] = useState('');
   const [userSearch, setUserSearch]         = useState('');
   const [targetRoute, setTargetRoute]       = useState('');
+  const [scheduledAt, setScheduledAt]       = useState('');
+  const [repeatInterval, setRepeatInterval] = useState<'none' | '12h' | '24h' | '48h' | '7d'>('none');
   const [isDraft, setIsDraft]               = useState(false);
   const [isSubmitting, setIsSubmitting]     = useState(false);
 
@@ -78,6 +81,9 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
         recipient_value: recipientValue,
         status,
         sent_count: sentCount,
+        scheduled_at: scheduledAt || null,
+        repeat_interval: repeatInterval,
+        metadata: { route: payload.route || null },
         created_at: new Date().toISOString(),
       });
     } catch {}
@@ -108,9 +114,10 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
         return;
       }
 
-      const status: DraftNotification['status'] = asDraft ? 'draft' : 'sent';
+      // Determine status. If scheduled for the future, do not send immediately.
+      const status: DraftNotification['status'] = asDraft ? 'draft' : (scheduledAt && new Date(scheduledAt) > new Date() ? 'scheduled' : 'sent');
 
-      if (!asDraft) {
+      if (status === 'sent') {
         // Batch insert max 50 at a time to avoid payload limits
         const payloads = userIds.map(id => ({
           user_id: id,
@@ -133,7 +140,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
       );
 
       // Reset
-      setTitle(''); setMessage(''); setRecipientValue(''); setTargetRoute(''); setUserSearch('');
+      setTitle(''); setMessage(''); setRecipientValue(''); setTargetRoute(''); setUserSearch(''); setScheduledAt(''); setRepeatInterval('none');
       if (tab === 'compose') fetchHistory();
     } catch (err: any) {
       showToast?.(err?.message || 'Dispatch failed', 'error');
@@ -151,7 +158,9 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
     setTitle(h.title);
     setMessage(h.message);
     setRecipientType(h.recipient_type as any);
-    setRecipientValue(h.recipient_value || '');
+    setTargetRoute(h.metadata?.route || '');
+    setScheduledAt(h.scheduled_at?.substring(0, 16) || '');
+    setRepeatInterval(h.repeat_interval || 'none');
     setTab('compose');
   };
 
@@ -269,11 +278,47 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
               </div>
             </div>
 
-            {/* Step 3: Schedule & Repeat (optional) */}
-            {/* Step 3: Destination (optional) */}
+            {/* Step 3: Schedule & Repeat */}
+            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-6">
+              <h3 className="text-xs uppercase font-black tracking-widest text-brand-teal flex items-center gap-2">
+                <Clock size={14} /> 3. Schedule & Repeat
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Initial Send Time</label>
+                  <input 
+                    type="datetime-local" 
+                    value={scheduledAt} 
+                    onChange={e => setScheduledAt(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                  />
+                  <p className="text-[8px] opacity-50 mt-1">Leave empty to send immediately upon broadcast.</p>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase font-bold tracking-widest text-white/40 flex items-center gap-1">
+                    <Repeat size={10} /> Repeat Frequency
+                  </label>
+                  <select 
+                    value={repeatInterval} 
+                    onChange={e => setRepeatInterval(e.target.value as any)}
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                  >
+                    <option value="none">Does not repeat</option>
+                    <option value="12h">Every 12 Hours</option>
+                    <option value="24h">Every 24 Hours</option>
+                    <option value="48h">Every 48 Hours</option>
+                    <option value="7d">Every 7 Days</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4: Destination (optional) */}
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
               <h3 className="text-xs uppercase font-black tracking-widest text-white/40 flex items-center gap-2">
-                <Target size={14} /> 3. Destination Link (Optional)
+                <Target size={14} /> 4. Destination Link (Optional)
               </h3>
               <div className="space-y-1.5">
                 <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Target Link or URL</label>
