@@ -1,18 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bell, CreditCard, Shield, Camera, Package, Save, Loader2 } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
 
 export const Notifications = ({ user, showToast }: { user: UserProfile, showToast: any }) => {
   const [prefs, setPrefs] = useState({
-    billing_reminders: user.notification_preferences?.billing_reminders ?? true,
-    payment_confirmations: user.notification_preferences?.payment_confirmations ?? true,
-    membership_renewals: user.notification_preferences?.membership_renewals ?? true,
-    workout_reminders: user.notification_preferences?.workout_reminders ?? false,
-    retreat_confirmations: user.notification_preferences?.retreat_confirmations ?? true,
-    program_updates: user.notification_preferences?.program_updates ?? true,
-    order_updates: user.notification_preferences?.order_updates ?? true,
+    billing_reminders: true,
+    payment_confirmations: true,
+    membership_renewals: true,
+    workout_reminders: false,
+    retreat_confirmations: true,
+    program_updates: true,
+    order_updates: true,
   });
+
+  // Try to load heavily nested auth data asynchronously to ensure latest prefs sync
+  useEffect(() => {
+    const fetchPrefs = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.notification_preferences) {
+         setPrefs(p => ({ ...p, ...user.user_metadata.notification_preferences }));
+      }
+    };
+    fetchPrefs();
+  }, []);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleToggle = (key: keyof typeof prefs) => {
@@ -22,13 +33,12 @@ export const Notifications = ({ user, showToast }: { user: UserProfile, showToas
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          notification_preferences: prefs,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      // Save directly to the auth metadata to securely persist without requiring schema modifications
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          notification_preferences: prefs
+        }
+      });
 
       if (error) throw error;
       showToast('Neural notification matrix updated.', 'success');
