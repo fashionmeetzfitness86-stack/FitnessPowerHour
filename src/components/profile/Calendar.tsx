@@ -99,14 +99,14 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
 
       const priceAmount = SERVICE_PRICES[serviceType] || 0;
 
-      // Ensure user intent is recorded locally first
+      // Ensure user intent is recorded locally first as unpaid
       const { data: requestData, error } = await supabase.from('service_requests').insert({
         user_id: user.id,
         service_type: serviceType,
         service_subtype: '1-on-1 Session',
         requested_date: selectedDay,
         requested_time: getFormattedTime(selectedTime),
-        status: 'pending',
+        status: 'unpaid',
         notes: `Message: ${serviceMessage}`
       }).select().single();
 
@@ -125,6 +125,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
           selectedTime: getFormattedTime(selectedTime),
           userId: user.id,
           userEmail: user.email,
+          requestId: requestData.id,
           successUrl: window.location.href.split('#')[0] + '#/profile?payment=success&type=service',
           cancelUrl: window.location.href
         })
@@ -399,15 +400,57 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                                 {r.requested_time && <p className="text-[9px] text-white/30 font-bold uppercase mt-0.5">{r.requested_time}</p>}
                               </div>
                               <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
-                                r.status === 'confirmed' ? 'bg-indigo-500/20 text-indigo-400' : 
+                                r.status === 'confirmed' || r.status === 'approved' ? 'bg-indigo-500/20 text-indigo-400' : 
                                 r.status === 'denied' ? 'bg-red-500/20 text-red-500' :
+                                r.status === 'unpaid' ? 'bg-coral-500/20 text-brand-coral border border-brand-coral/30' :
                                 'bg-amber-500/20 text-amber-400'
                               }`}>
-                                {r.status}
+                                {r.status === 'unpaid' ? 'unpaid' : r.status}
                               </span>
                             </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => handleDeleteRequest(r.id)} className="w-full py-2 bg-red-500/10 border border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5">
+                            <div className="flex gap-2 w-full">
+                              {r.status === 'unpaid' ? (
+                                <button
+                                  disabled={isSubmitting} 
+                                  onClick={async () => {
+                                      setIsSubmitting(true);
+                                      try {
+                                        const SERVICE_PRICES: Record<string, number> = {
+                                          '1-on-1 Personal Training': 75,
+                                          'Small Group Training': 250,
+                                          'Massage': 120,
+                                          'Stretching': 180,
+                                          'Recovery': 80
+                                        };
+                                        const priceAmount = SERVICE_PRICES[r.service_type] || 0;
+                                        const res = await fetch('/.netlify/functions/create-checkout', {
+                                          method: 'POST',
+                                          headers: { 'Content-Type': 'application/json' },
+                                          body: JSON.stringify({
+                                            type: 'service',
+                                            serviceName: r.service_type,
+                                            priceAmount,
+                                            selectedDate: r.requested_date,
+                                            selectedTime: r.requested_time,
+                                            userId: user.id,
+                                            userEmail: user.email,
+                                            requestId: r.id,
+                                            successUrl: window.location.href.split('#')[0] + '#/profile?payment=success&type=service',
+                                            cancelUrl: window.location.href
+                                          })
+                                        });
+                                        const d = await res.json();
+                                        if (d.url) window.location.href = d.url;
+                                      } catch (e) {
+                                        if (showToast) showToast('Failed to checkout', 'error');
+                                      } finally { setIsSubmitting(false); }
+                                  }}
+                                  className="flex-1 py-3 bg-brand-teal text-black text-[9px] font-black uppercase tracking-widest rounded-lg transition-all text-center disabled:opacity-50"
+                                >
+                                  Complete Payment
+                                </button>
+                              ) : null}
+                              <button onClick={() => handleDeleteRequest(r.id)} className="flex-1 py-3 bg-red-500/10 border border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20 text-[9px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-1.5">
                                 <X size={12} /> Cancel Request
                               </button>
                             </div>

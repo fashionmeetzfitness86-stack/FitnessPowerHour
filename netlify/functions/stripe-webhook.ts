@@ -367,21 +367,16 @@ export default async (req: Request) => {
           const date = metadata.date || new Date().toISOString().split('T')[0];
           const time = metadata.time || '12:00';
           const uId = metadata.userId;
+          const reqId = metadata.requestId;
 
           console.log(`[stripe-webhook] Service booking paid: ${serviceName} on ${date} at ${time}`);
 
-          if (uId) {
-            await supabase.from('calendar_sessions').insert({
-              user_id: uId,
-              source_type: 'service',
-              title: `${serviceName} (${time})`,
-              session_date: date,
-              session_time: time,
-              duration_minutes: 60,
-              status: 'approved',
-              created_at: new Date().toISOString()
-            });
+          // Transition the request status from unpaid to pending admin approval
+          if (reqId) {
+             await supabase.from('service_requests').update({ status: 'pending' }).eq('id', reqId);
+          }
 
+          if (uId) {
             let userName = 'User';
             const { data: uData } = await supabase.from('profiles').select('full_name').eq('id', uId).single();
             if (uData) userName = uData.full_name;
@@ -394,7 +389,7 @@ export default async (req: Request) => {
                   user_id: admin.id,
                   type: 'purchase',
                   title: 'Service Booked',
-                  message: `New service booked: ${serviceName} by ${userName} for ${date} at ${time}. [Event:${event.id}]`,
+                  message: `Payment confirmed for service: ${serviceName} by ${userName} for ${date} at ${time}. Ready for admin approval! [Event:${event.id}]`,
                   status: 'sent',
                   send_at: new Date().toISOString(),
                   created_at: new Date().toISOString()

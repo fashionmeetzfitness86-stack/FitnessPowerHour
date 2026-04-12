@@ -114,6 +114,7 @@ export const RequestsManager = ({
       case 'approved': return 'bg-brand-teal/10 text-brand-teal border-brand-teal/20';
       case 'completed': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       case 'denied': return 'bg-brand-coral/10 text-brand-coral border-brand-coral/20';
+      case 'unpaid': return 'bg-white/5 text-white/50 border-white/10';
       default: return 'bg-amber-400/10 text-amber-400 border-amber-400/20';
     }
   };
@@ -135,6 +136,7 @@ export const RequestsManager = ({
   const stats = {
     total: requests.length,
     pending: requests.filter(r => r.status === 'pending').length,
+    unpaid: requests.filter(r => r.status === 'unpaid').length,
     approved: requests.filter(r => r.status === 'approved' || r.status === 'completed').length
   };
 
@@ -147,7 +149,7 @@ export const RequestsManager = ({
             Service <span className="text-brand-teal">Requests</span>
           </h2>
           <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold mt-1">
-            {stats.pending} pending · {stats.approved} approved
+            {stats.unpaid} unpaid · {stats.pending} pending · {stats.approved} approved
           </p>
         </div>
         
@@ -170,7 +172,7 @@ export const RequestsManager = ({
             onChange={e => setFilterStatus(e.target.value)}
             className="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs outline-none focus:border-brand-teal transition-all"
           >
-            {['All', 'Pending', 'Approved', 'Completed', 'Denied'].map(s => (
+            {['All', 'Unpaid', 'Pending', 'Approved', 'Completed', 'Denied'].map(s => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>

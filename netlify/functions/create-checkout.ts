@@ -174,7 +174,7 @@ export default async (req: Request) => {
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
       });
     } else if (type === 'service') {
-      const { serviceName, priceAmount, selectedDate, selectedTime } = body;
+      const { serviceName, priceAmount, selectedDate, selectedTime, requestId } = body;
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
@@ -184,7 +184,8 @@ export default async (req: Request) => {
           serviceName,
           date: selectedDate,
           time: selectedTime,
-          userId: userId || ''
+          userId: userId || '',
+          requestId: requestId || ''
         },
         line_items: [{
           price_data: {
