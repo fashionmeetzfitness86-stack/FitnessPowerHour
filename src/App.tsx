@@ -16,6 +16,7 @@ import { CommunityDetail } from './components/community/CommunityDetail';
 import { CommunityPage } from './components/community/CommunityPage';
 import { AuthCallback } from './components/auth/AuthCallback';
 
+import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { FreeAccessGate } from './components/FreeAccessGate';
 import { useSiteContent } from './hooks/useSiteContent';
 import { 
@@ -1315,7 +1316,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
         <ul className="space-y-4 text-sm text-white/40">
           <li><Link to="/about" className="hover:text-white">Our Story</Link></li>
           <li><Link to="/contact" className="hover:text-white">Contact Us</Link></li>
-          <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
+          <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
           <li><a href="#" className="hover:text-white">Terms of Service</a></li>
         </ul>
       </div>
@@ -1342,7 +1343,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
             </button>
           </div>
           <p className="text-[10px] text-white/20 uppercase tracking-[0.2em] leading-relaxed">
-            By subscribing, you agree to our <a href="#" className="text-white/40 hover:text-white underline underline-offset-4">Privacy Policy</a>.
+            By subscribing, you agree to our <Link to="/privacy" className="text-white/40 hover:text-white underline underline-offset-4">Privacy Policy</Link>.
           </p>
         </form>
       </div>
@@ -6816,6 +6817,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/recovery" element={<Recovery />} />
               <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
               <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="/admin/dashboard" element={
                 user && (user.role === 'admin' || user.role === 'super_admin') ? (
