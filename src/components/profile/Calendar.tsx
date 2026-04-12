@@ -26,7 +26,7 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
   const [selectedTime, setSelectedTime] = useState('');
   
   // Service State
-  const [serviceType, setServiceType] = useState('Personal Training');
+  const [serviceType, setServiceType] = useState('101 Personal Training');
   const [serviceMessage, setServiceMessage] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,7 +89,18 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
         return map[timeSlot] || '12:00:00';
       };
 
-      const { data, error } = await supabase.from('service_requests').insert({
+      const SERVICE_PRICES: Record<string, number> = {
+        '101 Personal Training': 100,
+        'Small Group Training': 50,
+        'Massage': 120,
+        'Stretching': 60,
+        'Recovery': 80
+      };
+
+      const priceAmount = SERVICE_PRICES[serviceType] || 0;
+
+      // Ensure user intent is recorded locally first
+      const { data: requestData, error } = await supabase.from('service_requests').insert({
         user_id: user.id,
         service_type: serviceType,
         service_subtype: '1-on-1 Session',
@@ -100,12 +111,31 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
       }).select().single();
 
       if (error) throw error;
-      if (data) setRequests(prev => [...prev, data]);
-      if (showToast) showToast(`Service request sent. Awaiting admin confirmation.`, 'success');
-      setServiceType('Personal Training');
-      setServiceMessage('');
-      setSelectedTime('');
-      setPanelMode('view');
+      if (requestData) setRequests(prev => [...prev, requestData]);
+
+      // Route through connected stripe handler automatically
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'service',
+          serviceName: serviceType,
+          priceAmount,
+          selectedDate: selectedDay,
+          selectedTime: getFormattedTime(selectedTime),
+          userId: user.id,
+          userEmail: user.email,
+          successUrl: window.location.href.split('#')[0] + '#/profile?payment=success&type=service',
+          cancelUrl: window.location.href
+        })
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Failed to initialize checkout session.');
+      }
     } catch (err: any) {
       if (showToast) showToast(err.message || 'Failed to request service.', 'error');
     } finally {
@@ -453,10 +483,11 @@ export const Calendar = ({ user, showToast }: { user: UserProfile; showToast?: a
                       <div>
                         <label className="text-[9px] uppercase tracking-widest font-black text-white/40 block mb-2">Service Type</label>
                         <select value={serviceType} onChange={e => setServiceType(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-xs font-bold uppercase tracking-widest text-white focus:border-white/40 outline-none transition-all appearance-none cursor-pointer hover:bg-white/10">
-                          <option value="Personal Training" className="bg-brand-black">Personal Training</option>
-                          <option value="Nutrition Coaching" className="bg-brand-black">Nutrition Coaching</option>
-                          <option value="Video Analysis" className="bg-brand-black">Video Analysis</option>
-                          <option value="Flex mob 305" className="bg-brand-black">Flex mob 305 (Massage / Stretching / Recovery)</option>
+                          <option value="101 Personal Training" className="bg-brand-black">101 Personal Training ($100)</option>
+                          <option value="Small Group Training" className="bg-brand-black">Small Group Training ($50)</option>
+                          <option value="Massage" className="bg-brand-black">Massage ($120)</option>
+                          <option value="Stretching" className="bg-brand-black">Stretching ($60)</option>
+                          <option value="Recovery" className="bg-brand-black">Recovery ($80)</option>
                         </select>
                       </div>
                       <div>

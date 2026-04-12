@@ -25,6 +25,7 @@ import { OnboardingFlow } from './OnboardingFlow';
 
 export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(() => {
     const shouldShow = sessionStorage.getItem('intent_onboarding') === 'true';
     if (shouldShow) sessionStorage.removeItem('intent_onboarding');
@@ -63,6 +64,9 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
       }
       setTimeout(() => {
         setIsProcessingPayment(false);
+        if (isService) {
+          setShowReceiptModal(true);
+        }
         window.history.replaceState({}, document.title, window.location.pathname);
       }, 4000);
     }
@@ -131,6 +135,41 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
 
   return (
     <div className="pt-40 pb-32 px-6 bg-brand-black text-white">
+      {/* RECEIPT POPUP */}
+      <AnimatePresence>
+        {showReceiptModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          >
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="card-gradient p-10 rounded-[2.5rem] border border-brand-teal text-center max-w-md w-full shadow-[0_0_50px_rgba(45,212,191,0.2)]">
+              <div className="w-20 h-20 bg-brand-teal/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Shield size={36} className="text-brand-teal" />
+              </div>
+              <h3 className="text-2xl font-black uppercase tracking-tighter text-white">Payment Validation Set!</h3>
+              <p className="text-sm font-bold mt-2 text-white/50 uppercase tracking-widest leading-relaxed">
+                Your receipt has been safely sent by email.
+              </p>
+              
+              <div className="mt-8 bg-brand-coral/10 border border-brand-coral/30 p-6 rounded-2xl animate-pulse">
+                <p className="text-brand-coral font-black uppercase tracking-[0.2em] text-sm">
+                  ⚠️ SCREENSHOT YOUR RECEIPT
+                </p>
+                <p className="text-[10px] uppercase text-brand-coral/50 font-bold mt-2">
+                  Retain access immediately.
+                </p>
+              </div>
+
+              <button 
+                onClick={() => setShowReceiptModal(false)}
+                className="btn-primary w-full mt-8 uppercase py-5 text-xs font-black tracking-widest"
+              >
+                Close Window
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {showOnboarding && (
         <OnboardingFlow 
           showToast={showToast} 
