@@ -926,14 +926,8 @@ const NotificationBell = () => {
                       key={notif.id}
                       onClick={() => {
                         markAsRead(notif.id);
-                        if (route) {
-                          setIsOpen(false);
-                          const cleanRoute = route.startsWith('/') ? route : '/' + route;
-                          window.location.href = window.location.origin + window.location.pathname + '#' + cleanRoute;
-                        } else {
-                          setSelectedNotif(notif);
-                          setIsOpen(false);
-                        }
+                        setSelectedNotif(notif);
+                        setIsOpen(false);
                       }}
                       className={`p-4 border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer ${!(notif as any).is_read ? 'bg-brand-teal/5' : ''}`}
                     >
@@ -999,11 +993,30 @@ const NotificationBell = () => {
                   {selectedNotif.message}
                 </div>
 
-                <div className="pt-6 border-t border-white/5 flex flex-col justify-end">
-                  <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-4 text-center">FMF Notification System</p>
+                <div className="pt-6 border-t border-white/5 flex flex-col justify-end gap-3">
+                  <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold text-center mb-1">FMF Notification System</p>
+                  
+                  {selectedNotif.metadata?.route && (
+                    <button
+                      onClick={() => {
+                        const route = selectedNotif.metadata.route;
+                        if (route.startsWith('http://') || route.startsWith('https://')) {
+                           window.open(route, '_blank');
+                        } else {
+                           const cleanRoute = route.startsWith('/') ? route : '/' + route;
+                           window.location.href = window.location.origin + window.location.pathname + '#' + cleanRoute;
+                        }
+                        setSelectedNotif(null);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-4 bg-brand-teal text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all shadow-[0_0_20px_rgba(45,212,191,0.2)]"
+                    >
+                      <Link2 size={14} /> Open Attached Link
+                    </button>
+                  )}
+
                   <button
                     onClick={() => setSelectedNotif(null)}
-                    className="w-full py-4 bg-brand-teal text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all shadow-[0_0_20px_rgba(45,212,191,0.2)]"
+                    className="w-full py-4 bg-white/5 border border-white/10 text-white/70 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-white/10 transition-all"
                   >
                     Close Message
                   </button>

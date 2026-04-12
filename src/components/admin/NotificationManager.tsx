@@ -28,7 +28,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
   const [recipientType, setRecipientType]   = useState<'broadcast' | 'individual' | 'city' | 'group'>('broadcast');
   const [recipientValue, setRecipientValue] = useState('');
   const [userSearch, setUserSearch]         = useState('');
-  const [targetRoute, setTargetRoute]       = useState('#/profile');
+  const [targetRoute, setTargetRoute]       = useState('');
   const [isDraft, setIsDraft]               = useState(false);
   const [isSubmitting, setIsSubmitting]     = useState(false);
 
@@ -117,7 +117,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
           type: 'system',
           title,
           message,
-          metadata: { source: 'Admin Broadcast', route: targetRoute || '#/profile' }
+          metadata: { source: 'Admin Broadcast', route: targetRoute || null }
         }));
         for (let i = 0; i < payloads.length; i += 50) {
           const { error } = await supabase.from('notifications').insert(payloads.slice(i, i + 50));
@@ -133,7 +133,7 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
       );
 
       // Reset
-      setTitle(''); setMessage(''); setRecipientValue(''); setTargetRoute('#/profile'); setUserSearch('');
+      setTitle(''); setMessage(''); setRecipientValue(''); setTargetRoute(''); setUserSearch('');
       if (tab === 'compose') fetchHistory();
     } catch (err: any) {
       showToast?.(err?.message || 'Dispatch failed', 'error');
@@ -276,17 +276,26 @@ export const NotificationManager = ({ users = [], groups = [], showToast }: any)
                 <Target size={14} /> 3. Destination Link (Optional)
               </h3>
               <div className="space-y-1.5">
-                <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">In-App Target Route</label>
-                <select value={targetRoute} onChange={e => setTargetRoute(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal">
-                  <option value="#/profile">Profile/Dashboard (Default)</option>
+                <label className="text-[9px] uppercase font-bold tracking-widest text-white/40">Target Link or URL</label>
+                <input 
+                  type="text" 
+                  value={targetRoute} 
+                  onChange={e => setTargetRoute(e.target.value)}
+                  placeholder="https://example.com or #/videos"
+                  list="route-suggestions"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-teal"
+                />
+                <datalist id="route-suggestions">
+                  <option value="#/profile">Profile/Dashboard</option>
                   <option value="#/shop">Shop Page</option>
                   <option value="#/retreats">Retreats Page</option>
                   <option value="#/community">Community Timeline</option>
                   <option value="#/videos">Video Library</option>
                   <option value="#/services">Services Page</option>
-                </select>
-                <p className="text-[8px] opacity-50 mt-1">When users click the notification on their bell, they will be sent here.</p>
+                </datalist>
+                <p className="text-[8px] opacity-50 mt-1">
+                  You can paste an external link (start with https://) or select an internal app page. A button will automatically appear in the notification popup.
+                </p>
               </div>
             </div>
 
