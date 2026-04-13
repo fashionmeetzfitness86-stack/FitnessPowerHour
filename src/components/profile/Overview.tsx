@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, CalendarSession } from '../../types';
 import { supabase } from '../../supabase';
+import { InAppWaiverPopup } from '../legal/InAppWaiverPopup';
 
 export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; showToast: any; onTabChange?: (tab: string) => void }) => {
   const [loading, setLoading] = useState(true);
@@ -96,12 +97,22 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
   }, [user.id]);
 
   // ── Check-in handler — enforces 1st/2nd logic ───────────────────────────────
-  const initiateCheckIn = () => {
+  const [showWaiver, setShowWaiver] = useState(false);
+
+  const executeCheckIn = () => {
     if (todayCheckInCount >= 1) {
       // Second workout today — show confirmation popup
       setShowSecondWorkoutModal(true);
     } else {
       setShowCheckInModal(true);
+    }
+  };
+
+  const initiateCheckIn = () => {
+    if (user && !user.waiver_accepted) {
+       setShowWaiver(true);
+    } else {
+       executeCheckIn();
     }
   };
 
@@ -801,37 +812,23 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingPhoto}
-                    className="w-full h-40 border-2 border-dashed border-brand-coral/30 rounded-2xl flex flex-col items-center justify-center gap-3 hover:border-brand-coral/60 hover:bg-brand-coral/5 transition-all group"
-                  >
-                    {isUploadingPhoto ? (
-                      <Loader2 size={28} className="animate-spin text-brand-coral" />
-                    ) : (
-                      <>
-                        <div className="w-12 h-12 bg-brand-coral/10 rounded-xl flex items-center justify-center text-brand-coral group-hover:scale-110 transition-transform">
-                          <Upload size={22} />
-                        </div>
-                        <div className="text-center">
-                          <p className="text-[10px] uppercase tracking-widest font-black text-white/60">Tap to take photo</p>
-                          <p className="text-[9px] text-white/30 mt-1">Camera Only</p>
-                        </div>
-                      </>
-                    )}
-                  </button>
+                  <div className="p-8 border border-dashed border-white/20 rounded-2xl flex flex-col items-center justify-center text-center gap-3">
+                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-white/40">
+                      <Upload size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest font-black text-white/60 mb-1">Take a Photo</p>
+                      <p className="text-[9px] uppercase font-bold text-white/30 tracking-widest">Show your face or environment to prove it.</p>
+                    </div>
+                    <button onClick={() => fileInputRef.current?.click()} className="mt-2 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-black text-[9px] uppercase tracking-widest rounded-xl transition-all">
+                      {isUploadingPhoto ? 'Uploading...' : 'Open Camera'}
+                    </button>
+                    <input type="file" ref={fileInputRef} accept="image/*" capture="environment" className="hidden" aria-hidden="true" onChange={(e) => {
+                      const files = e.target.files;
+                      if (files && files.length > 0) handlePhotoFile(files[0]);
+                    }} />
+                  </div>
                 )}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) handlePhotoFile(file);
-                  }}
-                />
               </div>
 
               {/* Submit */}
@@ -853,7 +850,17 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
         )}
       </AnimatePresence>
 
-
+      {showWaiver && (
+        <InAppWaiverPopup 
+          user={user as any} 
+          onAccept={() => {
+             setShowWaiver(false);
+             if (user) user.waiver_accepted = true;
+             executeCheckIn();
+          }} 
+          onCancel={() => setShowWaiver(false)} 
+        />
+      )}
     </div>
   );
 };

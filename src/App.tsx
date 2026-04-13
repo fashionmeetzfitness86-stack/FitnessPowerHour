@@ -20,7 +20,7 @@ import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
 import { RefundPolicy } from './components/legal/RefundPolicy';
 import { LiabilityWaiver } from './components/legal/LiabilityWaiver';
-import { TrainingGate } from './components/legal/TrainingGate';
+import { InAppWaiverPopup } from './components/legal/InAppWaiverPopup';
 import { FreeAccessGate } from './components/FreeAccessGate';
 import { useSiteContent } from './hooks/useSiteContent';
 import { 
@@ -4064,7 +4064,7 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
   const [guestGender, setGuestGender] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState<{ date: string, time: string, service: string, amount: number, email: string } | null>(null);
-
+  const [showWaiver, setShowWaiver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const serviceOptions = [
@@ -4103,6 +4103,16 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
       return;
     }
 
+    const guestAccepted = !user ? localStorage.getItem('guest_waiver_accepted') : 'true';
+    if ((user && !user.waiver_accepted) || (!user && !guestAccepted)) {
+       setShowWaiver(true);
+       return;
+    }
+
+    proceedToCheckout();
+  };
+
+  const proceedToCheckout = async () => {
     setIsSubmitting(true);
     try {
       const getFormattedTime = (timeSlot: string) => {
@@ -4438,6 +4448,19 @@ const FlexMob305 = ({ showToast }: { showToast: (m: string, t?: 'success' | 'err
           </div>
         </div>
       </div>
+      {showWaiver && (
+        <InAppWaiverPopup 
+          user={user as any} 
+          onAccept={() => {
+             setShowWaiver(false);
+             if (!user) localStorage.setItem('guest_waiver_accepted', 'true');
+             // Update local user object immediately to prevent infinite loops before refetch
+             if (user) user.waiver_accepted = true;
+             proceedToCheckout();
+          }} 
+          onCancel={() => setShowWaiver(false)} 
+        />
+      )}
     </div>
   );
 };
@@ -4460,6 +4483,7 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
   const hasActiveMembership = !!(user && (user.tier === 'Basic' || user.membership_status === 'active' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete'));
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showWaiver, setShowWaiver] = useState(false);
 
   const serviceOptions = [
     { name: '1-on-1 Training', price: 75 },
@@ -4497,6 +4521,15 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
       return;
     }
 
+    if (user && !user.waiver_accepted) {
+       setShowWaiver(true);
+       return;
+    }
+
+    proceedToCheckout();
+  };
+
+  const proceedToCheckout = async () => {
     setIsSubmitting(true);
     try {
       const getFormattedTime = (timeSlot: string) => {
@@ -4810,6 +4843,17 @@ const PersonalTraining = ({ showToast }: { showToast: (m: string, t?: 'success' 
           </div>
         </div>
       </div>
+      {showWaiver && (
+        <InAppWaiverPopup 
+          user={user as any} 
+          onAccept={() => {
+             setShowWaiver(false);
+             if (user) user.waiver_accepted = true;
+             proceedToCheckout();
+          }} 
+          onCancel={() => setShowWaiver(false)} 
+        />
+      )}
     </div>
   );
 };
@@ -6818,11 +6862,11 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/services" element={<Services />} />
               <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
-              <Route path="/program" element={<TrainingGate user={user}><ProgramPage /></TrainingGate>} />
+              <Route path="/program" element={<ProgramPage />} />
               <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
               <Route path="/athlete-application" element={<AthleteApplicationPage showToast={showToast} />} />
-              <Route path="/videos" element={<TrainingGate user={user}><VideoLibrary showToast={showToast} /></TrainingGate>} />
-              <Route path="/video/:id" element={<TrainingGate user={user}><VideoDetail showToast={showToast} /></TrainingGate>} />
+              <Route path="/videos" element={<VideoLibrary showToast={showToast} />} />
+              <Route path="/video/:id" element={<VideoDetail showToast={showToast} />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />

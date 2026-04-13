@@ -8,6 +8,7 @@ import {
 import { UserProfile } from '../../types';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
+import { InAppWaiverPopup } from '../legal/InAppWaiverPopup';
 
 // ── Workout Confirmation Dialog ──────────────────────────────────────────────
 const WorkoutConfirmDialog = ({
@@ -209,6 +210,8 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [workoutStartTime, setWorkoutStartTime] = useState<number | null>(null);
   const [savingCheckIn, setSavingCheckIn] = useState(false);
+  const [showWaiver, setShowWaiver] = useState(false);
+  const [pendingVideo, setPendingVideo] = useState<any>(null);
 
   useEffect(() => {
     supabase.from('videos').select('*').order('created_at', { ascending: false }).then(({ data }) => {
@@ -238,7 +241,12 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
   };
 
   const handleStartWorkout = (video: any) => {
-    setConfirmVideo(video);
+    if (user && !user.waiver_accepted) {
+       setPendingVideo(video);
+       setShowWaiver(true);
+    } else {
+       setConfirmVideo(video);
+    }
   };
 
   const handleConfirmWorkout = () => {
@@ -656,6 +664,21 @@ export const MyPrograms = ({ user, showToast }: { user: UserProfile; showToast?:
             ))}
           </div>
         </div>
+      )}
+
+      {showWaiver && (
+        <InAppWaiverPopup 
+          user={user as any} 
+          onAccept={() => {
+             setShowWaiver(false);
+             if (user) user.waiver_accepted = true;
+             if (pendingVideo) {
+               setConfirmVideo(pendingVideo);
+               setPendingVideo(null);
+             }
+          }} 
+          onCancel={() => { setShowWaiver(false); setPendingVideo(null); }} 
+        />
       )}
     </div>
   );
