@@ -26,6 +26,7 @@ import { OnboardingFlow } from './OnboardingFlow';
 const LockedServiceRequests = ({ user, showToast }: any) => {
   const [requests, setRequests] = useState<any[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false);
 
   useEffect(() => {
     supabase.from('service_requests').select('*').eq('user_id', user.id).then(({ data }) => {
@@ -43,6 +44,39 @@ const LockedServiceRequests = ({ user, showToast }: any) => {
        showToast('Failed to cancel.', 'error');
     }
   }
+
+  const handleCheckout = async () => {
+    if (!selectedRequest) return;
+    setIsProcessingCheckout(true);
+    try {
+      const res = await fetch('/.netlify/functions/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'service',
+          serviceName: selectedRequest.service_type,
+          priceAmount: selectedRequest.amount_paid || 0,
+          selectedDate: selectedRequest.requested_date,
+          selectedTime: selectedRequest.requested_time,
+          userId: user ? user.id : '',
+          userEmail: user ? user.email : '',
+          requestId: selectedRequest.id,
+          successUrl: window.location.href.split('#')[0] + '#/profile?payment=success&type=service',
+          cancelUrl: window.location.href
+        })
+      });
+
+      const checkoutData = await res.json();
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url;
+      } else {
+        throw new Error(checkoutData.error || 'Failed to initialize checkout session.');
+      }
+    } catch (err: any) {
+        showToast(err?.message || 'Error processing payment.', 'error');
+        setIsProcessingCheckout(false);
+    }
+  };
 
   if (requests.length === 0) return null;
 
@@ -79,9 +113,20 @@ const LockedServiceRequests = ({ user, showToast }: any) => {
                    <p className="text-sm font-black uppercase text-brand-teal">{selectedRequest.status}</p>
                  </div>
                </div>
-               <div className="flex gap-2 pt-4">
-                 <button onClick={() => setSelectedRequest(null)} className="flex-1 px-4 border border-white/10 text-white/60 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black hover:bg-white/5 transition-all">Close</button>
-                 <button onClick={() => handleCancel(selectedRequest.id)} className="flex-1 bg-brand-coral/10 text-brand-coral border border-brand-coral/20 rounded-xl py-3 text-[10px] uppercase tracking-widest font-black hover:bg-brand-coral hover:text-black transition-all">Cancel Booking</button>
+               <div className="flex flex-col gap-2 pt-4">
+                 {(selectedRequest.status || '').toLowerCase() === 'unpaid' && (
+                    <button 
+                      onClick={handleCheckout} 
+                      disabled={isProcessingCheckout}
+                      className="w-full bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest py-3 rounded-xl hover:shadow-[0_0_15px_rgba(45,212,191,0.4)] transition-all disabled:opacity-50"
+                    >
+                      {isProcessingCheckout ? 'Connecting to Stripe...' : 'Complete Payment'}
+                    </button>
+                 )}
+                 <div className="flex gap-2">
+                   <button onClick={() => setSelectedRequest(null)} className="flex-1 px-4 border border-white/10 text-white/60 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black hover:bg-white/5 transition-all">Close</button>
+                   <button onClick={() => handleCancel(selectedRequest.id)} className="flex-1 bg-brand-coral/10 text-brand-coral border border-brand-coral/20 rounded-xl py-3 text-[10px] uppercase tracking-widest font-black hover:bg-brand-coral hover:text-black transition-all">Cancel Booking</button>
+                 </div>
                </div>
              </div>
            </motion.div>
