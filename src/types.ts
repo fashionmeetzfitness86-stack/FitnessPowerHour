@@ -366,6 +366,7 @@ export interface UserProfile {
   created_at: string;
   updated_at: string;
   onboarding_completed?: boolean;
+  waiver_accepted?: boolean;
   profile_images?: string[]; // Up to 10 images
   // Stripe billing fields (synced via webhook)
   stripe_customer_id?: string;

@@ -20,6 +20,7 @@ import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import { TermsOfService } from './components/legal/TermsOfService';
 import { RefundPolicy } from './components/legal/RefundPolicy';
 import { LiabilityWaiver } from './components/legal/LiabilityWaiver';
+import { TrainingGate } from './components/legal/TrainingGate';
 import { FreeAccessGate } from './components/FreeAccessGate';
 import { useSiteContent } from './hooks/useSiteContent';
 import { 
@@ -6817,11 +6818,11 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/services" element={<Services />} />
               <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
-              <Route path="/program" element={<ProgramPage />} />
+              <Route path="/program" element={<TrainingGate user={user}><ProgramPage /></TrainingGate>} />
               <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
               <Route path="/athlete-application" element={<AthleteApplicationPage showToast={showToast} />} />
-              <Route path="/videos" element={<VideoLibrary showToast={showToast} />} />
-              <Route path="/video/:id" element={<VideoDetail showToast={showToast} />} />
+              <Route path="/videos" element={<TrainingGate user={user}><VideoLibrary showToast={showToast} /></TrainingGate>} />
+              <Route path="/video/:id" element={<TrainingGate user={user}><VideoDetail showToast={showToast} /></TrainingGate>} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
