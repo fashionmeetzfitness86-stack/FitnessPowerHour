@@ -350,11 +350,11 @@ export interface UserProfile {
   profile_image?: string;
   role: 'user' | 'admin' | 'super_admin' | 'athlete' | 'flex_mob_admin';
   package_id?: string;
-  tier?: string;
+  tier?: string | null;
   membership_package_id?: string; // Matching brief
-  membership_status?: 'active' | 'suspended' | 'banned' | 'archived';
+  membership_status?: 'active' | 'inactive' | 'pending' | 'cancelled' | 'suspended' | 'banned' | 'archived' | null;
   last_membership_change_at?: string;
-  status: 'active' | 'suspended' | 'banned' | 'archived';
+  status: 'active' | 'suspended' | 'banned' | 'archived' | 'deleted';
   banned_at?: string;
   bio?: string; // Matching brief
   preferences?: {

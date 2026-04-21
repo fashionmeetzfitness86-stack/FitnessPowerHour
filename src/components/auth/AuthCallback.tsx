@@ -34,6 +34,9 @@ export const AuthCallback = () => {
       const code = searchParams.get('code');
       const errorParam = searchParams.get('error');
       const errorDescription = searchParams.get('error_description');
+      // Supabase may include type=recovery in hash for password-reset flow
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const tokenType = hashParams.get('type') || searchParams.get('type');
 
       // Handle explicit error from Supabase redirect
       if (errorParam) {
@@ -50,7 +53,7 @@ export const AuthCallback = () => {
 
       // 2. PKCE flow – exchange authorization code for session
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
           if (error.message.toLowerCase().includes('expired') || error.message.toLowerCase().includes('invalid')) {
             setStatus('expired');
@@ -62,13 +65,20 @@ export const AuthCallback = () => {
           return;
         }
 
-        // Code exchanged successfully — email is confirmed
+        // Detect if this code exchange was for a password reset (recovery)
+        // Supabase sets amr claim to 'email_otp' with type 'recovery', or we can check token_type
+        const isRecovery = tokenType === 'recovery' ||
+          (exchangeData?.session?.user?.recovery_sent_at && !exchangeData?.session?.user?.email_confirmed_at === false);
+
+        if (isRecovery || tokenType === 'recovery') {
+          // Don't sign out — keep the session so /reset-password can call updateUser
+          navigate('/reset-password', { replace: true });
+          return;
+        }
+
+        // Email confirmation flow
         setStatus('success');
-
-        // Sign out so the user logs in with their credentials (clean UX)
         await supabase.auth.signOut();
-
-        // Redirect to login with confirmed=true after a brief success animation
         setTimeout(() => {
           navigate('/membership?confirmed=true', { replace: true });
         }, 2500);
@@ -76,11 +86,26 @@ export const AuthCallback = () => {
       }
 
       // 3. Implicit flow (legacy fallback) — tokens in URL hash
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
 
       if (accessToken && refreshToken) {
+        // If type=recovery, route directly to /reset-password
+        if (tokenType === 'recovery') {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          if (error) {
+            setStatus('error');
+            setErrorMessage(error.message);
+            return;
+          }
+          // Keep session alive for password reset form
+          navigate('/reset-password', { replace: true });
+          return;
+        }
+
         const { error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken

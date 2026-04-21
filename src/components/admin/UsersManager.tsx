@@ -15,10 +15,6 @@ interface UsersManagerProps {
   setSearchQuery: (q: string) => void;
   onUpdateUser: (userId: string, updates: Partial<UserProfile>) => Promise<void>;
   packages?: any;
-  roleFilter?: string;
-  setRoleFilter?: any;
-  statusFilter?: string;
-  setStatusFilter?: any;
   onEdit?: any;
   currentUser?: any;
   showToast?: any;
@@ -64,6 +60,8 @@ export const UsersManager = ({
     setSavingId(userId);
     try {
       await onUpdateUser(userId, updates);
+    } catch (err) {
+      if (showToast) showToast('Failed to update user', 'error');
     } finally {
       setSavingId(null);
     }
@@ -77,13 +75,11 @@ export const UsersManager = ({
 
   const handleDelete = async (u: UserProfile) => {
     try {
-      await supabase.auth.admin.deleteUser(u.id).catch(() => ({ error: null }));
-      await supabase.from('profiles').delete().eq('id', u.id);
+      await onUpdateUser(u.id, { status: 'deleted' });
       setDeletingUser(null);
       if (showToast) showToast('User removed from platform', 'success');
-      await onUpdateUser(u.id, { status: 'deleted' } as any);
     } catch (err) {
-      if (showToast) showToast('Delete failed — remove from Supabase Auth manually', 'error');
+      if (showToast) showToast('Delete failed', 'error');
     }
   };
 
@@ -102,6 +98,7 @@ export const UsersManager = ({
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input
+            data-testid="search-users"
             type="text"
             placeholder="Search name or email..."
             className="w-full sm:w-56 bg-black/40 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-xs focus:border-brand-teal outline-none"
@@ -172,6 +169,7 @@ export const UsersManager = ({
                   </td>
                   <td className="px-6 py-4">
                     <select
+                      data-testid={`role-update-${u.id}`}
                       value={role}
                       disabled={isSaving}
                       onChange={e => handleUpdate(u.id, { role: e.target.value as any })}
@@ -185,9 +183,16 @@ export const UsersManager = ({
                   </td>
                   <td className="px-6 py-4">
                     <select
+                      data-testid={`tier-update-${u.id}`}
                       value={u.tier || 'Free'}
                       disabled={isSaving}
-                      onChange={e => handleUpdate(u.id, { tier: e.target.value, membership_status: e.target.value === 'Basic' ? 'active' : 'inactive' } as any)}
+                      onChange={e => {
+                        const updates: Partial<UserProfile> = {
+                          tier: e.target.value,
+                          membership_status: e.target.value === 'Basic' ? 'active' : 'inactive'
+                        };
+                        handleUpdate(u.id, updates);
+                      }}
                       className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-[10px] font-black uppercase outline-none focus:border-brand-teal cursor-pointer"
                     >
                       <option value="Free">Free</option>
@@ -206,6 +211,7 @@ export const UsersManager = ({
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <button
+                        data-testid={`view-user-${u.id}`}
                         onClick={() => { 
                           setViewingUser(u); 
                           setActiveTab('overview'); 
@@ -218,6 +224,7 @@ export const UsersManager = ({
                         <User size={13} />
                       </button>
                       <button
+                        data-testid={`suspend-user-${u.id}`}
                         onClick={() => handleSuspend(u)}
                         title={isSuspended ? 'Reactivate' : 'Suspend'}
                         className={`p-2 rounded-lg transition-all hover:text-black ${isSuspended ? 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400' : 'bg-amber-500/10 hover:bg-amber-500 text-amber-400'}`}
@@ -225,6 +232,7 @@ export const UsersManager = ({
                         <Ban size={13} />
                       </button>
                       <button
+                        data-testid={`delete-user-${u.id}`}
                         onClick={() => setDeletingUser(u)}
                         title="Delete user"
                         className="p-2 bg-red-500/10 hover:bg-red-500 rounded-lg text-red-400 hover:text-white transition-all"
@@ -267,6 +275,7 @@ export const UsersManager = ({
                 <div className="flex items-center gap-3">
                   {isEditing ? (
                     <button 
+                      data-testid="save-user-btn"
                       onClick={async () => {
                         await handleUpdate(viewingUser.id, editForm);
                         setViewingUser({ ...viewingUser, ...editForm });
@@ -280,6 +289,7 @@ export const UsersManager = ({
                     </button>
                   ) : (
                     <button 
+                      data-testid="edit-user-btn"
                       onClick={() => setIsEditing(true)}
                       className="px-4 py-2 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 text-[10px] font-black uppercase tracking-widest rounded-full transition-colors flex items-center gap-2"
                     >
@@ -365,7 +375,7 @@ export const UsersManager = ({
                       </div>
                     )}
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border bg-brand-coral/10 border-brand-coral/20 text-brand-coral">
-                      <Flame size={10} /> {(viewingUser as any).streak_count || 0} Day Streak
+                      <Flame size={10} /> {viewingUser.streak_count ?? 0} Day Streak
                     </span>
                   </div>
                   {(isEditing || viewingUser.short_bio) && (
@@ -408,11 +418,11 @@ export const UsersManager = ({
                 {activeTab === 'overview' && (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                      { label: 'Platform Role', value: viewingUser.role || 'user', icon: Crown },
-                      { label: 'Access Tier', value: viewingUser.tier || 'Free', icon: Zap },
-                      { label: 'Membership', value: (viewingUser as any).membership_status || '—', icon: CreditCard },
-                      { label: 'Joined', value: viewingUser.signup_date ? new Date(viewingUser.signup_date).toLocaleDateString() : '—', icon: Clock },
-                      { label: 'Stripe Sub ID', value: viewingUser.stripe_subscription_id || 'N/A', icon: CreditCard },
+                      { label: 'Platform Role', value: viewingUser.role ?? 'user', icon: Crown },
+                      { label: 'Access Tier', value: viewingUser.tier ?? 'Free', icon: Zap },
+                      { label: 'Membership', value: viewingUser.membership_status ?? 'Not set', icon: CreditCard },
+                      { label: 'Joined', value: viewingUser.signup_date ? new Date(viewingUser.signup_date).toLocaleDateString() : 'Unknown', icon: Clock },
+                      { label: 'Stripe Sub ID', value: viewingUser.stripe_subscription_id ?? 'N/A', icon: CreditCard },
                       { label: 'Last Check-In', value: viewingUser.last_checkin || 'Never', icon: Activity },
                     ].map(item => (
                       <div key={item.label} className="p-5 bg-white/[0.03] rounded-2xl border border-white/[0.05] hover:bg-white/[0.05] transition-colors">

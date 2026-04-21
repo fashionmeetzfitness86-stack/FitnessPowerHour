@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation, useNavigate, useParams, Navigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'motion/react';
 import { ProfileDashboard } from './components/profile/ProfileDashboard';
 import { AdminDashboard } from './components/admin/AdminDashboard';
@@ -337,6 +337,7 @@ interface AuthContextType {
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
   updateSecurity: (email?: string, password?: string) => Promise<void>;
   logActivity: (action: string, entityType: string, entityId?: string, metadata?: any) => Promise<void>;
+  sendPasswordResetEmail: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -797,6 +798,19 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const sendPasswordResetEmail = async (email: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}${window.location.pathname}#/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      throw error;
+    }
+  };
+
   const logActivity = async (action: string, entityType: string, entityId?: string, metadata?: any) => {
     if (!user) return;
     try {
@@ -835,7 +849,8 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       toggleBookmark,
       updateProfile,
       updateSecurity,
-      logActivity
+      logActivity,
+      sendPasswordResetEmail
     }}>
       {children}
     </AuthContext.Provider>
@@ -5080,7 +5095,7 @@ const RunClub = () => {
 };
 
 const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) => {
-  const { user, login, signup, logout, updateTier } = useAuth();
+  const { user, login, signup, logout, updateTier, sendPasswordResetEmail } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedTier, setSelectedTier] = useState<any>(null);
@@ -5099,6 +5114,11 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [resendCooldown, setResendCooldown] = useState(0);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [localPassModal, setLocalPassModal] = useState<any>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotError, setForgotError] = useState('');
 
   // Close modal and go to profile when user logs in
   useEffect(() => {
@@ -5541,15 +5561,159 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                     </button>
                   </form>
 
-                  <div className="text-center">
+                  <div className="text-center space-y-3">
+                    {isLogin && (
+                      <button
+                        type="button"
+                        onClick={() => { setShowForgotPassword(true); setForgotEmail(formData.email); setForgotError(''); setForgotSent(false); }}
+                        className="text-[10px] uppercase tracking-widest text-white/30 hover:text-brand-teal transition-colors block w-full"
+                      >
+                        Forgot Password?
+                      </button>
+                    )}
                     <button 
                       type="button"
-                      onClick={() => { setIsLogin(!isLogin); setErrorMsg(''); setShowUnverified(false); }}
+                      onClick={() => { setIsLogin(!isLogin); setErrorMsg(''); setShowUnverified(false); setShowForgotPassword(false); }}
                       className="text-[10px] uppercase tracking-widest text-white/40 hover:text-brand-teal transition-colors"
                     >
                       {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
                     </button>
                   </div>
+                </>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Forgot Password Modal ── */}
+      <AnimatePresence>
+        {showForgotPassword && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(''); }}
+              className="absolute inset-0 bg-brand-black/95 backdrop-blur-xl"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 24 }}
+              transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-md card-gradient p-12 space-y-8 rounded-[2rem] border border-white/10 shadow-2xl"
+            >
+              <button
+                onClick={() => { setShowForgotPassword(false); setForgotSent(false); setForgotError(''); }}
+                className="absolute top-6 right-6 text-white/20 hover:text-white transition-colors"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+
+              {forgotSent ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center space-y-8 py-4"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.1 }}
+                    className="w-20 h-20 bg-brand-teal rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(45,212,191,0.25)]"
+                  >
+                    <Send size={36} className="text-black" />
+                  </motion.div>
+                  <div className="space-y-3">
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">Reset Link <span className="text-brand-teal">Sent</span></h3>
+                    <p className="text-white/50 text-sm leading-relaxed">
+                      We've sent a password reset link to <span className="text-white font-bold">{forgotEmail}</span>.
+                    </p>
+                    <p className="text-white/30 text-[10px] uppercase tracking-widest">
+                      Check your inbox and follow the link to set a new password. The link expires in 1 hour.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { setShowForgotPassword(false); setForgotSent(false); }}
+                    className="btn-primary w-full py-4 text-[10px] uppercase tracking-[0.4em] font-black"
+                  >
+                    Back to Login
+                  </button>
+                </motion.div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mb-2">
+                      <Shield size={28} className="text-brand-teal" />
+                    </div>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">Forgot <span className="text-brand-teal">Password?</span></h3>
+                    <p className="text-white/40 text-[10px] uppercase tracking-widest leading-relaxed">
+                      Enter your account email and we'll send you a secure reset link.
+                    </p>
+                  </div>
+
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setForgotSubmitting(true);
+                      setForgotError('');
+                      try {
+                        await sendPasswordResetEmail(forgotEmail);
+                        setForgotSent(true);
+                      } catch (err: any) {
+                        setForgotError(err?.message || 'Failed to send reset email. Please try again.');
+                      } finally {
+                        setForgotSubmitting(false);
+                      }
+                    }}
+                    className="space-y-6"
+                  >
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40">Email Address</label>
+                      <input
+                        required
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => { setForgotEmail(e.target.value); setForgotError(''); }}
+                        className="w-full bg-white/5 border border-white/10 p-4 text-sm focus:outline-none focus:border-brand-teal transition-colors rounded-lg"
+                        placeholder="YOUR@EMAIL.COM"
+                        autoFocus
+                      />
+                    </div>
+
+                    {forgotError && (
+                      <div className="p-4 bg-brand-coral/10 border border-brand-coral/30 rounded-lg">
+                        <p className="text-brand-coral text-xs leading-relaxed">{forgotError}</p>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={forgotSubmitting || !forgotEmail}
+                      className="btn-primary w-full py-5 flex items-center justify-center gap-3 disabled:opacity-50 text-[10px] uppercase tracking-[0.4em] font-black"
+                    >
+                      {forgotSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={14} /> Send Reset Link
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  <button
+                    type="button"
+                    onClick={() => { setShowForgotPassword(false); setForgotError(''); }}
+                    className="text-[10px] uppercase tracking-widest text-white/30 hover:text-white transition-colors block w-full text-center"
+                  >
+                    Back to Login
+                  </button>
                 </>
               )}
             </motion.div>
@@ -5593,6 +5757,277 @@ const ProfileGuard = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-brand-black">
       <div className="w-12 h-12 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+};
+
+// ── Reset Password Page ──────────────────────────────────────────────────────
+// Supabase redirects here after the user clicks the email reset link.
+// URL format: /#/reset-password (with token exchanged automatically by Supabase detectSessionInUrl,
+// OR a ?code= param from PKCE flow that we must exchange ourselves).
+const ResetPassword = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void }) => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [status, setStatus] = useState<'loading' | 'ready' | 'saving' | 'success' | 'error'>('loading');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Password strength
+  const strength = (() => {
+    if (password.length === 0) return 0;
+    let s = 0;
+    if (password.length >= 8) s++;
+    if (/[A-Z]/.test(password)) s++;
+    if (/[0-9]/.test(password)) s++;
+    if (/[^A-Za-z0-9]/.test(password)) s++;
+    return s;
+  })();
+  const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
+  const strengthColor = ['', '#ef4444', '#f59e0b', '#3b82f6', '#2dd4bf'][strength];
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        // PKCE flow: exchange code for session
+        const code = searchParams.get('code');
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          setStatus('ready');
+          return;
+        }
+
+        // Implicit/magic-link flow: check if Supabase auto-set a session
+        // (detectSessionInUrl picks up hash params automatically)
+        await new Promise(resolve => setTimeout(resolve, 800));
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setStatus('ready');
+        } else {
+          setStatus('error');
+          setErrorMsg('Invalid or expired reset link. Please request a new one.');
+        }
+      } catch (err: any) {
+        setStatus('error');
+        setErrorMsg(err?.message || 'Invalid or expired reset link.');
+      }
+    };
+    init();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      showToast('Passwords do not match.', 'error');
+      return;
+    }
+    if (password.length < 8) {
+      showToast('Password must be at least 8 characters.', 'error');
+      return;
+    }
+    setStatus('saving');
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      await supabase.auth.signOut();
+      setStatus('success');
+      setTimeout(() => {
+        navigate('/membership?mode=login', { replace: true });
+      }, 3000);
+    } catch (err: any) {
+      setStatus('ready');
+      showToast(err?.message || 'Failed to update password.', 'error');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-brand-black px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+        className="w-full max-w-md card-gradient p-12 space-y-10 rounded-[3rem] border border-white/10 shadow-2xl"
+      >
+        {/* Loading */}
+        {status === 'loading' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-8 py-8">
+            <div className="relative w-20 h-20 mx-auto">
+              <div className="w-20 h-20 border-4 border-brand-teal border-t-transparent rounded-full animate-spin" />
+              <div className="absolute inset-0 w-20 h-20 rounded-full border-2 border-brand-teal/10 animate-ping" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black uppercase tracking-tighter">Verifying <span className="text-brand-teal">Link</span></h2>
+              <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-bold">Authenticating your reset session...</p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Error */}
+        {status === 'error' && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center space-y-8 py-4">
+            <div className="w-20 h-20 bg-brand-coral/15 rounded-full flex items-center justify-center mx-auto border border-brand-coral/30">
+              <AlertCircle size={44} className="text-brand-coral" />
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-2xl font-black uppercase tracking-tighter">Link <span className="text-brand-coral">Invalid</span></h2>
+              <p className="text-sm text-white/50 leading-relaxed">{errorMsg}</p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => navigate('/membership?mode=login', { replace: true })}
+                className="btn-primary w-full py-5 text-[10px] uppercase tracking-[0.4em] font-black"
+              >
+                Back to Login
+              </button>
+              <p className="text-[10px] text-white/30 uppercase tracking-widest">
+                Go to login → click "Forgot Password?" to get a new link.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Success */}
+        {status === 'success' && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+            className="text-center space-y-8 py-4"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 12, delay: 0.1 }}
+              className="w-20 h-20 bg-brand-teal rounded-full flex items-center justify-center mx-auto shadow-[0_0_40px_rgba(45,212,191,0.3)]"
+            >
+              <Check size={44} className="text-black" />
+            </motion.div>
+            <div className="space-y-3">
+              <h2 className="text-3xl font-black uppercase tracking-tighter">Password <span className="text-brand-teal">Updated</span></h2>
+              <p className="text-sm text-white/50 uppercase tracking-widest">Your new password has been saved.</p>
+              <p className="text-[10px] text-white/30 uppercase tracking-[0.3em]">Redirecting you to login...</p>
+            </div>
+            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: '0%' }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 3, ease: 'linear' }}
+                className="h-full bg-brand-teal rounded-full"
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {/* Password Form */}
+        {(status === 'ready' || status === 'saving') && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+            <div className="space-y-3">
+              <div className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center mb-2">
+                <Shield size={28} className="text-brand-teal" />
+              </div>
+              <h2 className="text-3xl font-black uppercase tracking-tighter">
+                Set New <span className="text-brand-teal">Password</span>
+              </h2>
+              <p className="text-[10px] uppercase tracking-widest text-white/40 leading-relaxed">
+                Choose a strong password for your FMF account. Minimum 8 characters.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* New Password */}
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40">New Password</label>
+                <div className="relative">
+                  <input
+                    required
+                    type={showPass ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 p-4 pr-12 text-sm focus:outline-none focus:border-brand-teal transition-colors rounded-lg"
+                    placeholder="••••••••"
+                    minLength={8}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors"
+                  >
+                    <Eye size={16} />
+                  </button>
+                </div>
+                {/* Strength bar */}
+                {password.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4].map((s) => (
+                        <div
+                          key={s}
+                          className="h-1 flex-1 rounded-full transition-all duration-300"
+                          style={{ backgroundColor: strength >= s ? strengthColor : 'rgba(255,255,255,0.06)' }}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-[9px] uppercase tracking-widest font-bold" style={{ color: strengthColor }}>
+                      {strengthLabel}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/40">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    required
+                    type={showConfirm ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full bg-white/5 border p-4 pr-12 text-sm focus:outline-none transition-colors rounded-lg ${
+                      confirmPassword && confirmPassword !== password
+                        ? 'border-brand-coral/60 focus:border-brand-coral'
+                        : 'border-white/10 focus:border-brand-teal'
+                    }`}
+                    placeholder="••••••••"
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors"
+                  >
+                    <Eye size={16} />
+                  </button>
+                </div>
+                {confirmPassword && confirmPassword !== password && (
+                  <p className="text-[9px] uppercase tracking-widest text-brand-coral font-bold">Passwords do not match</p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={status === 'saving' || !password || !confirmPassword || password !== confirmPassword}
+                className="btn-primary w-full py-5 flex items-center justify-center gap-3 disabled:opacity-50 text-[10px] uppercase tracking-[0.4em] font-black"
+              >
+                {status === 'saving' ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={16} /> Update Password
+                  </>
+                )}
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   );
 };
@@ -6869,6 +7304,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/video/:id" element={<VideoDetail showToast={showToast} />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/reset-password" element={<ResetPassword showToast={showToast} />} />
               <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
               <Route path="/community/:id" element={<CommunityDetail user={user} showToast={showToast} />} />
               <Route path="/schedule" element={<Schedule showToast={showToast} />} />
