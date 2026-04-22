@@ -340,6 +340,7 @@ Includes:
 
 🔸 1-MONTH FULL IMMERSION — $25,000
 Duration: June 1st – June 30th (30 Days)
+⚠️ STRICTLY LIMITED: ONLY 4 SPOTS AVAILABLE
 
 This is the complete transformation.
 
@@ -379,7 +380,13 @@ Exact details provided upon confirmation.
 • Stronger identity
 
 This is not temporary.
-This is who you become after the program.`,
+This is who you become after the program.
+
+⚠️ IMPORTANT
+• Limited spots available
+• Application required
+• No refunds once confirmed
+• Must be 21+ to attend`,
     cover_image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop', 
     start_date: '2026-06-01T09:00:00Z',
     end_date: '2026-06-30T17:00:00Z',
