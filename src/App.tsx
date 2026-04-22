@@ -7057,20 +7057,97 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
           <h2 className="text-4xl font-bold uppercase tracking-tighter mb-16 text-center">Upcoming <span className="text-brand-coral">Experiences</span></h2>
           <div className="space-y-12">
             {RETREATS.map((retreat) => (
-              <div key={retreat.id} className="card-gradient overflow-hidden flex flex-col lg:flex-row group">
-                <div className="lg:w-1/2 relative overflow-hidden">
-                  <img src={retreat.cover_image} alt={retreat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" referrerPolicy="no-referrer" />
-                  <div className="absolute top-6 left-6 bg-brand-teal px-4 py-2 text-[10px] uppercase tracking-widest font-bold">{new Date(retreat.start_date).toLocaleDateString()}</div>
-                </div>
-                <div className="lg:w-1/2 p-12 flex flex-col justify-center space-y-6">
-                  <div className="flex items-center gap-2 text-brand-coral text-xs uppercase tracking-widest">
-                    <MapPin size={14} /> {retreat.location}
+              <div key={retreat.id} className="card-gradient overflow-hidden rounded-[2rem] border border-white/10 group">
+                {/* Hero Image */}
+                <div className="relative h-72 lg:h-96 overflow-hidden">
+                  <img
+                    src={retreat.cover_image}
+                    alt={retreat.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 opacity-60"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
+                  {/* Overlay badges */}
+                  <div className="absolute bottom-8 left-8 right-8 flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-brand-coral text-[10px] uppercase tracking-widest font-bold mb-2">
+                        <MapPin size={12} /> {retreat.location}
+                      </div>
+                      <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white">{retreat.title}</h3>
+                    </div>
+                    <div className="flex flex-col gap-2 text-right">
+                      <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold">
+                        {new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      <span className="px-3 py-1 bg-brand-coral text-black text-[9px] font-black uppercase tracking-widest rounded-full">
+                        21+ Only
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-3xl font-bold uppercase">{retreat.title}</h3>
-                  <p className="text-white/40 leading-relaxed whitespace-pre-wrap">{retreat.description}</p>
-                  <div className="flex items-center justify-between pt-8 border-t border-white/5">
-                    <div className="text-2xl font-bold">{retreat.price} <span className="text-xs text-white/20 font-normal uppercase tracking-widest">/ person</span></div>
-                    <button onClick={handleApply} className="btn-outline">Apply Now</button>
+                </div>
+
+                {/* Body */}
+                <div className="p-8 lg:p-12 space-y-8">
+                  {/* Tag line */}
+                  <p className="text-white/50 text-sm leading-relaxed max-w-2xl">
+                    This is not a vacation. This is a full lifestyle reset. Step into the FMF system — structured daily training, elite Miami Beach environment, and direct access to high-level coaching.
+                  </p>
+
+                  {/* Program Tiers */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Tier 1 */}
+                    <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Option 1</p>
+                          <h4 className="text-xl font-black uppercase tracking-tight mt-1">2-Week Transformation</h4>
+                          <p className="text-[10px] text-white/40 mt-1">June 1st – June 14th · 14 Days</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-2xl font-black text-brand-teal">$15,000</p>
+                        </div>
+                      </div>
+                      <ul className="space-y-1.5 text-[11px] text-white/50">
+                        {['2 daily training sessions', 'Beach + rooftop workouts', 'Mobility & recovery', 'Nutrition guidance'].map(item => (
+                          <li key={item} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-brand-teal rounded-full flex-shrink-0" />{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Tier 2 */}
+                    <div className="p-6 bg-brand-coral/5 border border-brand-coral/20 rounded-2xl space-y-4 relative overflow-hidden">
+                      <div className="absolute top-4 right-4 px-2 py-0.5 bg-brand-coral text-black text-[8px] font-black uppercase tracking-widest rounded-full">
+                        ⚠️ Only 4 Spots
+                      </div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-[9px] uppercase tracking-widest text-brand-coral/60 font-bold">Option 2</p>
+                          <h4 className="text-xl font-black uppercase tracking-tight mt-1">1-Month Full Immersion</h4>
+                          <p className="text-[10px] text-white/40 mt-1">June 1st – June 30th · 30 Days</p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-2xl font-black text-brand-coral">$25,000</p>
+                        </div>
+                      </div>
+                      <ul className="space-y-1.5 text-[11px] text-white/50">
+                        {['Everything in 2-week +', 'Advanced calisthenics progression', 'Performance tracking', 'Full FMF lifestyle integration'].map(item => (
+                          <li key={item} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-brand-coral rounded-full flex-shrink-0" />{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Important notice + CTA */}
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-6 border-t border-white/5">
+                    <div className="flex flex-wrap gap-4">
+                      {['Application Required', 'No Refunds Once Confirmed', '21+ To Attend', 'Limited Spots'].map(note => (
+                        <span key={note} className="text-[9px] uppercase tracking-widest text-white/30 font-bold flex items-center gap-1.5">
+                          <span className="w-1 h-1 bg-brand-coral rounded-full" />{note}
+                        </span>
+                      ))}
+                    </div>
+                    <button onClick={handleApply} className="btn-primary flex-shrink-0 px-10">
+                      Apply Now
+                    </button>
                   </div>
                 </div>
               </div>
@@ -7078,6 +7155,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
           </div>
         </div>
       </section>
+
 
       {/* Testimonials */}
       <section className="py-32 px-6 max-w-7xl mx-auto">
