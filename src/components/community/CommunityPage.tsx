@@ -4,11 +4,13 @@ import { Users, MapPin, Activity, Bell, Lock } from 'lucide-react';
 import { UserProfile } from '../../types';
 import { AnimatePresence } from 'motion/react';
 import { X, Mail, User } from 'lucide-react';
+import { supabase } from '../../supabase';
 
 export const CommunityPage = ({ user, showToast }: { user: UserProfile | null, showToast: any }) => {
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [joinedEarlyAccess, setJoinedEarlyAccess] = useState(() => {
     return localStorage.getItem(`fmf_whitelist_${user?.id || 'guest'}`) === 'true';
@@ -29,12 +31,33 @@ export const CommunityPage = ({ user, showToast }: { user: UserProfile | null, s
      }
   };
 
-  const finalizeEarlyAccess = (e?: React.FormEvent) => {
-     if (e) e.preventDefault();
-     setJoinedEarlyAccess(true);
-     localStorage.setItem(`fmf_whitelist_${user?.id || guestEmail || 'guest'}`, 'true');
-     showToast('You are on the Early Access List.', 'success');
-     setShowGuestModal(false);
+  const finalizeEarlyAccess = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const name  = user?.full_name  || guestName;
+      const email = user?.email      || guestEmail;
+      // Save to Supabase community_whitelist table
+      const { error } = await supabase.from('community_whitelist').insert({
+        name,
+        email,
+        user_id:    user?.id   || null,
+        source:     user ? 'member' : 'guest',
+        status:     'pending',
+        created_at: new Date().toISOString(),
+      });
+      if (error && error.code !== '23505') throw error; // 23505 = unique violation (already signed up)
+      // Always mark locally so UI updates
+      setJoinedEarlyAccess(true);
+      localStorage.setItem(`fmf_whitelist_${user?.id || email || 'guest'}`, 'true');
+      showToast('You are on the Early Access List.', 'success');
+      setShowGuestModal(false);
+    } catch (err: any) {
+      console.error('Whitelist error:', err);
+      showToast(err?.message || 'Failed to join waitlist. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -193,9 +216,10 @@ export const CommunityPage = ({ user, showToast }: { user: UserProfile | null, s
                 
                 <button
                   type="submit"
-                  className="w-full mt-4 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:shadow-glow-teal transition-all"
+                  disabled={isSubmitting}
+                  className="w-full mt-4 py-4 bg-brand-teal text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:shadow-glow-teal transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Submit & Confirm
+                  {isSubmitting ? 'Submitting...' : 'Submit & Confirm'}
                 </button>
               </form>
             </motion.div>

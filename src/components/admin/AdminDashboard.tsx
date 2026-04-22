@@ -54,6 +54,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   const [products, setProducts] = useState<Product[]>([]);
   const [retreats, setRetreats] = useState<Retreat[]>([]);
   const [retreatApplications, setRetreatApplications] = useState<RetreatApplication[]>([]);
+  const [whitelistEntries, setWhitelistEntries] = useState<any[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   
   // Calendar & Services System
@@ -166,6 +167,13 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
          } else if (activeTab === 'athletes' && athleteProfiles.length === 0) {
            const { data } = await supabase.from('athlete_profiles').select('*, user:users(full_name, profile_image)');
            if (data) setAthleteProfiles(data);
+         } else if (activeTab === 'whitelist') {
+           const { data } = await supabase
+             .from('community_whitelist')
+             .select('*')
+             .order('created_at', { ascending: false })
+             .limit(200);
+           if (data) setWhitelistEntries(data);
          }
       } catch (error: any) {
         console.error('Error fetching admin data:', error);
@@ -506,18 +514,19 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
   };
 
   const sidebarItems = [
-    { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'requests', label: 'Requests', icon: Calendar },
-    { id: 'check_ins', label: 'Check-Ins', icon: Zap },
-    { id: 'content', label: 'Content', icon: PlayCircle },
-    { id: 'retreats', label: 'Retreats', icon: MapPin },
-    { id: 'community', label: 'Community', icon: MessageSquare },
-    { id: 'athletes', label: 'Athletes', icon: Trophy },
-    { id: 'athlete-applications', label: 'Applications', icon: UserPlus },
-    { id: 'shop', label: 'Shop', icon: ShoppingBag },
-    { id: 'orders', label: 'Orders', icon: PackageIcon },
-    { id: 'notifications', label: 'Broadcast', icon: Send },
+    { id: 'overview',              label: 'Dashboard',     icon: LayoutDashboard },
+    { id: 'users',                 label: 'Users',         icon: Users },
+    { id: 'whitelist',             label: 'Whitelist',     icon: Bell },
+    { id: 'requests',              label: 'Requests',      icon: Calendar },
+    { id: 'check_ins',             label: 'Check-Ins',     icon: Zap },
+    { id: 'content',               label: 'Content',       icon: PlayCircle },
+    { id: 'retreats',              label: 'Retreats',      icon: MapPin },
+    { id: 'community',             label: 'Community',     icon: MessageSquare },
+    { id: 'athletes',              label: 'Athletes',      icon: Trophy },
+    { id: 'athlete-applications',  label: 'Applications',  icon: UserPlus },
+    { id: 'shop',                  label: 'Shop',          icon: ShoppingBag },
+    { id: 'orders',                label: 'Orders',        icon: PackageIcon },
+    { id: 'notifications',         label: 'Broadcast',     icon: Send },
   ];
 
   const renderContent = () => {
@@ -659,6 +668,104 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
       );
       case 'check_ins': return (
         <CheckInsManager />
+      );
+      case 'whitelist': return (
+        <div className="space-y-6 fade-in">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5 border border-white/10 p-6 md:p-8 rounded-[2rem]">
+            <div>
+              <h2 className="text-3xl font-black uppercase tracking-tighter">Community <span className="text-brand-teal">Whitelist</span></h2>
+              <div className="flex items-center gap-4 mt-2">
+                <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">{whitelistEntries.length} signups</span>
+                <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold">
+                  {whitelistEntries.filter(e => e.status === 'pending').length} pending
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                const { data } = await supabase.from('community_whitelist').select('*').order('created_at', { ascending: false }).limit(200);
+                if (data) setWhitelistEntries(data);
+                showToast('Whitelist refreshed', 'success');
+              }}
+              className="px-6 py-3 bg-brand-teal/10 border border-brand-teal/20 text-brand-teal font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-brand-teal hover:text-black transition-all"
+            >
+              Refresh List
+            </button>
+          </div>
+
+          {/* Table */}
+          {whitelistEntries.length === 0 ? (
+            <div className="py-24 text-center card-gradient rounded-[3rem] border-2 border-dashed border-white/5">
+              <Bell size={48} className="mx-auto text-white/5 mb-4" />
+              <p className="text-[10px] uppercase tracking-widest text-white/20 font-black">No whitelist entries yet</p>
+            </div>
+          ) : (
+            <div className="card-gradient rounded-[2rem] border border-white/10 overflow-hidden">
+              {/* Column headers */}
+              <div className="hidden md:grid grid-cols-[1fr_1.5fr_0.7fr_0.7fr_0.8fr_auto] gap-4 px-6 py-4 border-b border-white/5 text-[9px] uppercase tracking-widest text-white/30 font-black">
+                <span>Name</span><span>Email</span><span>Source</span><span>Status</span><span>Signed Up</span><span>Action</span>
+              </div>
+              <div className="divide-y divide-white/5">
+                {whitelistEntries.map((entry, i) => (
+                  <motion.div
+                    key={entry.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_0.7fr_0.7fr_0.8fr_auto] gap-4 px-6 py-5 items-center hover:bg-white/[0.02] transition-colors"
+                  >
+                    <p className="font-black text-sm uppercase tracking-tight truncate">{entry.name || '—'}</p>
+                    <a href={`mailto:${entry.email}`} className="text-brand-teal text-[11px] font-mono hover:underline truncate block">{entry.email}</a>
+                    <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg w-fit ${
+                      entry.source === 'member' ? 'bg-brand-teal/10 text-brand-teal border border-brand-teal/20' : 'bg-white/5 text-white/40 border border-white/10'
+                    }`}>
+                      {entry.source || 'guest'}
+                    </span>
+                    <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-lg w-fit ${
+                      entry.status === 'approved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      entry.status === 'rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                      'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                    }`}>
+                      {entry.status || 'pending'}
+                    </span>
+                    <span className="text-[9px] text-white/30 font-mono">
+                      {new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                    <div className="flex gap-2">
+                      {entry.status !== 'approved' && (
+                        <button
+                          onClick={async () => {
+                            await supabase.from('community_whitelist').update({ status: 'approved' }).eq('id', entry.id);
+                            setWhitelistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'approved' } : e));
+                            showToast(`${entry.name || entry.email} approved ✅`, 'success');
+                          }}
+                          className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
+                          title="Approve"
+                        >
+                          <Check size={13} />
+                        </button>
+                      )}
+                      {entry.status !== 'rejected' && (
+                        <button
+                          onClick={async () => {
+                            await supabase.from('community_whitelist').update({ status: 'rejected' }).eq('id', entry.id);
+                            setWhitelistEntries(prev => prev.map(e => e.id === entry.id ? { ...e, status: 'rejected' } : e));
+                            showToast(`${entry.name || entry.email} rejected`, 'error');
+                          }}
+                          className="p-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 hover:bg-red-500 hover:text-white transition-all"
+                          title="Reject"
+                        >
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       );
       case 'community': return (
         <CommunityManager 
