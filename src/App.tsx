@@ -6863,16 +6863,38 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-    setFormStep(3);
-    showToast(`Application received! Confirmation sent to ${formData.email}`);
-    setTimeout(() => {
-      setIsModalOpen(false);
-      setFormData({ name: '', email: '', experience: '', goals: '' });
-      setFormStep(1);
-    }, 5000);
+    try {
+      // Find an active retreat to apply for (or null if none)
+      const { data: activeRetreats } = await supabase
+        .from('retreats')
+        .select('id')
+        .eq('visibility_status', 'published')
+        .limit(1);
+      
+      const retreat_id = activeRetreats?.[0]?.id || null;
+
+      const { error } = await supabase.from('retreat_applications').insert({
+        retreat_id: retreat_id,
+        user_name: formData.name,
+        user_email: formData.email,
+        message: `${formData.experience ? 'Experience: ' + formData.experience + '\n\n' : ''}${formData.goals ? 'Goals: ' + formData.goals : ''}`.trim() || null
+      });
+
+      if (error) throw error;
+
+      setFormStep(3);
+      showToast(`Application received! Confirmation sent to ${formData.email}`, 'success');
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setFormData({ name: '', email: '', experience: '', goals: '' });
+        setFormStep(1);
+      }, 5000);
+    } catch (err: any) {
+      console.error('Error submitting application:', err);
+      showToast(err.message || 'Failed to submit application. Please try again.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
