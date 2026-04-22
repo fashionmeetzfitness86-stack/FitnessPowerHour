@@ -303,12 +303,88 @@ const SESSIONS: TrainingSession[] = [
 const RETREATS: Retreat[] = [
   { 
     id: 'r1', 
-    title: 'Miami Beach Immersion', 
-    description: 'Our exclusive flagship experience. Miami Beach is currently our only retreat location, focusing on high-intensity calisthenics, mindset workshops, and luxury wellness on the Florida coast.',
-    cover_image: 'https://picsum.photos/seed/fmfr1/1200/600', 
-    start_date: '2026-06-15T09:00:00Z',
-    end_date: '2026-06-20T17:00:00Z',
+    title: 'Miami Beach Transformation Retreat', 
+    description: `🏝️ THE EXPERIENCE
+
+This is not a vacation.
+This is a full lifestyle reset.
+
+For a limited time, you will step into the FMF system:
+
+• Structured daily training
+• Clean discipline-driven routine
+• Elite Miami Beach environment
+• Direct access to high-level coaching
+
+You don’t come here to "try fitness."
+You come here to transform your body, your habits, and your mindset.
+
+💰 PROGRAM OPTIONS
+
+🔹 2-WEEK TRANSFORMATION — $15,000
+Duration: June 1st – June 14th (14 Days)
+
+Perfect for:
+• Rapid reset
+• Fat loss / conditioning
+• Breaking bad habits
+• Rebuilding discipline
+
+Includes:
+• 2 daily training sessions (morning + evening)
+• Beach workouts + rooftop sessions
+• Mobility, recovery & stretching sessions
+• Daily structure & coaching
+• Nutrition guidance
+• Lifestyle discipline framework
+
+🔸 1-MONTH FULL IMMERSION — $25,000
+Duration: June 1st – June 30th (30 Days)
+
+This is the complete transformation.
+
+Perfect for:
+• Total body recomposition
+• Long-term habit installation
+• High-level physical and mental upgrade
+• Lifestyle overhaul
+
+Includes everything from the 2-week program +:
+• Deeper coaching & performance tracking
+• Advanced calisthenics progression
+• Extended recovery & regeneration protocols
+• Full integration into the FMF lifestyle system
+• Stronger accountability & structure
+
+🏋️ DAILY STRUCTURE (EXAMPLE)
+8:30 AM — Rooftop Training (Strength / Calisthenics)
+10:00 AM — Beach Workout (Conditioning / Mobility)
+Afternoon — Recovery / Sauna / Stretching
+Evening — Optional Training / Lifestyle Integration
+
+📍 LOCATIONS
+Miami Beach (Primary)
+Rooftop training (hotel partnerships)
+Beach training zones
+Private workout environments
+
+Exact details provided upon confirmation.
+
+🧠 WHAT YOU GAIN
+• Discipline
+• Structure
+• Lean, athletic body
+• Increased energy
+• Mental clarity
+• Stronger identity
+
+This is not temporary.
+This is who you become after the program.`,
+    cover_image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop', 
+    start_date: '2026-06-01T09:00:00Z',
+    end_date: '2026-06-30T17:00:00Z',
     location: 'Miami Beach, FL', 
+    price: '$15k - $25k',
     visibility_status: 'published',
     access_type: 'package_based',
     allowed_packages: ['elite'],
@@ -6984,7 +7060,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                     <MapPin size={14} /> {retreat.location}
                   </div>
                   <h3 className="text-3xl font-bold uppercase">{retreat.title}</h3>
-                  <p className="text-white/40 leading-relaxed">{retreat.description}</p>
+                  <p className="text-white/40 leading-relaxed whitespace-pre-wrap">{retreat.description}</p>
                   <div className="flex items-center justify-between pt-8 border-t border-white/5">
                     <div className="text-2xl font-bold">{retreat.price} <span className="text-xs text-white/20 font-normal uppercase tracking-widest">/ person</span></div>
                     <button onClick={handleApply} className="btn-outline">Apply Now</button>
