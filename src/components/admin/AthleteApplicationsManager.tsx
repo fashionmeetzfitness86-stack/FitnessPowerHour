@@ -49,7 +49,8 @@ export const AthleteApplicationsManager = ({ showToast }: Props) => {
       .select('*')
       .order('created_at', { ascending: false });
     if (error) {
-      showToast('Failed to load applications', 'error');
+      console.error('Athlete fetch error:', error);
+      showToast(`Failed to load applications: ${error.message}`, 'error');
     } else {
       setApplications(data as AthleteApplication[]);
     }

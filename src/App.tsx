@@ -6489,7 +6489,7 @@ const Recovery = () => {
   );
 };
 
-const FAQItem = ({ question, answer }: { question: string; answer: string }) => {
+const FAQItem = ({ question, answer }: { question: string; answer: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -6518,9 +6518,9 @@ const FAQItem = ({ question, answer }: { question: string; answer: string }) => 
             className="overflow-hidden"
           >
             <div className="pb-8 pl-2 pr-12">
-              <p className="text-white/40 leading-relaxed text-base font-light">
+              <div className="text-white/40 leading-relaxed text-base font-light space-y-4">
                 {answer}
-              </p>
+              </div>
             </div>
           </motion.div>
         )}
@@ -7038,39 +7038,128 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
           {[
             { 
               q: 'What fitness level is required?', 
-              a: 'While we welcome all levels, a baseline of physical fitness is recommended. Our trainers scale movements to your ability, but the intensity is high. We focus on calisthenics, mobility, and functional strength.' 
+              a: (
+                <>
+                  <p>All levels are welcome.</p>
+                  <p>The program is built on calisthenics fundamentals, meaning every movement can be scaled to your level — from beginner to advanced.</p>
+                  <p>Our coaching system focuses on:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Proper form</li>
+                    <li>Progressive strength</li>
+                    <li>Controlled intensity</li>
+                  </ul>
+                  <p>You are not expected to be in shape — you come here to become it.</p>
+                </>
+              )
             },
             { 
               q: 'Where in Miami Beach is the retreat held?', 
-              a: 'We partner with a luxury oceanfront estate in the South of Fifth (SoFi) district. It provides the perfect balance of private training grounds and immediate beach access for our sunrise sessions.' 
+              a: (
+                <>
+                  <p>The retreat takes place across premium locations in Miami Beach, including:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Beach training zones (sunrise & daytime sessions)</li>
+                    <li>Rooftop fitness spaces (hotel partnerships)</li>
+                    <li>Private indoor training areas</li>
+                  </ul>
+                  <p>Exact locations are shared with confirmed participants prior to arrival.</p>
+                </>
+              )
             },
             { 
               q: 'Are meals included in the price?', 
-              a: 'Yes, all meals are included. We provide chef-prepared, performance-focused nutrition designed to fuel your training and recovery. We can accommodate most dietary restrictions with prior notice.' 
+              a: (
+                <>
+                  <p>Meals are not fully included, but guidance is.</p>
+                  <p>We provide:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Daily nutrition recommendations</li>
+                    <li>Approved meal options nearby</li>
+                    <li>Access to clean, performance-focused food options</li>
+                  </ul>
+                  <p>This keeps flexibility while ensuring you stay aligned with the program.</p>
+                </>
+              )
             },
             { 
               q: 'Are flights included?', 
-              a: 'Flights are not included in the retreat price. We provide luxury ground transportation to and from Miami International Airport (MIA) on the start and end dates of the retreat.' 
+              a: (
+                <>
+                  <p>No — flights are not included.</p>
+                  <p>Participants are responsible for their own travel to Miami.</p>
+                  <p>Once you arrive, we guide you through the full experience.</p>
+                </>
+              )
             },
             { 
               q: 'Is there a minimum age requirement?', 
-              a: 'Participants must be at least 21 years of age. Our community typically consists of dedicated professionals and athletes looking for a high-intensity growth environment.' 
+              a: (
+                <>
+                  <p>Yes.</p>
+                  <p>Participants must be 21 years or older to join the retreat.</p>
+                </>
+              )
             },
             { 
               q: 'What should I pack?', 
-              a: 'You will receive a detailed packing list 30 days before the retreat. Generally, you will need multiple sets of training gear, comfortable resort wear, swimwear, and a pair of versatile training shoes.' 
+              a: (
+                <>
+                  <p>Keep it simple and performance-focused:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Training clothes (lightweight, breathable)</li>
+                    <li>Running shoes / training shoes</li>
+                    <li>Swimwear (for recovery & beach sessions)</li>
+                    <li>Towel & hydration bottle</li>
+                    <li>Optional: resistance bands / recovery tools</li>
+                  </ul>
+                  <p>Miami weather is warm — pack accordingly.</p>
+                </>
+              )
             },
             { 
               q: 'Can I extend my stay?', 
-              a: 'Yes, we can assist in booking additional nights at our partner estate or nearby luxury hotels at a preferred rate if you wish to enjoy Miami Beach for longer.' 
+              a: (
+                <>
+                  <p>Yes.</p>
+                  <p>Many clients choose to extend their stay before or after the program.</p>
+                  <p>We can:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Recommend accommodations</li>
+                    <li>Suggest additional experiences</li>
+                    <li>Guide you through extended training options</li>
+                  </ul>
+                </>
+              )
             },
             { 
               q: 'Can I come alone?', 
-              a: 'Absolutely. Most of our participants come solo. The retreat is designed to build a strong community, and you will leave with a new network of like-minded individuals.' 
+              a: (
+                <>
+                  <p>Yes — and most people do.</p>
+                  <p>This is not just a fitness program, it’s an environment.</p>
+                  <p>You’ll be surrounded by:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Like-minded individuals</li>
+                    <li>Athletes, entrepreneurs, and high-performers</li>
+                    <li>A structured but social atmosphere</li>
+                  </ul>
+                  <p>You won’t feel alone — you’ll feel aligned.</p>
+                </>
+              )
             },
             { 
               q: 'What is the cancellation policy?', 
-              a: 'Deposits are non-refundable. Cancellations made 60 days prior to the start date are eligible for a partial credit toward a future retreat. We highly recommend purchasing travel insurance.' 
+              a: (
+                <>
+                  <p>All retreat bookings are final and non-refundable.</p>
+                  <p>Due to the nature of scheduling, staffing, and limited availability, we do not offer refunds once a spot is secured.</p>
+                  <p>However:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>You may request a reschedule (case-by-case basis)</li>
+                    <li>Credits may be applied to future programs when applicable</li>
+                  </ul>
+                </>
+              )
             }
           ].map((item, i) => (
             <div key={i}>

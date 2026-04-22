@@ -507,6 +507,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
 
   const sidebarItems = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'users', label: 'Users', icon: Users },
     { id: 'requests', label: 'Requests', icon: Calendar },
     { id: 'check_ins', label: 'Check-Ins', icon: Zap },
     { id: 'content', label: 'Content', icon: PlayCircle },
@@ -516,7 +517,6 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
     { id: 'athlete-applications', label: 'Applications', icon: UserPlus },
     { id: 'shop', label: 'Shop', icon: ShoppingBag },
     { id: 'orders', label: 'Orders', icon: PackageIcon },
-    { id: 'users', label: 'Users', icon: Users },
     { id: 'notifications', label: 'Broadcast', icon: Send },
   ];
 
