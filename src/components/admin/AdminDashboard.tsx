@@ -263,7 +263,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
         const notifMsg = status === 'accepted'
           ? 'Congratulations! Your retreat application has been approved. Check your Retreats tab for details.'
           : status === 'needs_call'
-          ? 'Your retreat application requires a follow-up call. Our team will reach out to your email soon.'
+          ? 'Your retreat application requires a follow-up call. Our team will reach out to you via email or phone call soon. (within 24 hours).'
           : 'Your retreat application was not selected at this time. Thank you for applying.';
         await supabase.from('notifications').insert({
           user_id: app.user_id,

@@ -6934,7 +6934,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', experience: '', goals: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', experience: '', goals: '' });
   const [liveRetreats, setLiveRetreats] = useState<Retreat[]>([]);
 
   // Fetch live retreats from Supabase on mount
@@ -6977,7 +6977,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
   };
 
   const handleNext = () => {
-    if (formStep === 1 && formData.name && formData.email) {
+    if (formStep === 1 && formData.name && formData.email && formData.phone) {
       setFormStep(2);
     }
   };
@@ -7001,6 +7001,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
         user_id: user?.id || null,
         user_name: formData.name,
         user_email: formData.email,
+        phone: formData.phone || null,
         status: 'pending',
         message: [
           formData.experience && `Experience: ${formData.experience}`,
@@ -7014,7 +7015,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
       showToast(`Application received! We'll be in touch at ${formData.email}`, 'success');
       setTimeout(() => {
         setIsModalOpen(false);
-        setFormData({ name: '', email: '', experience: '', goals: '' });
+        setFormData({ name: '', email: '', phone: '', experience: '', goals: '' });
         setFormStep(1);
       }, 5000);
     } catch (err: any) {
@@ -7482,11 +7483,22 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                         onChange={(e) => setFormData({...formData, email: e.target.value})}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-white/40">Phone Number <span className="text-brand-coral">*</span></label>
+                      <input 
+                        type="tel"
+                        required
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-teal outline-none transition-colors"
+                        placeholder="+1 (305) 000-0000"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      />
+                    </div>
                   </div>
 
                   <button 
                     onClick={handleNext}
-                    disabled={!formData.name || !formData.email}
+                    disabled={!formData.name || !formData.email || !formData.phone}
                     className="btn-primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Continue to Experience
