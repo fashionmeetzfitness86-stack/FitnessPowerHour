@@ -93,37 +93,47 @@ class ErrorBoundary extends React.Component<any, any> {
   }
 
   componentDidCatch(error: any, errorInfo: any) {
-    console.error("Uncaught error:", error, errorInfo);
+    console.error('Uncaught error:', error, errorInfo);
   }
 
   render() {
     const state = this['state'] as any;
     if (state.hasError) {
-      let errorMessage = "Something went wrong.";
-      try {
-        const parsed = JSON.parse(state.error.message);
-        if (parsed.error) errorMessage = `Error: ${parsed.error}`;
-      } catch (e) {
-        errorMessage = state.error.message || errorMessage;
-      }
+      const errorMessage: string = state.error?.message || 'An unexpected error occurred.';
+      const isStorageError = errorMessage.includes('before initialization') ||
+        errorMessage.includes('localStorage') ||
+        errorMessage.includes('JSON');
+
+      const handleReset = () => {
+        try { localStorage.clear(); } catch (_) {}
+        try { sessionStorage.clear(); } catch (_) {}
+        window.location.href = window.location.origin + window.location.pathname + '#/';
+      };
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-brand-black p-6 text-center">
-          <div className="card-gradient p-12 max-w-md space-y-6">
-            <div className="w-16 h-16 bg-brand-teal/20 rounded-full flex items-center justify-center mx-auto text-brand-teal">
-              <Clock size={32} />
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', padding: '24px', fontFamily: 'sans-serif' }}>
+          <div style={{ background: '#111', border: '1px solid #222', borderRadius: '24px', padding: '48px', maxWidth: '480px', width: '100%', textAlign: 'center' }}>
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+              <span style={{ fontSize: 28 }}>⚠️</span>
             </div>
-            <h2 className="text-2xl font-bold uppercase tracking-tighter">Something Went Wrong</h2>
-            <p className="text-white/40 text-sm leading-relaxed">{errorMessage}</p>
+            <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+              WINGMAN crashed on render
+            </h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, marginBottom: 24, lineHeight: 1.6 }}>
+              {isStorageError
+                ? 'Cached app data is out of sync with the new build. Click Reset to clear it and reload.'
+                : errorMessage}
+            </p>
             <button
-              onClick={() => {
-                (this as any).setState({ hasError: false, error: null });
-                window.location.href = window.location.origin + window.location.pathname + '#/';
-              }}
-              className="btn-primary w-full"
+              onClick={handleReset}
+              style={{ width: '100%', padding: '14px 24px', background: '#2dd4a8', color: '#000', fontWeight: 900, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', borderRadius: 12, cursor: 'pointer', marginBottom: 12 }}
             >
-              Try Again
+              Reset &amp; Reload
             </button>
+            <details style={{ textAlign: 'left', marginTop: 8 }}>
+              <summary style={{ color: 'rgba(255,255,255,0.2)', fontSize: 11, cursor: 'pointer', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Error details</summary>
+              <pre style={{ color: '#ef4444', fontSize: 10, marginTop: 8, overflowX: 'auto', background: 'rgba(239,68,68,0.05)', padding: 12, borderRadius: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{errorMessage}</pre>
+            </details>
           </div>
         </div>
       );
@@ -6920,12 +6930,47 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
 };
 
 const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' | 'error') => void }) => {
+  const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', experience: '', goals: '' });
+  const [liveRetreats, setLiveRetreats] = useState<Retreat[]>([]);
+
+  // Fetch live retreats from Supabase on mount
+  useEffect(() => {
+    supabase
+      .from('retreats')
+      .select('*')
+      .eq('visibility_status', 'published')
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn('[RetreatPage] Could not load retreats from DB:', error.message);
+          return;
+        }
+        if (data && data.length > 0) {
+          setLiveRetreats(data as Retreat[]);
+        }
+      });
+  }, []);
+
+  // Use live Supabase retreats; fall back to the hardcoded array so the page is never empty.
+  // useMemo prevents TDZ issues in the Vite production bundle when referencing the
+  // module-level RETREATS constant inside a closure.
+  const displayRetreats = useMemo(
+    () => (liveRetreats.length > 0 ? liveRetreats : RETREATS),
+    [liveRetreats]
+  );
 
   const handleApply = () => {
+    // Pre-fill form from logged-in user profile
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || user.full_name || '',
+        email: prev.email || user.email || ''
+      }));
+    }
     setIsModalOpen(true);
     setFormStep(1);
     setIsSubmitting(false);
@@ -6938,35 +6983,35 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
   };
 
   const handleBack = () => {
-    if (formStep === 2) {
-      setFormStep(1);
-    }
+    if (formStep === 2) setFormStep(1);
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Find an active retreat to apply for (or null if none)
-      const { data: activeRetreats } = await supabase
-        .from('retreats')
-        .select('id')
-        .eq('visibility_status', 'published')
-        .limit(1);
-      
-      const retreat_id = activeRetreats?.[0]?.id || null;
+      // Resolve the first published retreat id from Supabase
+      const retreat_id = liveRetreats[0]?.id ||
+        (await supabase.from('retreats').select('id').eq('visibility_status', 'published').limit(1)
+          .then(r => r.data?.[0]?.id)) ||
+        null;
 
       const { error } = await supabase.from('retreat_applications').insert({
-        retreat_id: retreat_id,
+        retreat_id,
+        user_id: user?.id || null,
         user_name: formData.name,
         user_email: formData.email,
-        message: `${formData.experience ? 'Experience: ' + formData.experience + '\n\n' : ''}${formData.goals ? 'Goals: ' + formData.goals : ''}`.trim() || null
+        status: 'pending',
+        message: [
+          formData.experience && `Experience: ${formData.experience}`,
+          formData.goals && `Goals: ${formData.goals}`
+        ].filter(Boolean).join('\n\n') || null
       });
 
       if (error) throw error;
 
       setFormStep(3);
-      showToast(`Application received! Confirmation sent to ${formData.email}`, 'success');
+      showToast(`Application received! We'll be in touch at ${formData.email}`, 'success');
       setTimeout(() => {
         setIsModalOpen(false);
         setFormData({ name: '', email: '', experience: '', goals: '' });
@@ -6986,10 +7031,9 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
       <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://picsum.photos/seed/fmf-retreat/1920/1080"
-            alt="Retreat"
-            className="w-full h-full object-cover opacity-40"
-            referrerPolicy="no-referrer"
+            src={displayRetreats[0]?.cover_image || 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1920&auto=format&fit=crop'}
+            alt="Miami Beach Retreat"
+            className="w-full h-full object-cover opacity-50"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-brand-black via-transparent to-brand-black" />
         </div>
@@ -7045,8 +7089,8 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
             <button onClick={handleApply} className="btn-primary">Apply for Next Retreat</button>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <img src="https://picsum.photos/seed/fmfr3/600/800" alt="Retreat 1" className="rounded-2xl aspect-[3/4] object-cover" referrerPolicy="no-referrer" />
-            <img src="https://picsum.photos/seed/fmfr4/600/800" alt="Retreat 2" className="rounded-2xl aspect-[3/4] object-cover translate-y-12" referrerPolicy="no-referrer" />
+            <img src="https://images.unsplash.com/photo-1599058917765-a780eda07a3e?q=80&w=600&auto=format&fit=crop" alt="Beach Training" className="rounded-2xl aspect-[3/4] object-cover" />
+            <img src="https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=600&auto=format&fit=crop" alt="Rooftop Workout" className="rounded-2xl aspect-[3/4] object-cover translate-y-12" />
           </div>
         </div>
       </section>
@@ -7056,7 +7100,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-4xl font-bold uppercase tracking-tighter mb-16 text-center">Upcoming <span className="text-brand-coral">Experiences</span></h2>
           <div className="space-y-12">
-            {RETREATS.map((retreat) => (
+            {displayRetreats.map((retreat) => (
               <div key={retreat.id} className="card-gradient overflow-hidden rounded-[2rem] border border-white/10 group">
                 {/* Hero Image */}
                 <div className="relative h-72 lg:h-96 overflow-hidden">
@@ -7087,61 +7131,100 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
 
                 {/* Body */}
                 <div className="p-8 lg:p-12 space-y-8">
-                  {/* Tag line */}
+                  {/* Description preview */}
                   <p className="text-white/50 text-sm leading-relaxed max-w-2xl">
-                    This is not a vacation. This is a full lifestyle reset. Step into the FMF system — structured daily training, elite Miami Beach environment, and direct access to high-level coaching.
+                    {retreat.description
+                      ? retreat.description.replace(/[🏝️💰🔹🔸🏋️📍🧠⚠️]/gu, '').split('\n').find((l: string) => l.trim().length > 40) || retreat.description.substring(0, 280) + '…'
+                      : 'An exclusive FMF immersion experience. Application required. Limited spots available.'}
                   </p>
 
-                  {/* Program Tiers */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Tier 1 */}
-                    <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Option 1</p>
-                          <h4 className="text-xl font-black uppercase tracking-tight mt-1">2-Week Transformation</h4>
-                          <p className="text-[10px] text-white/40 mt-1">June 1st – June 14th · 14 Days</p>
+                  {/* Pricing block — dual-tier for Miami Beach, single price for others */}
+                  {retreat.description?.includes('2-WEEK') ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Tier 1 */}
+                      <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Option 1</p>
+                            <h4 className="text-xl font-black uppercase tracking-tight mt-1">2-Week Transformation</h4>
+                            <p className="text-[10px] text-white/40 mt-1">
+                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'June 1st'} · 14 Days
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-2xl font-black text-brand-teal">$15,000</p>
+                          </div>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-2xl font-black text-brand-teal">$15,000</p>
-                        </div>
+                        <ul className="space-y-1.5 text-[11px] text-white/50">
+                          {['2 daily training sessions', 'Beach + rooftop workouts', 'Mobility & recovery', 'Nutrition guidance'].map(item => (
+                            <li key={item} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-brand-teal rounded-full flex-shrink-0" />{item}</li>
+                          ))}
+                        </ul>
                       </div>
-                      <ul className="space-y-1.5 text-[11px] text-white/50">
-                        {['2 daily training sessions', 'Beach + rooftop workouts', 'Mobility & recovery', 'Nutrition guidance'].map(item => (
-                          <li key={item} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-brand-teal rounded-full flex-shrink-0" />{item}</li>
-                        ))}
-                      </ul>
+                      {/* Tier 2 */}
+                      <div className="p-6 bg-brand-coral/5 border border-brand-coral/20 rounded-2xl space-y-4 relative overflow-hidden">
+                        <div className="absolute top-4 right-4 px-2 py-0.5 bg-brand-coral text-black text-[8px] font-black uppercase tracking-widest rounded-full">
+                          ⚠️ Only 4 Spots
+                        </div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="text-[9px] uppercase tracking-widest text-brand-coral/60 font-bold">Option 2</p>
+                            <h4 className="text-xl font-black uppercase tracking-tight mt-1">1-Month Full Immersion</h4>
+                            <p className="text-[10px] text-white/40 mt-1">
+                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'June 1st'} – {retreat.end_date ? new Date(retreat.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'June 30th'} · 30 Days
+                            </p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-2xl font-black text-brand-coral">$25,000</p>
+                          </div>
+                        </div>
+                        <ul className="space-y-1.5 text-[11px] text-white/50">
+                          {['Everything in 2-week +', 'Advanced calisthenics progression', 'Performance tracking', 'Full FMF lifestyle integration'].map(item => (
+                            <li key={item} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-brand-coral rounded-full flex-shrink-0" />{item}</li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-
-                    {/* Tier 2 */}
-                    <div className="p-6 bg-brand-coral/5 border border-brand-coral/20 rounded-2xl space-y-4 relative overflow-hidden">
-                      <div className="absolute top-4 right-4 px-2 py-0.5 bg-brand-coral text-black text-[8px] font-black uppercase tracking-widest rounded-full">
-                        ⚠️ Only 4 Spots
-                      </div>
-                      <div className="flex items-start justify-between gap-2">
+                  ) : (
+                    /* Single-price card for other retreats */
+                    <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
+                      <div className="flex items-center justify-between flex-wrap gap-4">
                         <div>
-                          <p className="text-[9px] uppercase tracking-widest text-brand-coral/60 font-bold">Option 2</p>
-                          <h4 className="text-xl font-black uppercase tracking-tight mt-1">1-Month Full Immersion</h4>
-                          <p className="text-[10px] text-white/40 mt-1">June 1st – June 30th · 30 Days</p>
+                          <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-1">Investment</p>
+                          <p className="text-3xl font-black text-brand-teal">
+                            {retreat.price
+                              ? (typeof retreat.price === 'number'
+                                  ? `$${Number(retreat.price).toLocaleString()}`
+                                  : String(retreat.price).startsWith('$') ? retreat.price : `$${retreat.price}`)
+                              : 'Contact for Pricing'}
+                          </p>
                         </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-2xl font-black text-brand-coral">$25,000</p>
+                        <div className="text-right space-y-1">
+                          {retreat.start_date && (
+                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">
+                              {new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                              {retreat.end_date && ` – ${new Date(retreat.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`}
+                            </p>
+                          )}
+                          {(retreat as any).capacity && (
+                            <p className="text-[9px] text-brand-coral font-black uppercase tracking-widest">
+                              {(retreat as any).capacity} Spots Max
+                            </p>
+                          )}
                         </div>
                       </div>
-                      <ul className="space-y-1.5 text-[11px] text-white/50">
-                        {['Everything in 2-week +', 'Advanced calisthenics progression', 'Performance tracking', 'Full FMF lifestyle integration'].map(item => (
-                          <li key={item} className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-brand-coral rounded-full flex-shrink-0" />{item}</li>
-                        ))}
-                      </ul>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Important notice + CTA */}
+                  {/* Requirements / notices */}
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pt-6 border-t border-white/5">
                     <div className="flex flex-wrap gap-4">
-                      {['Application Required', 'No Refunds Once Confirmed', '21+ To Attend', 'Limited Spots'].map(note => (
+                      {((retreat as any).requirements
+                        ? (retreat as any).requirements.split('.').filter((s: string) => s.trim())
+                        : ['Application Required', 'No Refunds Once Confirmed', '21+ To Attend', 'Limited Spots']
+                      ).slice(0, 4).map((note: string) => (
                         <span key={note} className="text-[9px] uppercase tracking-widest text-white/30 font-bold flex items-center gap-1.5">
-                          <span className="w-1 h-1 bg-brand-coral rounded-full" />{note}
+                          <span className="w-1 h-1 bg-brand-coral rounded-full" />{note.trim()}
                         </span>
                       ))}
                     </div>

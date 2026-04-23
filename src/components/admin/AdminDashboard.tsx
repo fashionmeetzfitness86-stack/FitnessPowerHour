@@ -8,8 +8,8 @@ import {
   ShieldCheck, ArrowUpRight, Plus, Download, Search,
   Edit2, Eye, Ban, Trash2, Check, X, Printer,
   Filter, Activity, TrendingUp, DollarSign, Clock,
-  CheckCircle, Video as VideoIcon, UserPlus, Star, 
-  Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck, Calendar, Send, Zap
+  CheckCircle, Video as VideoIcon, UserPlus, Star,
+  Bell, Mail, MessageCircle, Heart, Share2, ShieldAlert, AlertCircle, Truck, Calendar, Send, Zap
 } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../App';
