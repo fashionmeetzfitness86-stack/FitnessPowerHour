@@ -260,6 +260,14 @@ export const RetreatManager = ({
                       <div className="flex-1 min-w-0">
                         <p className="font-black text-sm uppercase tracking-tight truncate">{app.user_name}</p>
                         <p className="text-[10px] text-white/30 font-mono truncate">{app.user_email}</p>
+                        {(app as any).phone && (
+                          <a href={`tel:${(app as any).phone}`}
+                            className="text-[10px] text-brand-teal font-mono hover:underline flex items-center gap-1 mt-0.5"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <Phone size={9} />{(app as any).phone}
+                          </a>
+                        )}
                         {retreat && (
                           <div className="flex items-center gap-1.5 mt-1">
                             <MapPin size={9} className="text-brand-coral" />
@@ -311,6 +319,26 @@ export const RetreatManager = ({
                                 <a href={`mailto:${app.user_email}`} className="text-sm font-black text-brand-teal hover:underline truncate block">{app.user_email}</a>
                               </div>
                             </div>
+                            {/* Phone number call strip */}
+                            {(app as any).phone && (
+                              <div className="flex items-center justify-between p-4 bg-brand-teal/5 border border-brand-teal/20 rounded-xl">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-brand-teal/10 flex items-center justify-center">
+                                    <Phone size={15} className="text-brand-teal" />
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Phone</p>
+                                    <p className="text-sm font-black text-white">{(app as any).phone}</p>
+                                  </div>
+                                </div>
+                                <a
+                                  href={`tel:${(app as any).phone}`}
+                                  className="flex items-center gap-2 px-5 py-2.5 bg-brand-teal text-black font-black text-[9px] uppercase tracking-widest rounded-xl hover:shadow-glow-teal transition-all"
+                                >
+                                  <Phone size={12} /> Call Now
+                                </a>
+                              </div>
+                            )}
 
                             {/* Applicant message */}
                             {app.message && (
