@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import {
   Activity, Clock, Search, Calendar as CalendarIcon,
-  Zap, User, Star, X, ChevronRight, Filter
+  Zap, User, Star, X, ChevronRight, Filter, RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../supabase';
 
@@ -37,30 +37,70 @@ export const CheckInsManager = () => {
   const fetchCheckIns = async () => {
     try {
       setLoading(true);
-      // Pull from both calendar_sessions and workout_logs
+
+      // ── Step 1: Fetch sessions and workout_logs (no join hint — avoid FK name mismatch) ──
       const [sessionRes, logRes] = await Promise.all([
         supabase
           .from('calendar_sessions')
-          .select('*, users:profiles!calendar_sessions_user_id_fkey(full_name, email, city, streak_count, profile_image)')
+          .select('id, user_id, source_type, session_date, session_time, created_at, rating, notes, check_in_image, title, duration_minutes, status')
           .order('created_at', { ascending: false })
-          .limit(200),
+          .limit(500),
         supabase
           .from('workout_logs')
-          .select('*, users:profiles!workout_logs_user_id_fkey(full_name, email, city, streak_count, profile_image)')
+          .select('id, user_id, source, logged_at, rating, notes')
           .order('logged_at', { ascending: false })
-          .limit(200),
+          .limit(500),
       ]);
-      const sessions = (sessionRes.data || []).map((r: any) => ({ ...r, source: r.source_type || 'session' }));
-      const wLogs    = (logRes.data || []).map((r: any) => ({
+
+      if (sessionRes.error) console.error('[CheckIns] calendar_sessions error:', sessionRes.error.message);
+      if (logRes.error)     console.error('[CheckIns] workout_logs error:',     logRes.error.message);
+
+      const rawSessions = sessionRes.data || [];
+      const rawLogs     = logRes.data     || [];
+
+      // ── Step 2: Collect all unique user_ids ──
+      const allUserIds = Array.from(new Set([
+        ...rawSessions.map((r: any) => r.user_id),
+        ...rawLogs.map((r: any)     => r.user_id),
+      ].filter(Boolean)));
+
+      // ── Step 3: Batch-fetch profiles ──
+      let profileMap: Record<string, { full_name: string; email: string; city: string | null; streak_count: number; profile_image?: string }> = {};
+      if (allUserIds.length > 0) {
+        const { data: profiles, error: profileErr } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, city, streak_count, profile_image')
+          .in('id', allUserIds);
+        if (profileErr) console.error('[CheckIns] profiles error:', profileErr.message);
+        (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
+      }
+
+      // ── Step 4: Merge profiles into records ──
+      const sessions = rawSessions.map((r: any) => ({
         ...r,
+        source:       r.source_type || 'check_in',
+        session_date: r.session_date || r.created_at?.split('T')[0],
+        session_time: r.session_time || new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        users:        profileMap[r.user_id] || null,
+      }));
+
+      const wLogs = rawLogs.map((r: any) => ({
+        ...r,
+        source:       r.source || 'workout_log',
         session_date: r.logged_at?.split('T')[0],
         session_time: new Date(r.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         created_at:   r.logged_at,
-        source: r.source || 'workout_log'
+        users:        profileMap[r.user_id] || null,
       }));
-      setLogs([...sessions, ...wLogs].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+
+      const combined = [...sessions, ...wLogs].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      console.log(`[CheckIns] Loaded ${sessions.length} sessions + ${wLogs.length} workout logs = ${combined.length} total`);
+      setLogs(combined);
     } catch (err) {
-      console.error('Error fetching check-ins:', err);
+      console.error('[CheckIns] Unexpected error:', err);
     } finally {
       setLoading(false);
     }
@@ -130,6 +170,14 @@ export const CheckInsManager = () => {
             <button onClick={() => { setSearch(''); setMonthFilter(''); setYearFilter(''); }}
               className="p-2 text-white/30 hover:text-white transition-all"><X size={14} /></button>
           )}
+          <button
+            onClick={fetchCheckIns}
+            disabled={loading}
+            title="Refresh check-ins"
+            className="p-2 text-white/30 hover:text-brand-teal transition-all disabled:opacity-40"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          </button>
         </div>
       </div>
 
