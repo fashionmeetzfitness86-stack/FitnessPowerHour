@@ -186,15 +186,23 @@ export const Notifications = ({ user, showToast }: { user: UserProfile; showToas
     if (!user?.id) return;
     setNotifLoading(true);
     try {
-      const [{ data: personal }, { data: broadcast }] = await Promise.all([
-        supabase.from('notifications').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(100),
-        supabase.from('notifications').select('*').is('user_id', null).order('created_at', { ascending: false }).limit(100),
-      ]);
-      const merged: NotificationItem[] = [
-        ...(personal || []).map((n: any) => ({ ...n, source: 'personal' as const })),
-        ...(broadcast || []).map((n: any) => ({ ...n, source: 'broadcast' as const })),
-      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setNotifications(merged);
+      // Single query — all notifications for this user, stored as per-user rows.
+      // Broadcasts are identified by metadata.source === 'Admin Broadcast' (set by NotificationManager).
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+
+      const mapped: NotificationItem[] = (data || []).map((n: any) => ({
+        ...n,
+        source: n.metadata?.source === 'Admin Broadcast' ? ('broadcast' as const) : ('personal' as const),
+      }));
+
+      setNotifications(mapped);
     } catch (err) {
       console.error('Failed to load notifications:', err);
     } finally {
