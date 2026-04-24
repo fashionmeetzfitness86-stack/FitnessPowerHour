@@ -331,7 +331,7 @@ You come here to transform your body, your habits, and your mindset.
 
 💰 PROGRAM OPTIONS
 
-🔹 2-WEEK TRANSFORMATION — $15,000
+🔹 2-WEEK TRANSFORMATION — $10,000
 Duration: June 1st – June 14th (14 Days)
 
 Perfect for:
@@ -348,7 +348,7 @@ Includes:
 • Nutrition guidance
 • Lifestyle discipline framework
 
-🔸 1-MONTH FULL IMMERSION — $25,000
+🔸 1-MONTH FULL IMMERSION — $15,000
 Duration: June 1st – June 30th (30 Days)
 ⚠️ STRICTLY LIMITED: ONLY 4 SPOTS AVAILABLE
 
@@ -7153,7 +7153,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-2xl font-black text-brand-teal">$15,000</p>
+                            <p className="text-2xl font-black text-brand-teal">$10,000</p>
                           </div>
                         </div>
                         <ul className="space-y-1.5 text-[11px] text-white/50">
@@ -7176,7 +7176,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-2xl font-black text-brand-coral">$25,000</p>
+                            <p className="text-2xl font-black text-brand-coral">$15,000</p>
                           </div>
                         </div>
                         <ul className="space-y-1.5 text-[11px] text-white/50">
