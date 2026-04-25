@@ -44,6 +44,16 @@ interface AdminDashboardProps {
 export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+
+  // ── Scroll the main content panel to top on every tab switch ────────────────
+  const switchTab = (tabId: string) => {
+    // Scroll the page/main element to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Also scroll the <main> content element for the fixed-sidebar layout
+    const mainEl = document.querySelector('main');
+    if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveTab(tabId);
+  };
   const [loading, setLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(true);
   
@@ -843,7 +853,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => switchTab(item.id)}
                 className={`flex-shrink-0 flex items-center justify-center lg:justify-start gap-3 lg:gap-4 px-4 lg:px-6 py-3 lg:py-4 rounded-xl lg:rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${
                   isActive 
                     ? 'bg-brand-teal text-black shadow-glow-teal' 

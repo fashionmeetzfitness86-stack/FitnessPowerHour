@@ -1,4 +1,4 @@
-/**
+﻿﻿﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -176,7 +176,7 @@ const VIDEOS: Video[] = [
   },
 ];
 
-// Branded placeholder generator Ã¢â‚¬â€ replace with real product photos later
+// Branded placeholder generator — replace with real product photos later
 const placeholder = (label: string, color: string = '2dd4a8') =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect fill="#0a0a0a" width="600" height="800"/><rect fill="#${color}" opacity="0.15" width="600" height="800"/><text x="300" y="370" text-anchor="middle" fill="#${color}" font-family="sans-serif" font-size="20" font-weight="bold" letter-spacing="4">${label.toUpperCase()}</text><text x="300" y="410" text-anchor="middle" fill="#ffffff" opacity="0.3" font-family="sans-serif" font-size="12" letter-spacing="6">COMING SOON</text></svg>`)}`;
 
@@ -630,10 +630,27 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
+    // ── "Stay Logged In" tab-close handler ──────────────────────────────────
+    // If the user logged in without checking "Stay Logged In", we sign them
+    // out when the browser tab fully closes (beforeunload).
+    // We use sendBeacon (fire-and-forget) to avoid blocking the unload.
+    const handleTabClose = () => {
+      if (sessionStorage.getItem('fmf_tab_session') === 'true') {
+        // Best-effort sign-out — supabase.auth.signOut() is async but we
+        // clear the local storage token synchronously which is enough to
+        // prevent auto-login on next visit.
+        const storageKey = Object.keys(localStorage).find(k => k.includes('supabase.auth.token') || k.includes('sb-') && k.includes('-auth-token'));
+        if (storageKey) localStorage.removeItem(storageKey);
+        sessionStorage.removeItem('fmf_tab_session');
+      }
+    };
+    window.addEventListener('beforeunload', handleTabClose);
+
     return () => {
       subscription.unsubscribe();
       if (realtimeChannel) supabase.removeChannel(realtimeChannel);
       if (notifChannel) supabase.removeChannel(notifChannel);
+      window.removeEventListener('beforeunload', handleTabClose);
     };
   }, []);
 
@@ -5212,6 +5229,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
   const [forgotSubmitting, setForgotSubmitting] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotError, setForgotError] = useState('');
+  const [stayLoggedIn, setStayLoggedIn] = useState(true);
 
   // Close modal and go to profile when user logs in
   useEffect(() => {
@@ -5321,6 +5339,13 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
     try {
       if (isLogin) {
         await login(formData.email, formData.password);
+        // If the user did NOT check "Stay Logged In", mark the session as
+        // tab-only so we sign them out when the browser tab closes.
+        if (!stayLoggedIn) {
+          sessionStorage.setItem('fmf_tab_session', 'true');
+        } else {
+          sessionStorage.removeItem('fmf_tab_session');
+        }
         showToast('Logged in successfully');
         const p = new URLSearchParams(location.search);
         if (p.get('confirmed') === 'true') {
@@ -5485,7 +5510,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                 <p className="text-white text-sm font-light italic leading-relaxed">
                   "Being a Fitness Power Hour member isn't just about the workouts; it's about the standard you set for your life. The privileges are just a reflection of that commitment."
                 </p>
-                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">Ã¢â‚¬â€ Michael L, Founder</p>
+                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">— Michael L, Founder</p>
               </div>
             </div>
           </div>
@@ -5640,6 +5665,47 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                       <div className="p-4 bg-brand-coral/10 border border-brand-coral/30 rounded-lg">
                         <p className="text-brand-coral text-xs leading-relaxed">{errorMsg}</p>
                       </div>
+                    )}
+
+                    {/* ── Stay Logged In — only shown on the login form ── */}
+                    {isLogin && (
+                      <label
+                        htmlFor="stay-logged-in"
+                        className="flex items-center gap-3 cursor-pointer group select-none"
+                      >
+                        <div
+                          className={`relative w-5 h-5 rounded flex-shrink-0 border transition-all duration-200 ${
+                            stayLoggedIn
+                              ? 'bg-brand-teal border-brand-teal shadow-[0_0_10px_rgba(45,212,191,0.4)]'
+                              : 'bg-white/5 border-white/20 group-hover:border-brand-teal/50'
+                          }`}
+                          onClick={() => setStayLoggedIn(v => !v)}
+                        >
+                          <input
+                            id="stay-logged-in"
+                            type="checkbox"
+                            checked={stayLoggedIn}
+                            onChange={e => setStayLoggedIn(e.target.checked)}
+                            className="sr-only"
+                          />
+                          {stayLoggedIn && (
+                            <svg
+                              className="absolute inset-0 m-auto w-3 h-3 text-black"
+                              viewBox="0 0 12 10"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="1 5 4.5 8.5 11 1" />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-white/50 group-hover:text-white/80 transition-colors">
+                          Stay Logged In
+                        </span>
+                      </label>
                     )}
 
                     <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-5 flex items-center justify-center gap-3 disabled:opacity-50">
