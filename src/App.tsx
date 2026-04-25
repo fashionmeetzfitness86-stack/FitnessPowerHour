@@ -1,4 +1,4 @@
-/**
+﻿﻿﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -176,7 +176,7 @@ const VIDEOS: Video[] = [
   },
 ];
 
-// Branded placeholder generator Ã¢â‚¬â€ replace with real product photos later
+// Branded placeholder generator — replace with real product photos later
 const placeholder = (label: string, color: string = '2dd4a8') =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect fill="#0a0a0a" width="600" height="800"/><rect fill="#${color}" opacity="0.15" width="600" height="800"/><text x="300" y="370" text-anchor="middle" fill="#${color}" font-family="sans-serif" font-size="20" font-weight="bold" letter-spacing="4">${label.toUpperCase()}</text><text x="300" y="410" text-anchor="middle" fill="#ffffff" opacity="0.3" font-family="sans-serif" font-size="12" letter-spacing="6">COMING SOON</text></svg>`)}`;
 
@@ -5510,7 +5510,7 @@ const Membership = ({ showToast }: { showToast: (msg: string, type?: 'success' |
                 <p className="text-white text-sm font-light italic leading-relaxed">
                   "Being a Fitness Power Hour member isn't just about the workouts; it's about the standard you set for your life. The privileges are just a reflection of that commitment."
                 </p>
-                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">Ã¢â‚¬â€ Michael L, Founder</p>
+                <p className="text-brand-teal text-[10px] uppercase tracking-widest mt-4 font-bold">— Michael L, Founder</p>
               </div>
             </div>
           </div>
