@@ -155,6 +155,12 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
     return 'overview';
   });
 
+  // ── Scroll to top on every tab switch ────────────────────────────────────
+  const switchTab = (tabId: string) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setActiveTab(tabId);
+  };
+
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
@@ -355,9 +361,10 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
                   key={item.id}
                   onClick={() => {
                       if (item.id === 'videos-out') {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                           window.location.hash = '#/videos';
                       } else {
-                          setActiveTab(item.id);
+                          switchTab(item.id);
                       }
                   }}
                   className={`flex items-center gap-4 px-4 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${
@@ -381,9 +388,10 @@ export const ProfileDashboard = ({ user, logout, updateTier, showToast }: any) =
                   key={item.id}
                   onClick={() => {
                       if (item.id === 'videos-out') {
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                           window.location.hash = '#/videos';
                       } else {
-                          setActiveTab(item.id);
+                          switchTab(item.id);
                       }
                   }}
                   className={`flex flex-col items-center gap-2 min-w-[80px] p-4 rounded-xl transition-all flex-shrink-0 ${
