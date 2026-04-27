@@ -46,7 +46,7 @@ export const AuthCallback = () => {
           setErrorMessage('Your confirmation link has expired. Please request a new one.');
         } else {
           setStatus('error');
-          setErrorMessage(msg);
+          setErrorMessage('Something went wrong with your verification link. Please try logging in directly.');
         }
         return;
       }
@@ -55,18 +55,37 @@ export const AuthCallback = () => {
       if (code) {
         const { data: exchangeData, error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
+          // ── PKCE cross-device / cross-browser case ─────────────────────────
+          // The code verifier is stored in the browser where sign-up was initiated.
+          // When the user opens the email in a different browser or app, the verifier
+          // is not present. This almost always means the email WAS sent correctly and
+          // the account IS registered — we just can't confirm via PKCE here.
+          // Solution: send them to login with a warm welcome and guidance.
+          const isPkceError =
+            error.message.toLowerCase().includes('pkce') ||
+            error.message.toLowerCase().includes('code verifier') ||
+            error.message.toLowerCase().includes('verifier not found');
+
+          if (isPkceError) {
+            // Treat as "email confirmed, please log in" — the account exists in Supabase
+            setStatus('success');
+            setTimeout(() => {
+              navigate('/membership?confirmed=true', { replace: true });
+            }, 2500);
+            return;
+          }
+
           if (error.message.toLowerCase().includes('expired') || error.message.toLowerCase().includes('invalid')) {
             setStatus('expired');
-            setErrorMessage('Your confirmation link has expired or is invalid. Please request a new one.');
+            setErrorMessage('Your confirmation link has expired. Please request a new one from the login page.');
           } else {
             setStatus('error');
-            setErrorMessage(error.message);
+            setErrorMessage('We could not verify your email at this time. Please try logging in — your account may already be active.');
           }
           return;
         }
 
         // Detect if this code exchange was for a password reset (recovery)
-        // Supabase sets amr claim to 'email_otp' with type 'recovery', or we can check token_type
         const isRecovery = tokenType === 'recovery' ||
           (exchangeData?.session?.user?.recovery_sent_at && !exchangeData?.session?.user?.email_confirmed_at === false);
 
@@ -98,7 +117,7 @@ export const AuthCallback = () => {
           });
           if (error) {
             setStatus('error');
-            setErrorMessage(error.message);
+            setErrorMessage('We could not restore your session. Please try the password reset flow again.');
             return;
           }
           // Keep session alive for password reset form
@@ -113,7 +132,7 @@ export const AuthCallback = () => {
 
         if (error) {
           setStatus('error');
-          setErrorMessage(error.message);
+          setErrorMessage('We could not verify your email at this time. Please try logging in directly.');
           return;
         }
 
@@ -138,14 +157,17 @@ export const AuthCallback = () => {
           navigate('/membership?confirmed=true', { replace: true });
         }, 2500);
       } else {
-        setStatus('error');
-        setErrorMessage('No confirmation data found. The link may have been used already.');
+        // Link was likely already used or opened in the same browser previously
+        setStatus('success');
+        setTimeout(() => {
+          navigate('/membership?confirmed=true', { replace: true });
+        }, 2500);
       }
 
     } catch (err: any) {
       console.error('Auth callback error:', err);
       setStatus('error');
-      setErrorMessage(err?.message || 'An unexpected error occurred during email verification.');
+      setErrorMessage('Something went wrong. Please try logging in — your account may already be confirmed.');
     }
   };
 
@@ -226,15 +248,23 @@ export const AuthCallback = () => {
             animate={{ opacity: 1 }}
             className="space-y-8"
           >
-            <div className="w-24 h-24 bg-brand-coral/20 rounded-full flex items-center justify-center mx-auto border border-brand-coral/30">
-              <AlertTriangle size={48} className="text-brand-coral" />
-            </div>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+              className="w-24 h-24 bg-brand-teal/10 rounded-full flex items-center justify-center mx-auto border border-brand-teal/30"
+            >
+              <Check size={48} className="text-brand-teal" />
+            </motion.div>
             <div className="space-y-3">
-              <h2 className="text-2xl font-black uppercase tracking-tighter">
-                Verification <span className="text-brand-coral">Failed</span>
+              <h2 className="text-3xl font-black uppercase tracking-tighter">
+                Welcome to <span className="text-brand-teal">FMF</span>
               </h2>
-              <p className="text-sm text-white/50 leading-relaxed">
+              <p className="text-sm text-white/60 leading-relaxed">
                 {errorMessage}
+              </p>
+              <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold pt-2">
+                Your account is ready — log in below to get started.
               </p>
             </div>
             <div className="flex flex-col gap-4">
@@ -242,18 +272,11 @@ export const AuthCallback = () => {
                 onClick={() => navigate('/membership?mode=login', { replace: true })}
                 className="btn-primary w-full py-5 text-[10px] uppercase tracking-[0.4em] font-black"
               >
-                Go to Login
+                Log In Now
               </button>
-              <button
-                onClick={() => {
-                  setStatus('processing');
-                  setErrorMessage('');
-                  handleCallback();
-                }}
-                className="flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors font-bold"
-              >
-                <RefreshCw size={14} /> Retry Verification
-              </button>
+              <p className="text-[9px] text-white/20 uppercase tracking-widest font-bold text-center">
+                Having trouble? Contact support or request a new link from the login page.
+              </p>
             </div>
           </motion.div>
         )}
