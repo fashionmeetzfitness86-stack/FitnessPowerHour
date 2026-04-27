@@ -500,7 +500,7 @@ export type CommunityType = Community;
 export interface CalendarSession {
   id: string;
   user_id: string;
-  source_type: 'workout' | 'service' | 'training' | 'manual';
+  source_type: 'workout' | 'service' | 'training' | 'manual' | 'check-in' | 'check_in' | 'video' | 'my_program';
   related_service_request_id?: string;
   related_program_assignment_id?: string;
   title: string;
@@ -510,6 +510,10 @@ export interface CalendarSession {
   status: 'pending' | 'approved' | 'completed' | 'missed' | 'cancelled';
   assigned_provider_user_id?: string;
   created_by_user_id?: string;
+  // Columns added via SQL migration (April 2026)
+  notes?: string;
+  check_in_image?: string;
+  rating?: number; // 1-5
   created_at: string;
   updated_at: string;
 }

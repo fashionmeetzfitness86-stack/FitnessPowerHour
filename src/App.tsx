@@ -1,4 +1,4 @@
-﻿﻿﻿/**
+﻿﻿/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -7753,7 +7753,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
                 )
               } />
               <Route path="/order-history" element={<Navigate to="/profile#orders" replace />} />
-              <Route path="/recovery" element={<Recovery />} />
+              <Route path="/recovery" element={user ? <Recovery /> : <Navigate to="/membership" replace />} />
               <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />

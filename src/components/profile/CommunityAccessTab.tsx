@@ -78,10 +78,10 @@ export const CommunityAccessTab = ({ user, showToast }: { user: UserProfile, sho
         
         <div className="relative z-10 space-y-4">
             <h2 className="text-4xl lg:text-5xl font-bold uppercase tracking-tighter">
-                Community <span className="text-brand-teal">Coming Soon</span>
+                Tribe Network — <span className="text-brand-teal">Launching Soon</span>
             </h2>
             <p className="text-white/50 text-sm max-w-xl mx-auto">
-                We are building a highly curated, private network for athletes. The community will launch globally once we hit our subscriber milestone to ensure a highly active roster.
+                We're building a highly curated private network for FMF members. Reserve your spot now — early access members get first-wave entry when we go live.
             </p>
         </div>
 
