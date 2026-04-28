@@ -782,7 +782,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           communities={communities} 
           posts={posts} 
           users={users} 
-          onAdd={() => showToast('Community genesis locked until milestone.', 'info')} 
+          showToast={showToast}
           onDeleteCommunity={handleDeleteCommunity} 
           onDeletePost={handleDeletePost} 
         />
@@ -795,9 +795,8 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
           onUpdateStatus={async (id, status) => {
              await supabase.from('orders').update({ status }).eq('id', id);
              setOrders(prev => prev.map(o => o.id === id ? { ...o, status: status as any } : o));
-             showToast('Updated', 'success');
+             showToast('Order status updated ✅', 'success');
           }} 
-          onViewDetails={() => showToast('Order details schema in development.', 'info')} 
         />
       );
       case 'notifications': return (
