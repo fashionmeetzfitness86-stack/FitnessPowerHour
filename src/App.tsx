@@ -1,4 +1,4 @@
-﻿﻿/**
+/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -174,133 +174,6 @@ const VIDEOS: Video[] = [
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   },
-];
-
-// Branded placeholder generator — replace with real product photos later
-const placeholder = (label: string, color: string = '2dd4a8') =>
-  `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect fill="#0a0a0a" width="600" height="800"/><rect fill="#${color}" opacity="0.15" width="600" height="800"/><text x="300" y="370" text-anchor="middle" fill="#${color}" font-family="sans-serif" font-size="20" font-weight="bold" letter-spacing="4">${label.toUpperCase()}</text><text x="300" y="410" text-anchor="middle" fill="#ffffff" opacity="0.3" font-family="sans-serif" font-size="12" letter-spacing="6">COMING SOON</text></svg>`)}`;
-
-const PRODUCTS: Product[] = [
-  { 
-    id: 'p1', 
-    brand_id: 'fmf',
-    category_id: 'apparel',
-    name: 'FMF Training Shirt',
-    slug: 'fmf-training-shirt',
-    description: 'High-performance training shirt.',
-    price: 45,
-    compare_at_price: 55,
-    sku: 'TSH-001',
-    inventory_count: 100,
-    status: 'active',
-    featured_image: placeholder('FMF Training Shirt'),
-    images: [placeholder('FMF Training Shirt')],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  { 
-    id: 'p2', 
-    brand_id: 'fmf',
-    category_id: 'gear',
-    name: 'FMF Power Band Set',
-    slug: 'fmf-power-band-set',
-    description: 'A complete set of resistance bands for calisthenics progression.',
-    price: 65,
-    compare_at_price: 80,
-    sku: 'GBD-001',
-    inventory_count: 50,
-    status: 'active',
-    featured_image: placeholder('Power Band Set'),
-    images: [placeholder('Power Band Set')],
-    benefits: ['Increased Resistance', 'Portability', 'Versatility'],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  { 
-    id: 'p3', 
-    brand_id: 'cle-paris',
-    category_id: 'fragrance',
-    name: "CLÉ Paris L'EAU",
-    slug: 'cle-paris-leau',
-    description: 'A fresh, sophisticated fragrance for the modern athlete.',
-    price: 120,
-    compare_at_price: 150,
-    sku: 'FRG-001',
-    inventory_count: 30,
-    status: 'active',
-    featured_image: placeholder('Clé Paris', 'c4a265'),
-    images: [placeholder('Clé Paris', 'c4a265')],
-    ingredients: ['Bergamot', 'Sandalwood', 'Marine Accord'],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  { 
-    id: 'p4', 
-    brand_id: 'mike-water',
-    category_id: 'nutrition',
-    name: 'Recovery Green Juice',
-    slug: 'recovery-green-juice',
-    description: 'Cold-pressed functional juice for post-workout recovery.',
-    price: 12,
-    compare_at_price: 15,
-    sku: 'NUT-001',
-    inventory_count: 200,
-    status: 'active',
-    featured_image: placeholder('Green Juice', '4ade80'),
-    images: [placeholder('Green Juice', '4ade80')],
-    ingredients: ['Kale', 'Spinach', 'Cucumber', 'Lemon', 'Ginger'],
-    benefits: ['Hydration', 'Anti-inflammatory', 'Vitamin Rich'],
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-];
-
-const COLLABORATIONS: CollaborationBrand[] = [
-  { 
-    id: 'c1', 
-    name: 'SORORITY', 
-    category: "Women's Fitness Lifestyle",
-    description: 'Exclusive women-focused brand dedicated to empowerment through fitness, confidence, and community. Strength, femininity, and performance.',
-    image: placeholder('Sorority', 'e87461'),
-    link: '/shop',
-    buttonText: 'View Collection'
-  },
-  { 
-    id: 'c2', 
-    name: 'FLEX MOB 305', 
-    category: 'Recovery & Mobility', 
-    description: 'Specializing in professional assisted stretching and muscle recovery designed to support athletes and optimize performance.',
-    image: placeholder('Flex Mob 305'),
-    link: '/services',
-    buttonText: 'Book Now'
-  },
-  { 
-    id: 'c3', 
-    name: 'PIER ST BARTH', 
-    category: 'Luxury Resort Fitness', 
-    description: 'Luxury resort-inspired fitness and swimwear brand blending beach aesthetics with fitness culture and premium performance.',
-    image: placeholder('Pier St Barth', '60a5fa'),
-    link: '/shop',
-    buttonText: 'View Collection'
-  },
-  { 
-    id: 'c4', 
-    name: 'CLÉ PARIS', 
-    category: 'Luxury Fragrance & Lifestyle', 
-    description: 'Represents the elegance and sophistication of the FMF lifestyle. Luxury, confidence, and personal presence for the refined athlete.',
-    image: placeholder('Clé Paris', 'c4a265'),
-    link: 'https://cle-paris.com',
-    buttonText: 'Explore Brand'
-  },
-  { 
-    id: 'c5', 
-    name: 'MIKE WATER FITNESS', 
-    category: 'Functional Nutrition', 
-    description: 'Cold-pressed functional juices designed for performance, recovery, and daily balance. Clean fuel for the body without additives or artificial sugars.',
-    image: placeholder('Mike Water', '4ade80'),
-    link: '/shop',
-    buttonText: 'Shop Juices'
-  }
 ];
 
 const SESSIONS: TrainingSession[] = [
@@ -1174,16 +1047,10 @@ const ScrollToTop = () => {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [athletesPopup, setAthletesPopup] = useState(false);
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  // Auto-close Athletes popup after 3 seconds
-  useEffect(() => {
-    if (!athletesPopup) return;
-    const t = setTimeout(() => setAthletesPopup(false), 3000);
-    return () => clearTimeout(t);
-  }, [athletesPopup]);
+
 
   const hasActiveMembership = !!(user && (
     user.tier === 'Basic' ||
@@ -1204,7 +1071,7 @@ const Navbar = () => {
   ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
-    { name: 'Athletes', path: '/athletes', comingSoon: true },
+    { name: 'Athletes', path: '/athletes' },
     { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
     { name: 'Retreats', path: '/retreats' },
@@ -1224,17 +1091,6 @@ const Navbar = () => {
           {navLinks.map((link: any) => {
             const isMembership = link.name === 'Membership';
             const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
-            if (link.comingSoon) {
-              return (
-                <button
-                  key={link.name}
-                  onClick={() => setAthletesPopup(true)}
-                  className="text-xs uppercase tracking-widest transition-colors text-white/60 hover:text-white"
-                >
-                  {link.name}
-                </button>
-              );
-            }
             return (
               <Link
                 key={link.name}
@@ -1296,17 +1152,6 @@ const Navbar = () => {
               {navLinks.map((link: any) => {
                 const isMembership = link.name === 'Membership';
                 const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
-                if (link.comingSoon) {
-                  return (
-                    <button
-                      key={link.name}
-                      onClick={() => { setAthletesPopup(true); setIsOpen(false); }}
-                      className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors text-left"
-                    >
-                      {link.name}
-                    </button>
-                  );
-                }
                 return (
                 <Link
                   key={link.name}
@@ -1365,49 +1210,6 @@ const Navbar = () => {
         )}
       </AnimatePresence>
 
-      {/* Athletes Coming Soon Popup */}
-      <AnimatePresence>
-        {athletesPopup && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-            onClick={() => setAthletesPopup(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.85, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.85, y: 20 }}
-              onClick={e => e.stopPropagation()}
-              className="bg-[#0a0a0a] border border-brand-teal/20 rounded-3xl p-10 w-full max-w-sm text-center shadow-2xl relative"
-            >
-              <button
-                onClick={() => setAthletesPopup(false)}
-                className="absolute top-4 right-4 p-2 text-white/20 hover:text-white transition-colors"
-              >
-                <X size={16} />
-              </button>
-              <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-teal/20">
-                <Users size={28} className="text-brand-teal" />
-              </div>
-              <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">Athletes</h2>
-              <p className="text-[11px] uppercase tracking-[0.3em] font-black text-brand-teal mb-3">Coming Soon</p>
-              <p className="text-white/40 text-xs leading-relaxed">
-                Our athlete roster is in final preparation. Check back soon for the full directory of FMF elite trainers.
-              </p>
-              <div className="mt-6 h-0.5 w-16 bg-brand-teal/30 mx-auto rounded-full">
-                <motion.div
-                  className="h-full bg-brand-teal rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 3, ease: 'linear' }}
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </nav>
   );
 };
@@ -3357,6 +3159,35 @@ const Store = () => {
           </div>
         </header>
 
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+            {[1,2,3,4,5,6].map(i => (
+              <div key={i} className="space-y-4">
+                <div className="aspect-[3/4] bg-white/5 animate-pulse rounded-2xl" />
+                <div className="h-4 bg-white/5 animate-pulse rounded w-3/4" />
+                <div className="h-3 bg-white/5 animate-pulse rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="py-40 text-center">
+            <div className="w-20 h-20 bg-brand-teal/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-brand-teal/20">
+              <ShoppingBag size={36} className="text-brand-teal/40" />
+            </div>
+            <h3 className="text-2xl font-black uppercase tracking-tighter mb-3">Products Coming Soon</h3>
+            <p className="text-white/30 text-[11px] uppercase tracking-widest font-bold max-w-xs mx-auto">
+              Our collection is being curated. Check back soon.
+            </p>
+            {(user?.role === 'admin' || user?.role === 'super_admin') && (
+              <Link
+                to="/admin/dashboard"
+                className="inline-block mt-8 px-8 py-4 bg-brand-teal text-black text-[10px] uppercase tracking-widest font-black rounded-xl hover:scale-105 transition-all"
+              >
+                Add Products in Admin Dashboard
+              </Link>
+            )}
+          </div>
+        ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
           {filteredProducts.map((product) => (
             <motion.div
@@ -3409,6 +3240,7 @@ const Store = () => {
             </motion.div>
           ))}
         </div>
+        )}
         
         {recentlyViewed.length > 0 && (
           <div className="mt-40 space-y-12">
@@ -7733,7 +7565,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/program" element={<ProgramPage />} />
               <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
               <Route path="/athlete-application" element={<AthleteApplicationPage showToast={showToast} />} />
-              <Route path="/videos" element={<VideoLibrary showToast={showToast} />} />
+              <Route path="/videos" element={user ? <VideoLibrary showToast={showToast} /> : <Navigate to="/membership" replace />} />
               <Route path="/video/:id" element={<VideoDetail showToast={showToast} />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />

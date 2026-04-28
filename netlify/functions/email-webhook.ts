@@ -1,3 +1,23 @@
+/**
+ * email-webhook.ts — Supabase DB Webhook Handler
+ *
+ * PURPOSE: Fires when a new row is INSERTed into the `notifications` table.
+ * Sends a transactional email to the user via Resend if their preferences allow it.
+ *
+ * REQUIRED SETUP IN SUPABASE (one-time):
+ *   1. Go to: Supabase Dashboard → Database → Webhooks
+ *   2. Create webhook:
+ *        - Table:  notifications
+ *        - Event:  INSERT
+ *        - URL:    https://<your-netlify-site>.netlify.app/.netlify/functions/email-webhook
+ *        - Method: POST
+ *        - Headers: { "x-webhook-secret": "<value of WEBHOOK_SECRET env var>" }
+ *   3. Set env var WEBHOOK_SECRET in Netlify (Dashboard → Site settings → Env vars)
+ *   4. Set env var RESEND_API_KEY in Netlify
+ *   5. Verify domain `fitnesspowerhour.com` in Resend before going live
+ *
+ * This function is NOT called by the frontend directly.
+ */
 import { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
