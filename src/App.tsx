@@ -6281,21 +6281,18 @@ const Athletes = () => (
               focus: ['Energy', 'Mental Focus', 'Daily Performance'],
               desc: 'A wellness supplement designed to support mental clarity and sustained energy throughout the day. Best used as part of a morning routine before work, training, or daily activity.',
               image: 'https://picsum.photos/seed/wellness1/800/1000',
-              link: 'https://example.com/energy'
             },
             {
               title: 'Gut & Mood Support',
               focus: ['Gut Health', 'Daily Balance', 'Long-term Wellness'],
               desc: 'A daily wellness product designed to support digestive balance and overall well-being. Gut health plays an important role in energy levels, recovery, and mental balance.',
               image: 'https://picsum.photos/seed/wellness2/800/1000',
-              link: 'https://example.com/gut'
             },
             {
               title: 'Recovery Support',
               focus: ['Recovery', 'Relaxation', 'Physical Restoration'],
               desc: 'Supports recovery after training and helps the body maintain balance after intense physical activity. Best used as part of a recovery or evening routine.',
               image: 'https://picsum.photos/seed/wellness3/800/1000',
-              link: 'https://example.com/recovery'
             }
           ].map((product, i) => (
             <div key={i} className="card-gradient p-10 flex flex-col space-y-8 group hover:border-brand-teal/30 transition-all">
@@ -6316,14 +6313,9 @@ const Athletes = () => (
                   </div>
                 </div>
               </div>
-              <a 
-                href={product.link} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn-outline w-full flex items-center justify-center gap-2"
-              >
-                View Product <ExternalLink size={14} />
-              </a>
+              <div className="btn-outline w-full flex items-center justify-center gap-2 opacity-40 cursor-not-allowed select-none">
+                <span className="text-[10px] uppercase tracking-widest font-bold">Coming Soon</span>
+              </div>
             </div>
           ))}
         </div>
@@ -7566,7 +7558,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
               <Route path="/athlete-application" element={<AthleteApplicationPage showToast={showToast} />} />
               <Route path="/videos" element={user ? <VideoLibrary showToast={showToast} /> : <Navigate to="/membership" replace />} />
-              <Route path="/video/:id" element={<VideoDetail showToast={showToast} />} />
+              <Route path="/video/:id" element={user ? <VideoDetail showToast={showToast} /> : <Navigate to="/membership" replace />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/reset-password" element={<ResetPassword showToast={showToast} />} />
