@@ -205,7 +205,7 @@ You come here to transform your body, your habits, and your mindset.
 💰 PROGRAM OPTIONS
 
 🔹 2-WEEK TRANSFORMATION — $10,000
-Duration: June 1st – June 14th (14 Days)
+Duration: August 1st – August 14th (14 Days)
 
 Perfect for:
 • Rapid reset
@@ -222,7 +222,7 @@ Includes:
 • Lifestyle discipline framework
 
 🔸 1-MONTH FULL IMMERSION — $15,000
-Duration: June 1st – June 30th (30 Days)
+Duration: August 1st – August 31st (30 Days)
 ⚠️ STRICTLY LIMITED: ONLY 4 SPOTS AVAILABLE
 
 This is the complete transformation.
@@ -271,8 +271,8 @@ This is who you become after the program.
 • No refunds once confirmed
 • Must be 21+ to attend`,
     cover_image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop', 
-    start_date: '2026-06-01T09:00:00Z',
-    end_date: '2026-06-30T17:00:00Z',
+    start_date: '2026-08-01T09:00:00Z',
+    end_date: '2026-08-31T17:00:00Z',
     location: 'Miami Beach, FL', 
     price: '$15k - $25k',
     visibility_status: 'published',
@@ -7039,7 +7039,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                             <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Option 1</p>
                             <h4 className="text-xl font-black uppercase tracking-tight mt-1">2-Week Transformation</h4>
                             <p className="text-[10px] text-white/40 mt-1">
-                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'June 1st'} · 14 Days
+                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'August 1st'} · 14 Days
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
@@ -7062,7 +7062,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                             <p className="text-[9px] uppercase tracking-widest text-brand-coral/60 font-bold">Option 2</p>
                             <h4 className="text-xl font-black uppercase tracking-tight mt-1">1-Month Full Immersion</h4>
                             <p className="text-[10px] text-white/40 mt-1">
-                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'June 1st'} – {retreat.end_date ? new Date(retreat.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'June 30th'} · 30 Days
+                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'August 1st'} – {retreat.end_date ? new Date(retreat.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'August 31st'} · 30 Days
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
