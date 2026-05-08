@@ -7011,7 +7011,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                     </div>
                     <div className="flex flex-col gap-2 text-right">
                       <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold">
-                        {new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        August 1, 2026
                       </span>
                       <span className="px-3 py-1 bg-brand-coral text-black text-[9px] font-black uppercase tracking-widest rounded-full">
                         21+ Only
@@ -7039,7 +7039,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                             <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold">Option 1</p>
                             <h4 className="text-xl font-black uppercase tracking-tight mt-1">2-Week Transformation</h4>
                             <p className="text-[10px] text-white/40 mt-1">
-                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'August 1st'} · 14 Days
+                              August 1st – August 14th · 14 Days
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
@@ -7062,7 +7062,7 @@ const RetreatPage = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                             <p className="text-[9px] uppercase tracking-widest text-brand-coral/60 font-bold">Option 2</p>
                             <h4 className="text-xl font-black uppercase tracking-tight mt-1">1-Month Full Immersion</h4>
                             <p className="text-[10px] text-white/40 mt-1">
-                              {retreat.start_date ? new Date(retreat.start_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'August 1st'} – {retreat.end_date ? new Date(retreat.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'August 31st'} · 30 Days
+                              August 1st – August 31st · 30 Days
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
