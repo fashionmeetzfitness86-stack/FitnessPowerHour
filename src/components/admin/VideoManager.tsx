@@ -1,7 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { PlayCircle, Upload, Trash2, X, Save, CheckCircle2, Search, Filter, Eye, Edit2, CheckSquare, Square, ChevronRight, AlertTriangle, Play } from 'lucide-react';
+import { PlayCircle, Upload, Trash2, X, Save, CheckCircle2, Search, Filter, Eye, Edit2, CheckSquare, Square, ChevronRight, AlertTriangle, Play, Image, RefreshCw, Link as LinkIcon } from 'lucide-react';
 import { Video, VideoCategory } from '../../types';
 import { MediaCapture } from '../MediaCapture';
+
+// Extract YouTube video ID from any URL format
+const getYouTubeId = (url?: string | null): string => {
+  if (!url) return '';
+  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+  if (match?.[1]) return match[1];
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  return '';
+};
+
+const getYouTubeThumbnail = (url?: string | null): string => {
+  const id = getYouTubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+};
 
 interface VideoManagerProps {
   videos: Video[];
@@ -250,18 +264,16 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
 
               {/* Thumbnail Area */}
               <div className="aspect-video bg-black relative rounded-t-[2rem] overflow-hidden group">
-                <video 
-                  src={video.video_url} 
-                  className={`w-full h-full object-cover transition-all duration-700 ${isSelected ? 'opacity-30' : 'opacity-80 group-hover:scale-105 group-hover:opacity-100'}`} 
-                  poster={video.thumbnail_url} 
-                  onError={(e) => { e.currentTarget.setAttribute('poster', 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop'); }}
-                  preload="none"
+                <img
+                  src={video.thumbnail_url || getYouTubeThumbnail(video.video_url) || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&auto=format&fit=crop'}
+                  alt={video.title}
+                  onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=800&auto=format&fit=crop'; }}
+                  className={`w-full h-full object-cover transition-all duration-700 ${isSelected ? 'opacity-30' : 'opacity-80 group-hover:scale-105 group-hover:opacity-100'}`}
                 />
-                
                 {/* Center Hover Action */}
                 {!isSelected && (
-                    <button onClick={() => window.open(video.video_url, '_blank')} className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-black/40 text-brand-teal hover:scale-110">
-                        <PlayCircle size={48} fill="currentColor" className="text-black drop-shadow-2xl" />
+                    <button onClick={() => window.open(video.video_url, '_blank')} className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-black/40">
+                        <PlayCircle size={48} fill="currentColor" className="text-white drop-shadow-2xl" />
                     </button>
                 )}
               </div>
@@ -357,23 +369,93 @@ export const VideoManager = ({ videos, categories, onEdit, onDelete }: VideoMana
                         {uploadMode === 'youtube' && (
                             <div className="space-y-2">
                                 <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">YouTube URL</label>
-                                <input type="url" placeholder="https://youtube.com/watch?v=..." value={editingVideo.video_url || ''} onChange={e => setEditingVideo({ ...editingVideo, video_url: e.target.value, thumbnail_url: editingVideo.thumbnail_url || e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white transition-all"/>
+                                <input
+                                  type="url"
+                                  placeholder="https://youtube.com/watch?v=..."
+                                  value={editingVideo.video_url || ''}
+                                  onChange={e => {
+                                    const url = e.target.value;
+                                    const autoThumb = getYouTubeThumbnail(url);
+                                    setEditingVideo({ ...editingVideo, video_url: url, thumbnail_url: editingVideo.thumbnail_url || autoThumb });
+                                  }}
+                                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white transition-all"
+                                />
                             </div>
                         )}
                         {uploadMode === 'link' && (
                             <div className="space-y-2">
                                 <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">External Link URL</label>
-                                <input type="url" placeholder="https://vimeo.com/..." value={editingVideo.video_url || ''} onChange={e => setEditingVideo({ ...editingVideo, video_url: e.target.value, thumbnail_url: editingVideo.thumbnail_url || e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white transition-all"/>
+                                <input type="url" placeholder="https://vimeo.com/..." value={editingVideo.video_url || ''} onChange={e => setEditingVideo({ ...editingVideo, video_url: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-sm outline-none focus:border-brand-teal text-white transition-all"/>
                             </div>
                         )}
                         {uploadMode === 'upload' && (
                             <div className="space-y-2">
                                 <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Direct Upload</label>
                                 <div className="p-1 bg-white/5 rounded-xl border border-white/10">
-                                    <MediaCapture bucket="fmf-media" folder="videos" accept="video/*" onUploadSuccess={(url) => setEditingVideo({ ...editingVideo, video_url: url, thumbnail_url: url })} />
+                                    <MediaCapture bucket="fmf-media" folder="videos" accept="video/*" onUploadSuccess={(url) => setEditingVideo({ ...editingVideo, video_url: url })} />
                                 </div>
                             </div>
                         )}
+
+                        {/* ── THUMBNAIL SECTION ── */}
+                        <div className="space-y-3 pt-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-[10px] uppercase tracking-widest text-brand-teal font-bold flex items-center gap-2"><Image size={12} /> Thumbnail</label>
+                              {uploadMode === 'youtube' && editingVideo.video_url && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingVideo({ ...editingVideo, thumbnail_url: getYouTubeThumbnail(editingVideo.video_url) })}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-teal/10 hover:bg-brand-teal/20 border border-brand-teal/30 rounded-lg text-[9px] font-black uppercase tracking-widest text-brand-teal transition-all"
+                                >
+                                  <RefreshCw size={10} /> Auto-Generate
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Thumbnail Preview */}
+                            {(editingVideo.thumbnail_url || getYouTubeThumbnail(editingVideo.video_url)) && (
+                              <div className="relative aspect-video rounded-xl overflow-hidden border border-white/10 bg-black">
+                                <img
+                                  src={editingVideo.thumbnail_url || getYouTubeThumbnail(editingVideo.video_url)}
+                                  alt="Thumbnail preview"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingVideo({ ...editingVideo, thumbnail_url: '' })}
+                                  className="absolute top-2 right-2 w-7 h-7 bg-black/70 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors"
+                                >
+                                  <X size={12} />
+                                </button>
+                                <span className="absolute bottom-2 left-2 text-[8px] uppercase tracking-widest font-black text-white/60 bg-black/60 px-2 py-1 rounded">Preview</span>
+                              </div>
+                            )}
+
+                            {/* Upload thumbnail image */}
+                            <div className="p-1 bg-white/5 rounded-xl border border-white/10">
+                              <MediaCapture
+                                bucket="fmf-media"
+                                folder="thumbnails"
+                                accept="image/*"
+                                onUploadSuccess={(url) => setEditingVideo({ ...editingVideo, thumbnail_url: url })}
+                              />
+                            </div>
+
+                            {/* Or paste URL */}
+                            <div className="flex gap-2">
+                              <div className="relative flex-1">
+                                <LinkIcon size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                                <input
+                                  type="url"
+                                  placeholder="Or paste thumbnail URL..."
+                                  value={editingVideo.thumbnail_url || ''}
+                                  onChange={e => setEditingVideo({ ...editingVideo, thumbnail_url: e.target.value })}
+                                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-xs outline-none focus:border-brand-teal text-white transition-all placeholder:text-white/20"
+                                />
+                              </div>
+                            </div>
+                        </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">Video Title</label>
