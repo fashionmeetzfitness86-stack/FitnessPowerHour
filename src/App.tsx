@@ -72,6 +72,30 @@ import {
 
 import { supabase } from './supabase';
 
+// --- YouTube Utility ---
+/**
+ * Extracts a YouTube video ID from any common YouTube URL format:
+ * - https://www.youtube.com/watch?v=VIDEO_ID
+ * - https://youtu.be/VIDEO_ID
+ * - https://www.youtube.com/shorts/VIDEO_ID
+ * - https://www.youtube.com/embed/VIDEO_ID
+ * - VIDEO_ID (bare ID)
+ */
+const getYouTubeId = (url?: string | null): string => {
+  if (!url) return '';
+  const patterns = [
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/,
+    /youtube\.com\/shorts\/([^"&?\/\s]{11})/,
+  ];
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match?.[1]) return match[1];
+  }
+  // If it looks like a bare 11-char video ID, return as-is
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  return url;
+};
+
 // --- Error Boundary ---
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -1908,16 +1932,16 @@ const VideoPlayer = ({ video, onClose }: { video: Video; onClose: () => void }) 
           {video.source_type === 'youtube' ? (
             <iframe
               id={`yt-player-${video.id}`}
-              src={`https://www.youtube.com/embed/${video.video_url?.split('v=')[1]}?autoplay=1&enablejsapi=1`}
+              src={`https://www.youtube-nocookie.com/embed/${getYouTubeId(video.video_url)}?autoplay=1&enablejsapi=1&rel=0`}
               className="w-full h-full border-none"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
               allowFullScreen
               onLoad={(e) => {
                 const iframe = e.target as HTMLIFrameElement;
                 if (!iframe.contentWindow) return;
                 // Add event listener for YouTube postMessage
                 const handleMessage = (event: MessageEvent) => {
-                  if (event.origin !== 'https://www.youtube.com') return;
+                  if (event.origin !== 'https://www.youtube-nocookie.com' && event.origin !== 'https://www.youtube.com') return;
                   try {
                     const data = JSON.parse(event.data);
                     if (data.event === 'infoDelivery' && data.info) {
@@ -6640,9 +6664,10 @@ const VideoDetail = ({ showToast }: { showToast: (msg: string, type?: 'success' 
                 </div>
               ) : (
                 <iframe
-                  src={video.video_url?.replace('watch?v=', 'embed/')}
+                  src={`https://www.youtube-nocookie.com/embed/${getYouTubeId(video.video_url)}?rel=0&modestbranding=1`}
                   title={video.title}
-                  className="w-full h-full"
+                  className="w-full h-full border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                   allowFullScreen
                 />
               )}
