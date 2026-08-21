@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Map, MapPin, Calendar, Users, ExternalLink, CheckCircle, Loader2, ArrowRight, Plane, ShieldCheck, Compass, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { RETREATS_COMING_SOON, openComingSoon } from '../../comingSoon';
 import { UserProfile, Retreat, RetreatApplication } from '../../types';
 import { supabase } from '../../supabase';
 
@@ -171,8 +171,8 @@ export const RetreatsTab = ({ user, showToast }: { user: UserProfile, showToast:
                    </div>
 
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <Link 
-                            to="/retreats" 
+                       <button
+                            onClick={() => openComingSoon(RETREATS_COMING_SOON)}
                             className="group card-gradient p-10 rounded-[3rem] border border-white/5 hover:border-brand-teal/30 transition-all flex flex-col items-center justify-center text-center space-y-6"
                         >
                            <Plane size={40} className="text-brand-teal group-hover:-translate-y-2 transition-transform" />
@@ -183,7 +183,7 @@ export const RetreatsTab = ({ user, showToast }: { user: UserProfile, showToast:
                            <div className="px-8 py-4 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl shadow-xl group-hover:bg-brand-teal transition-all">
                                Explore Directory
                            </div>
-                       </Link>
+                       </button>
 
                        <div className="card-gradient p-10 rounded-[3rem] border border-white/5 flex flex-col items-center justify-center text-center space-y-6 opacity-60">
                            <Map size={40} className="text-white/20" />
