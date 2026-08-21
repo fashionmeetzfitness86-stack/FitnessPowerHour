@@ -23,6 +23,7 @@ import { LiabilityWaiver } from './components/legal/LiabilityWaiver';
 import { InAppWaiverPopup } from './components/legal/InAppWaiverPopup';
 import { FreeAccessGate } from './components/FreeAccessGate';
 import { useSiteContent } from './hooks/useSiteContent';
+import { COMING_SOON_EVENT, ComingSoonInfo, RETREATS_COMING_SOON, openComingSoon } from './comingSoon';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
   Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
@@ -1071,9 +1072,23 @@ const ScrollToTop = () => {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [comingSoon, setComingSoon] = useState<ComingSoonInfo | null>(null);
   const { user, logout } = useAuth();
   const location = useLocation();
 
+  // Auto-close Coming Soon popup after 3 seconds
+  useEffect(() => {
+    if (!comingSoon) return;
+    const t = setTimeout(() => setComingSoon(null), 3000);
+    return () => clearTimeout(t);
+  }, [comingSoon]);
+
+  // Popup can also be opened from outside the navbar (footer, home CTA, profile tabs)
+  useEffect(() => {
+    const handler = (e: Event) => setComingSoon((e as CustomEvent<ComingSoonInfo>).detail);
+    window.addEventListener(COMING_SOON_EVENT, handler);
+    return () => window.removeEventListener(COMING_SOON_EVENT, handler);
+  }, []);
 
 
   const hasActiveMembership = !!(user && (
@@ -1087,19 +1102,15 @@ const Navbar = () => {
   const navLinks = user ? [
     { name: 'Home', path: '/profile' },
     ...(hasActiveMembership ? [{ name: 'Videos', path: '/videos' }] : []),
-    { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
-    { name: 'Retreats', path: '/retreats' },
-    { name: 'Services', path: '/services' },
+    { name: 'Retreats', path: '/retreats', comingSoon: RETREATS_COMING_SOON },
     ...(user?.role === 'admin' || user?.role === 'super_admin' ? [{ name: 'Admin', path: '/admin/dashboard' }] : []),
   ] : [
     { name: 'Home', path: '/' },
     { name: 'Philosophy', path: '/philosophy' },
     { name: 'Athletes', path: '/athletes' },
-    { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
-    { name: 'Retreats', path: '/retreats' },
-    { name: 'Services', path: '/services' },
+    { name: 'Retreats', path: '/retreats', comingSoon: RETREATS_COMING_SOON },
     { name: 'Membership', path: '/membership' },
   ];
 
@@ -1115,6 +1126,17 @@ const Navbar = () => {
           {navLinks.map((link: any) => {
             const isMembership = link.name === 'Membership';
             const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
+            if (link.comingSoon) {
+              return (
+                <button
+                  key={link.name}
+                  onClick={() => setComingSoon(link.comingSoon)}
+                  className="text-xs uppercase tracking-widest transition-colors text-white/60 hover:text-white"
+                >
+                  {link.name}
+                </button>
+              );
+            }
             return (
               <Link
                 key={link.name}
@@ -1176,6 +1198,17 @@ const Navbar = () => {
               {navLinks.map((link: any) => {
                 const isMembership = link.name === 'Membership';
                 const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
+                if (link.comingSoon) {
+                  return (
+                    <button
+                      key={link.name}
+                      onClick={() => { setComingSoon(link.comingSoon); setIsOpen(false); }}
+                      className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors text-left"
+                    >
+                      {link.name}
+                    </button>
+                  );
+                }
                 return (
                 <Link
                   key={link.name}
@@ -1234,6 +1267,50 @@ const Navbar = () => {
         )}
       </AnimatePresence>
 
+      {/* Coming Soon Popup */}
+      <AnimatePresence>
+        {comingSoon && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setComingSoon(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-[#0a0a0a] border border-brand-teal/20 rounded-3xl p-10 w-full max-w-sm text-center shadow-2xl relative"
+            >
+              <button
+                onClick={() => setComingSoon(null)}
+                className="absolute top-4 right-4 p-2 text-white/20 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+              <div className="w-16 h-16 bg-brand-teal/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-teal/20">
+                <MapPin size={28} className="text-brand-teal" />
+              </div>
+              <h2 className="text-3xl font-black uppercase tracking-tighter mb-2">{comingSoon.title}</h2>
+              <p className="text-[11px] uppercase tracking-[0.3em] font-black text-brand-teal mb-3">Coming Soon</p>
+              <p className="text-white/40 text-xs leading-relaxed">
+                {comingSoon.message}
+              </p>
+              <div className="mt-6 h-0.5 w-16 bg-brand-teal/30 mx-auto rounded-full">
+                <motion.div
+                  className="h-full bg-brand-teal rounded-full"
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 3, ease: 'linear' }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </nav>
   );
 };
@@ -1262,7 +1339,7 @@ const Footer = ({ showToast }: { showToast?: (msg: string, type?: 'success' | 'e
           <li><Link to="/program" className="hover:text-white">The Program</Link></li>
           <li><Link to="/videos" className="hover:text-white">Video Library</Link></li>
           <li><Link to="/schedule" className="hover:text-white">Class Schedule</Link></li>
-          <li><Link to="/retreats" className="hover:text-white">FMF Retreats</Link></li>
+          <li><button onClick={() => openComingSoon(RETREATS_COMING_SOON)} className="hover:text-white">FMF Retreats</button></li>
         </ul>
       </div>
 
@@ -1591,7 +1668,7 @@ const Home = () => {
           <p className="text-white/50 max-w-2xl mx-auto uppercase tracking-[0.2em] text-xs leading-loose">
             {get('home_retreats_description', 'Step fully off the grid. Immerse yourself in a guided physical and mental overhaul at our exclusive global destinations.')}
           </p>
-          <button onClick={() => navigate('/retreats')} className="btn-outline border-brand-coral text-brand-coral hover:bg-brand-coral hover:text-black px-10">
+          <button onClick={() => openComingSoon(RETREATS_COMING_SOON)} className="btn-outline border-brand-coral text-brand-coral hover:bg-brand-coral hover:text-black px-10">
             Explore Retreats
           </button>
         </div>
@@ -6458,7 +6535,7 @@ const Recovery = () => {
             ))}
           </div>
 
-          <button onClick={() => navigate('/services')} className="btn-primary">Book Recovery Session</button>
+          <button onClick={() => navigate('/services/flexmob305')} className="btn-primary">Book Recovery Session</button>
         </div>
 
         <div className="relative">
@@ -7576,7 +7653,8 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/philosophy" element={user ? <Navigate to="/profile" replace /> : <Philosophy />} />
               <Route path="/mission" element={<Mission />} />
               <Route path="/run-club" element={<RunClub />} />
-              <Route path="/services" element={<Services />} />
+              {/* Services page hidden for now */}
+              <Route path="/services" element={<Navigate to="/" replace />} />
               <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
               <Route path="/program" element={<ProgramPage />} />
@@ -7587,8 +7665,9 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/reset-password" element={<ResetPassword showToast={showToast} />} />
-              <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
-              <Route path="/community/:id" element={<CommunityDetail user={user} showToast={showToast} />} />
+              {/* Community removed from the public site */}
+              <Route path="/community" element={<Navigate to="/" replace />} />
+              <Route path="/community/:id" element={<Navigate to="/" replace />} />
               <Route path="/schedule" element={<Schedule showToast={showToast} />} />
               <Route path="/shop" element={<Store />} />
               <Route path="/shop/:category" element={<Store />} />
@@ -7603,7 +7682,8 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               } />
               <Route path="/order-history" element={<Navigate to="/profile#orders" replace />} />
               <Route path="/recovery" element={user ? <Recovery /> : <Navigate to="/membership" replace />} />
-              <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
+              {/* Retreats coming soon */}
+              <Route path="/retreats" element={<Navigate to="/" replace />} />
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
