@@ -1102,16 +1102,15 @@ const Navbar = () => {
   const navLinks = user ? [
     { name: 'Home', path: '/profile' },
     ...(hasActiveMembership ? [{ name: 'Videos', path: '/videos' }] : []),
+    { name: 'Community', path: '/community' },
     { name: 'Shop', path: '/shop' },
-    { name: 'Retreats', path: '/retreats', comingSoon: RETREATS_COMING_SOON },
-    ...(user?.role === 'admin' || user?.role === 'super_admin' ? [{ name: 'Admin', path: '/admin/dashboard' }] : []),
+    { name: 'Retreats', path: '/retreats' },
+    { name: 'Services', path: '/services' },
   ] : [
     { name: 'Home', path: '/' },
-    { name: 'Philosophy', path: '/philosophy' },
-    { name: 'Athletes', path: '/athletes' },
-    { name: 'Shop', path: '/shop' },
-    { name: 'Retreats', path: '/retreats', comingSoon: RETREATS_COMING_SOON },
-    { name: 'Membership', path: '/membership' },
+    { name: 'Members', path: '/membership' },
+    { name: 'Schedules', path: '/schedule' },
+    { name: 'Programs', path: '/programs' },
   ];
 
   return (
@@ -1122,27 +1121,20 @@ const Navbar = () => {
           <span className="text-[10px] tracking-[0.3em] uppercase text-white/40">by Fashion meetz Fitness</span>
         </Link>
 
-        <div className="hidden lg:flex space-x-8">
+        <div className="hidden lg:flex items-center space-x-8">
           {navLinks.map((link: any) => {
-            const isMembership = link.name === 'Membership';
+            const isMembership = link.name === 'Members' || link.name === 'Membership';
             const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
-            if (link.comingSoon) {
-              return (
-                <button
-                  key={link.name}
-                  onClick={() => setComingSoon(link.comingSoon)}
-                  className="text-xs uppercase tracking-widest transition-colors text-white/60 hover:text-white"
-                >
-                  {link.name}
-                </button>
-              );
-            }
+            const isActive = location.pathname === link.path || 
+              (link.path === '/programs' && location.pathname === '/program') || 
+              (link.path === '/schedule' && location.pathname === '/schedules') ||
+              (link.path === '/membership' && location.pathname === '/members');
             return (
               <Link
                 key={link.name}
                 to={finalPath}
                 className={`text-xs uppercase tracking-widest transition-colors ${
-                  location.pathname === link.path ? 'text-brand-coral' : 'text-white/60 hover:text-white'
+                  isActive ? 'text-brand-coral font-bold' : 'text-white/60 hover:text-white'
                 }`}
               >
                 {link.name}
@@ -1174,10 +1166,20 @@ const Navbar = () => {
               </button>
             </div>
           ) : (
-            <Link to="/membership?mode=login" className="hidden lg:flex items-center space-x-2 text-xs uppercase tracking-widest text-white/60 hover:text-white transition-colors">
-              <User size={16} />
-              <span>Login</span>
-            </Link>
+            <div className="hidden lg:flex items-center space-x-6">
+              <Link 
+                to="/membership?mode=login" 
+                className="text-xs uppercase tracking-widest text-white/60 hover:text-white transition-colors"
+              >
+                Login
+              </Link>
+              <Link 
+                to="/membership?mode=signup" 
+                className="px-5 py-2.5 rounded-full bg-brand-teal text-black font-bold text-xs uppercase tracking-widest hover:bg-brand-teal/90 shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all hover:scale-105"
+              >
+                Sign Up
+              </Link>
+            </div>
           )}
           
           <button className="lg:hidden text-white" onClick={() => setIsOpen(!isOpen)}>
@@ -1195,43 +1197,39 @@ const Navbar = () => {
             className="lg:hidden bg-brand-black border-b border-white/10 overflow-hidden"
           >
             <div className="flex flex-col p-8 space-y-6">
-              {navLinks.map((link: any) => {
-                const isMembership = link.name === 'Membership';
-                const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
-                if (link.comingSoon) {
-                  return (
-                    <button
-                      key={link.name}
-                      onClick={() => { setComingSoon(link.comingSoon); setIsOpen(false); }}
-                      className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors text-left"
-                    >
-                      {link.name}
-                    </button>
-                  );
-                }
-                return (
-                <Link
-                  key={link.name}
-                  to={finalPath}
-                  onClick={() => setIsOpen(false)}
-                  className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors"
-                >
-                  {link.name}
-                </Link>
-                );
-              })}
-              <div className="pt-6 border-t border-white/5">
-                {user ? (
-                  <div className="flex flex-col space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
+              {user ? (
+                <>
+                  {navLinks.map((link: any) => {
+                    const isMembership = link.name === 'Members' || link.name === 'Membership';
+                    const finalPath = isMembership && user && user.tier === 'Basic' ? '/profile#membership' : link.path;
+                    return (
+                      <Link
+                        key={link.name}
+                        to={finalPath}
+                        onClick={() => setIsOpen(false)}
+                        className="text-lg uppercase tracking-widest text-white/70 hover:text-brand-coral transition-colors"
+                      >
+                        {link.name}
+                      </Link>
+                    );
+                  })}
+                  <div className="pt-6 border-t border-white/5 flex flex-col space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                      <div className="flex items-center gap-4 flex-wrap">
                         <NotificationBell />
                         <Link 
                           to="/profile" 
                           onClick={() => setIsOpen(false)}
                           className="text-white/60 hover:text-brand-teal transition-colors flex items-center gap-2 text-xs uppercase tracking-widest"
                         >
-                          <User size={16} /> Profile Dashboard
+                          <User size={16} /> Profile
+                        </Link>
+                        <Link 
+                          to="/order-history" 
+                          onClick={() => setIsOpen(false)}
+                          className="text-white/60 hover:text-brand-teal transition-colors flex items-center gap-2 text-xs uppercase tracking-widest"
+                        >
+                          <ShoppingBag size={16} /> Orders
                         </Link>
                         {(user?.role === 'admin' || user?.role === 'super_admin') && (
                           <Link 
@@ -1251,17 +1249,63 @@ const Navbar = () => {
                       </button>
                     </div>
                   </div>
-                ) : (
-                  <Link 
-                    to="/membership?mode=login" 
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 text-brand-teal text-lg uppercase tracking-widest"
+                    className={`text-lg uppercase tracking-widest transition-colors ${
+                      location.pathname === '/' ? 'text-brand-coral font-bold' : 'text-white/70 hover:text-brand-coral'
+                    }`}
                   >
-                    <User size={20} />
-                    <span>Login</span>
+                    Home
                   </Link>
-                )}
-              </div>
+                  <Link
+                    to="/membership"
+                    onClick={() => setIsOpen(false)}
+                    className={`text-lg uppercase tracking-widest transition-colors ${
+                      location.pathname === '/membership' || location.pathname === '/members' ? 'text-brand-coral font-bold' : 'text-white/70 hover:text-brand-coral'
+                    }`}
+                  >
+                    Members
+                  </Link>
+                  <Link
+                    to="/schedule"
+                    onClick={() => setIsOpen(false)}
+                    className={`text-lg uppercase tracking-widest transition-colors ${
+                      location.pathname === '/schedule' || location.pathname === '/schedules' ? 'text-brand-coral font-bold' : 'text-white/70 hover:text-brand-coral'
+                    }`}
+                  >
+                    Schedules
+                  </Link>
+                  <Link
+                    to="/programs"
+                    onClick={() => setIsOpen(false)}
+                    className={`text-lg uppercase tracking-widest transition-colors ${
+                      location.pathname === '/programs' || location.pathname === '/program' ? 'text-brand-coral font-bold' : 'text-white/70 hover:text-brand-coral'
+                    }`}
+                  >
+                    Programs
+                  </Link>
+                  <div className="pt-6 border-t border-white/10 flex flex-col space-y-4">
+                    <Link
+                      to="/membership?mode=login"
+                      onClick={() => setIsOpen(false)}
+                      className="text-lg uppercase tracking-widest text-white/70 hover:text-white transition-colors"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      to="/membership?mode=signup"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full py-4 rounded-xl bg-brand-teal text-black font-bold text-center text-sm uppercase tracking-widest shadow-[0_0_20px_rgba(45,212,191,0.4)]"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         )}
@@ -1949,39 +1993,134 @@ const SystemSection = () => {
 
 const ProgramPage = () => {
   const navigate = useNavigate();
+
+  const offerings = [
+    {
+      title: 'Training & Calisthenics System',
+      badge: 'Core Program',
+      desc: 'Structured 12-week progression focused on bodyweight mastery, functional strength, and physical endurance.',
+      link: '/schedule',
+      cta: 'View Schedules',
+      icon: Dumbbell
+    },
+    {
+      title: 'On-Demand Video Library',
+      badge: 'Video Vault',
+      desc: 'Exclusive video database featuring movement tutorials, guided workouts, and technique breakdown sessions.',
+      link: '/videos',
+      cta: 'Explore Videos',
+      icon: PlayCircle
+    },
+    {
+      title: 'Miami Fitness Retreats',
+      badge: 'Immersive Experience',
+      desc: 'Luxury wellness and intensive physical training retreats hosted in Miami for high-performing individuals.',
+      link: '/retreats',
+      cta: 'View Retreats',
+      icon: MapPin
+    },
+    {
+      title: 'Recovery & Mobility (FlexMob305)',
+      badge: 'Performance Recovery',
+      desc: 'Targeted mobility routines, joint health protocols, and 1-on-1 recovery coaching to maximize longevity.',
+      link: '/services',
+      cta: 'Explore Recovery',
+      icon: Heart
+    },
+    {
+      title: 'Official FMF Apparel & Gear',
+      badge: 'Equipment & Style',
+      desc: 'Premium training gear, community apparel, and fitness accessories designed for performance.',
+      link: '/shop',
+      cta: 'Visit Store',
+      icon: ShoppingBag
+    }
+  ];
+
   return (
-    <div className="pt-20">
-      <header className="py-32 px-6 bg-brand-black border-b border-white/5">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
+    <div className="pt-20 min-h-screen bg-brand-black">
+      <header className="py-20 px-6 bg-brand-black border-b border-white/5">
+        <div className="max-w-4xl mx-auto text-center space-y-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
           >
-            <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em] mb-4 block">Elite Performance</span>
-            <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-tighter leading-none">
-              The <span className="text-brand-teal">Program</span>
+            <span className="text-brand-coral text-[10px] uppercase tracking-[0.5em] mb-4 block">FMF Gateway</span>
+            <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-none">
+              Programs & <span className="text-brand-teal">Offerings</span>
             </h1>
-            <p className="mt-8 text-xl text-white/60 font-light leading-relaxed max-w-2xl mx-auto">
-              A structured calisthenics journey designed to transform your physical capability and mental discipline.
+            <p className="mt-6 text-lg text-white/60 font-light leading-relaxed max-w-xl mx-auto">
+              Your central hub for calisthenics training, video coaching, retreats, recovery, and official gear.
             </p>
           </motion.div>
         </div>
       </header>
 
-      <PhilosophySection />
-      <TrainerSection />
-      <SystemSection />
+      {/* Gateway Grid */}
+      <section className="py-20 px-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {offerings.map((item, idx) => {
+            const IconComponent = item.icon;
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.08 }}
+                viewport={{ once: true }}
+                onClick={() => navigate(item.link)}
+                className="card-gradient p-8 rounded-3xl space-y-6 flex flex-col justify-between group cursor-pointer hover:border-brand-teal/40 transition-all hover:scale-[1.02]"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-widest text-brand-teal font-semibold px-3 py-1 bg-brand-teal/10 rounded-full border border-brand-teal/20">
+                      {item.badge}
+                    </span>
+                    <div className="p-3 rounded-2xl bg-white/5 group-hover:bg-brand-teal/10 transition-colors">
+                      <IconComponent size={24} className="text-brand-teal group-hover:scale-110 transition-transform" />
+                    </div>
+                  </div>
 
-      <section className="py-32 px-6 bg-brand-black text-center">
-        <div className="max-w-2xl mx-auto space-y-8">
-          <h2 className="text-4xl font-bold uppercase tracking-tighter">Ready to Begin?</h2>
-          <p className="text-white/40 text-lg font-light">
-            Join the movement and start your 12-week transformation today.
+                  <h3 className="text-2xl font-bold uppercase tracking-tight text-white group-hover:text-brand-teal transition-colors">
+                    {item.title}
+                  </h3>
+
+                  <p className="text-sm text-white/50 font-light leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-brand-teal group-hover:text-brand-coral transition-colors">
+                  <span>{item.cta}</span>
+                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Conversion Banner */}
+      <section className="py-16 px-6 bg-white/5 border-t border-white/5 text-center">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <h2 className="text-3xl md:text-4xl font-bold uppercase tracking-tighter">Ready to Elevate Your Training?</h2>
+          <p className="text-white/50 text-base font-light">
+            Unlock complete access to guided training programs, daily schedules, and the FMF community for $19.99/month.
           </p>
-          <div className="flex justify-center gap-4">
-            <button onClick={() => navigate('/membership')} className="btn-primary">Get Started</button>
-            <Link to="/videos" className="btn-outline inline-block">View Library</Link>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-2">
+            <button 
+              onClick={() => navigate('/membership?mode=signup')} 
+              className="px-8 py-4 bg-brand-teal text-black font-bold text-xs uppercase tracking-widest rounded-full hover:bg-brand-teal/90 shadow-[0_0_20px_rgba(45,212,191,0.4)] transition-all"
+            >
+              Join Membership — $19.99/mo
+            </button>
+            <Link 
+              to="/schedule" 
+              className="px-8 py-4 border border-white/20 text-white font-bold text-xs uppercase tracking-widest rounded-full hover:bg-white/10 transition-all inline-block"
+            >
+              View Class Schedule
+            </Link>
           </div>
         </div>
       </section>
@@ -7657,17 +7796,18 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               <Route path="/services" element={<Navigate to="/" replace />} />
               <Route path="/services/flexmob305" element={<FlexMob305 showToast={showToast} />} />
               <Route path="/services/personal-training" element={<PersonalTraining showToast={showToast} />} />
+              <Route path="/programs" element={<ProgramPage />} />
               <Route path="/program" element={<ProgramPage />} />
               <Route path="/athletes" element={<AthletesDirectory showToast={showToast} />} />
               <Route path="/athlete-application" element={<AthleteApplicationPage showToast={showToast} />} />
               <Route path="/videos" element={user ? <VideoLibrary showToast={showToast} /> : <Navigate to="/membership" replace />} />
               <Route path="/video/:id" element={user ? <VideoDetail showToast={showToast} /> : <Navigate to="/membership" replace />} />
+              <Route path="/members" element={<Membership showToast={showToast} />} />
               <Route path="/membership" element={<Membership showToast={showToast} />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
-              <Route path="/reset-password" element={<ResetPassword showToast={showToast} />} />
-              {/* Community removed from the public site */}
-              <Route path="/community" element={<Navigate to="/" replace />} />
-              <Route path="/community/:id" element={<Navigate to="/" replace />} />
+              <Route path="/community" element={<CommunityPage user={user} showToast={showToast} />} />
+              <Route path="/community/:id" element={<CommunityDetail user={user} showToast={showToast} />} />
+              <Route path="/schedules" element={<Schedule showToast={showToast} />} />
               <Route path="/schedule" element={<Schedule showToast={showToast} />} />
               <Route path="/shop" element={<Store />} />
               <Route path="/shop/:category" element={<Store />} />
@@ -7682,8 +7822,7 @@ const MainAppContent = ({ showToast, toast, setToast }: { showToast: (m: string,
               } />
               <Route path="/order-history" element={<Navigate to="/profile#orders" replace />} />
               <Route path="/recovery" element={user ? <Recovery /> : <Navigate to="/membership" replace />} />
-              {/* Retreats coming soon */}
-              <Route path="/retreats" element={<Navigate to="/" replace />} />
+              <Route path="/retreats" element={<RetreatPage showToast={showToast} />} />
               <Route path="/about" element={<About />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfService />} />
