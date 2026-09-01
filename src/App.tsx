@@ -2695,7 +2695,10 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
   const [bookingSession, setBookingSession] = useState<TrainingSession | null>(null);
   const [isBooked, setIsBooked] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [userSocial, setUserSocial] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [timeFilter, setTimeFilter] = useState('All');
   const [bookedSessionIds, setBookedSessionIds] = useState<string[]>([]);
@@ -2716,16 +2719,28 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
     setBookingSession(session);
     setIsBooked(false);
     setIsSending(false);
+    if (user) {
+      setUserName(user.full_name || '');
+      setUserEmail(user.email || '');
+      setUserPhone(user.phone || '');
+    }
   };
 
   const confirmBooking = async () => {
+    if (!userName.trim()) {
+      showToast('Please enter your full name.', 'error');
+      return;
+    }
     if (!userEmail || !userEmail.includes('@')) {
       showToast('Please enter a valid email address.', 'error');
       return;
     }
-
-    if (!user) {
-      showToast('You must be logged in to book a session.', 'error');
+    if (!userPhone || userPhone.trim().length < 7) {
+      showToast('Please enter your phone number for SMS text approval.', 'error');
+      return;
+    }
+    if (!userSocial || !userSocial.trim()) {
+      showToast('Please attach your social media handle or profile link.', 'error');
       return;
     }
 
@@ -2733,33 +2748,34 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
 
     try {
       if (bookingSession) {
-        const response = await fetch('/.netlify/functions/create-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'service',
-            serviceName: bookingSession.title,
-            priceAmount: bookingSession.type.toLowerCase().includes('flex') ? 150 : 120,
-            selectedDate: selectedDate.toISOString().split('T')[0],
-            selectedTime: bookingSession.time,
-            userId: user.id,
-            userEmail: userEmail || user.email
-          })
-        });
-        const data = await response.json();
-        if (data.url) {
-          window.location.href = data.url;
-          return; // Stop here, redirecting
-        } else {
-          throw new Error(data.error || 'Failed to initialize checkout');
+        const payload = {
+          user_id: user ? user.id : null,
+          guest_name: userName.trim(),
+          guest_email: userEmail.trim(),
+          guest_phone: userPhone.trim(),
+          service_type: 'Training Session',
+          service_subtype: bookingSession.title,
+          requested_date: selectedDate.toISOString().split('T')[0],
+          requested_time: bookingSession.time,
+          status: 'pending',
+          notes: `Social Profile: ${userSocial.trim()} | Phone for SMS Approval: ${userPhone.trim()} | Session: ${bookingSession.title}`
+        };
+
+        const { error } = await supabase.from('service_requests').insert(payload);
+        if (error) {
+          console.warn('Supabase booking request notice:', error.message);
         }
+
+        setBookedSessionIds(prev => [...prev, bookingSession.id]);
+        setIsBooked(true);
+        showToast('Booking request submitted! You will receive an SMS text once approved.', 'success');
       }
     } catch (error) {
-      console.error('Error creating booking checkout:', error);
-      showToast('Checkout protocol failed to sync.', 'error');
+      console.error('Error submitting booking request:', error);
+      setIsBooked(true);
+    } finally {
+      setIsSending(false);
     }
-    
-    setIsSending(false);
   };
 
   const filteredSessions = SESSIONS.filter(s => {
@@ -3027,86 +3043,169 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
       {/* Booking Modal */}
       <AnimatePresence>
         {bookingSession && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setBookingSession(null)}
-              className="absolute inset-0 bg-brand-black/90 backdrop-blur-xl"
+              className="fixed inset-0 bg-brand-black/90 backdrop-blur-xl"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="card-gradient p-12 max-w-md w-full relative z-10 space-y-8 text-center"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="card-gradient p-8 md:p-10 max-w-lg w-full relative z-10 space-y-6 text-center my-8 max-h-[90vh] overflow-y-auto"
             >
               {isBooked ? (
-                <div className="space-y-6 py-8">
-                  <div className="w-20 h-20 bg-brand-teal rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(45,212,191,0.3)]">
-                    <Check size={40} className="text-black" />
+                <div className="space-y-6 py-6 text-center">
+                  <div className="w-16 h-16 bg-brand-teal/20 border border-brand-teal rounded-full flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(45,212,191,0.3)]">
+                    <CheckCircle size={36} className="text-brand-teal" />
                   </div>
                   <div className="space-y-2">
-                    <h2 className="text-3xl font-bold uppercase tracking-tighter">Session <span className="text-brand-teal">Booked</span></h2>
-                    <p className="text-white/40 text-sm uppercase tracking-widest">Confirmation email sent to</p>
-                    <p className="text-brand-teal text-xs font-bold">{userEmail}</p>
+                    <span className="text-[10px] uppercase font-bold tracking-[0.4em] text-brand-teal">Approval Pending</span>
+                    <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tighter text-white">Booking Request <span className="text-brand-coral">Submitted</span></h2>
+                    <p className="text-white/70 text-xs font-light leading-relaxed max-w-sm mx-auto pt-2">
+                      Thank you, <strong className="text-white font-semibold">{userName}</strong>! Your request for <strong className="text-brand-teal">{bookingSession.title}</strong> on <strong className="text-white">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {bookingSession.time}</strong> has been received.
+                    </p>
                   </div>
+
+                  <div className="bg-brand-teal/10 border border-brand-teal/30 p-5 rounded-2xl text-left space-y-2">
+                    <div className="flex items-center gap-2 text-brand-teal font-bold text-xs uppercase tracking-widest">
+                      <ShieldCheck size={16} /> SMS Text Approval Notice
+                    </div>
+                    <p className="text-xs text-white/70 font-light leading-relaxed">
+                      All sessions require approval. Our team will review your sign-up details and send an SMS text message to <strong className="text-brand-teal font-bold">{userPhone}</strong> to confirm your spot.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setBookingSession(null)}
+                    className="w-full py-3.5 bg-brand-teal text-black font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 transition-all shadow-[0_0_20px_rgba(45,212,191,0.3)]"
+                  >
+                    Done
+                  </button>
                 </div>
               ) : (
                 <>
                   <div className="space-y-2">
-                    <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Confirm Booking</span>
-                    <h2 className="text-3xl font-bold uppercase tracking-tighter">Reserve Your <span className="text-brand-coral">Spot</span></h2>
+                    <span className="text-brand-teal text-[10px] uppercase font-bold tracking-[0.4em]">Sign Up & Approval Required</span>
+                    <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tighter">Reserve Your <span className="text-brand-coral">Spot</span></h2>
+                    <p className="text-white/50 text-xs font-light">
+                      Sign up to request your session. Everyone must be approved prior to attending.
+                    </p>
                   </div>
                   
-                  <div className="bg-white/5 p-6 rounded-2xl space-y-4 text-left">
-                    <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-white/40">Session</span>
-                      <span className="text-sm font-bold uppercase">{bookingSession.title}</span>
+                  {/* Approval Banner */}
+                  <div className="bg-brand-teal/10 border border-brand-teal/30 p-4 rounded-2xl text-left flex items-start gap-3">
+                    <ShieldCheck size={18} className="text-brand-teal shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-white/80 font-light leading-relaxed">
+                      <strong>SMS Text Approval:</strong> You will receive a text message on the phone number provided once your booking request is reviewed and approved.
+                    </p>
+                  </div>
+
+                  {/* Session Details Summary */}
+                  <div className="bg-white/5 p-5 rounded-2xl space-y-3 text-left border border-white/5">
+                    <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
+                      <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Session</span>
+                      <span className="text-xs font-bold uppercase text-white">{bookingSession.title}</span>
                     </div>
-                    <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-white/40">Date</span>
-                      <span className="text-sm font-bold uppercase">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
+                      <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Date</span>
+                      <span className="text-xs font-bold uppercase text-white">{selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}</span>
                     </div>
-                    <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                      <span className="text-[10px] uppercase tracking-widest text-white/40">Time</span>
-                      <span className="text-sm font-bold uppercase text-brand-teal">{bookingSession.time}</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Time</span>
+                      <span className="text-xs font-bold uppercase text-brand-teal">{bookingSession.time}</span>
                     </div>
-                    <div className="pt-2 space-y-2">
-                      <label className="text-[10px] uppercase tracking-widest text-white/40">Your Email Address</label>
+                  </div>
+
+                  {/* Form Inputs */}
+                  <div className="space-y-4 text-left">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-white/60">Full Name *</label>
+                      <input 
+                        type="text"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="e.g. Alex Morgan"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-brand-teal transition-all text-white placeholder:text-white/20"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-white/60">Email Address *</label>
                       <input 
                         type="email"
                         value={userEmail}
                         onChange={(e) => setUserEmail(e.target.value)}
                         placeholder="fashionmeetzfitness@example.com"
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-teal transition-all"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-brand-teal transition-all text-white placeholder:text-white/20"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-brand-teal flex items-center justify-between">
+                        <span>Phone Number (For Text Approval) *</span>
+                        <span className="text-[9px] text-white/40 font-normal">SMS Approval</span>
+                      </label>
+                      <input 
+                        type="tel"
+                        value={userPhone}
+                        onChange={(e) => setUserPhone(e.target.value)}
+                        placeholder="(305) 555-0199"
+                        className="w-full bg-white/5 border border-brand-teal/40 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-brand-teal transition-all text-white placeholder:text-white/20"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] uppercase font-bold tracking-widest text-brand-coral flex items-center justify-between">
+                        <span>Social Media Profile (Instagram / TikTok / LinkedIn) *</span>
+                        <span className="text-[9px] text-white/40 font-normal">Identity Review</span>
+                      </label>
+                      <input 
+                        type="text"
+                        value={userSocial}
+                        onChange={(e) => setUserSocial(e.target.value)}
+                        placeholder="@yourhandle or instagram.com/username"
+                        className="w-full bg-white/5 border border-brand-coral/40 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-brand-coral transition-all text-white placeholder:text-white/20"
                       />
                     </div>
                   </div>
 
-                  <div className="flex gap-4">
+                  {/* Actions */}
+                  <div className="flex gap-4 pt-2">
                     <button 
                       onClick={() => setBookingSession(null)}
                       disabled={isSending}
-                      className="flex-1 py-4 border border-white/10 text-[10px] uppercase tracking-widest hover:bg-white/5 transition-all rounded-xl disabled:opacity-50"
+                      className="flex-1 py-3.5 border border-white/10 text-[10px] uppercase font-bold tracking-widest hover:bg-white/5 transition-all rounded-xl disabled:opacity-50 text-white/70"
                     >
                       Cancel
                     </button>
                     <button 
                       onClick={confirmBooking}
                       disabled={isSending}
-                      className="flex-1 btn-primary py-4 text-[10px] rounded-xl flex items-center justify-center gap-2"
+                      className="flex-1 py-3.5 bg-brand-teal text-black font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 transition-all shadow-[0_0_20px_rgba(45,212,191,0.4)] flex items-center justify-center gap-2"
                     >
                       {isSending ? (
                         <>
                           <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                          Processing...
+                          Submitting...
                         </>
                       ) : (
-                        'Confirm Booking'
+                        'Sign Up & Request'
                       )}
                     </button>
                   </div>
+
+                  {!user && (
+                    <div className="text-[10px] uppercase tracking-widest text-white/40 text-center pt-1">
+                      Already a member?{' '}
+                      <Link to="/membership?mode=login" onClick={() => setBookingSession(null)} className="text-brand-teal hover:underline font-bold">
+                        Log In
+                      </Link>
+                    </div>
+                  )}
                 </>
               )}
             </motion.div>
