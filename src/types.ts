@@ -460,9 +460,14 @@ export interface TrainingSession {
   id: string;
   title: string;
   time: string;
-  trainer: string;
-  spots: number;
+  trainer?: string;
+  spots?: number;
   type: string;
+  location?: string;
+  level?: string;
+  frequency?: string;
+  description?: string;
+  badge?: string;
 }
 
 export interface ActivityLog {

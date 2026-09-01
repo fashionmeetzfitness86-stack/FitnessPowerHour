@@ -202,10 +202,28 @@ const VIDEOS: Video[] = [
 ];
 
 const SESSIONS: TrainingSession[] = [
-  { id: 's1', title: 'Sunrise Calisthenics', time: '06:00 AM', trainer: 'Anderson Djeemo', spots: 5, type: 'Beach Training' },
-  { id: 's2', title: 'Power Hour Intensity', time: '09:00 AM', trainer: 'Sarah Chen', spots: 2, type: 'Strength' },
-  { id: 's3', title: 'Mobility & Flow', time: '11:00 AM', trainer: 'Marcus Thorne', spots: 10, type: 'Recovery' },
-  { id: 's4', title: 'Sunset Core Blast', time: '05:30 PM', trainer: 'Anderson Djeemo', spots: 8, type: 'Mindset & Core' },
+  { 
+    id: 's1', 
+    title: 'Calisthenics Functional Training', 
+    time: '8:30 AM', 
+    location: 'Grand Beach Hotel Miami Beach',
+    level: 'Beginners / All Levels',
+    type: 'Calisthenics Functional Training',
+    frequency: 'EVERY DAY — Monday through Sunday',
+    description: 'Beginner-friendly calisthenics functional training focused on mobility, strength, functionality, posture, core, and proper movement.',
+    badge: 'EVERY DAY · 8:30 AM'
+  },
+  { 
+    id: 's2', 
+    title: 'Family & Friends Beach Training', 
+    time: '10:00 AM', 
+    location: 'Miami Beach',
+    level: 'Advanced',
+    type: 'Group Beach Training',
+    frequency: 'EVERY DAY — Monday through Sunday',
+    description: 'Advanced-level group beach training for family and friends combining calisthenics, functional strength, conditioning, mobility, and endurance.',
+    badge: 'EVERY DAY · 10:00 AM'
+  }
 ];
 
 const RETREATS: Retreat[] = [
@@ -2745,7 +2763,7 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
   };
 
   const filteredSessions = SESSIONS.filter(s => {
-    const matchesCategory = activeFilter === 'All' || s.type.includes(activeFilter) || s.trainer.includes(activeFilter);
+    const matchesCategory = activeFilter === 'All' || s.type.includes(activeFilter) || s.title.includes(activeFilter);
     const hour = parseInt(s.time.split(':')[0]);
     const isPM = s.time.includes('PM');
     const actualHour = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
@@ -2760,17 +2778,19 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
 
   const bookedSessions = SESSIONS.filter(s => bookedSessionIds.includes(s.id));
 
-  const filterOptions = ['All', 'Strength', 'Recovery', 'Beach Training', 'Mindset'];
-  const timeOptions = ['All', 'Morning', 'Afternoon', 'Evening'];
+  const filterOptions = ['All', 'Calisthenics Functional Training', 'Group Beach Training'];
+  const timeOptions = ['All', 'Morning'];
 
   return (
     <div className="pt-40 pb-32 px-6">
       <div className="max-w-7xl mx-auto">
         <header className="mb-20 text-center space-y-4">
-          <span className="text-brand-teal text-[10px] uppercase tracking-[0.5em]">Training Schedule</span>
+          <span className="inline-block px-4 py-1.5 bg-brand-teal/10 border border-brand-teal/30 text-brand-teal text-[10px] uppercase font-bold tracking-[0.3em] rounded-full shadow-[0_0_15px_rgba(45,212,191,0.2)]">
+            DAILY CLASSES · MONDAY–SUNDAY
+          </span>
           <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter">Reserve Your <span className="text-brand-coral">Spot</span></h1>
           <p className="text-white/40 uppercase tracking-widest text-xs max-w-xl mx-auto leading-relaxed">
-            Join the elite collective in Miami. Select a date and book your session in the FMF Power Hour system.
+            Classes run 7 days a week, Monday through Sunday. Select any date to view and reserve your training session in Miami Beach.
           </p>
         </header>
 
@@ -2785,7 +2805,7 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
                   </h2>
                   <button 
                     onClick={() => setSelectedDate(new Date())}
-                    className="text-[10px] uppercase tracking-widest text-brand-teal hover:text-brand-coral transition-colors"
+                    className="text-[10px] uppercase tracking-widest text-brand-teal hover:text-brand-coral transition-colors font-bold"
                   >
                     Go to Today
                   </button>
@@ -2812,8 +2832,8 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
                   const day = i + 1;
                   const isToday = new Date().toDateString() === new Date(currentYear, currentMonth, day).toDateString();
                   const isSelected = selectedDate.getDate() === day;
-                  // Simulate some days having classes
-                  const classCount = day % 2 === 0 ? 3 : (day % 3 === 0 ? 2 : 0);
+                  // Daily recurring sessions run 7 days a week
+                  const classCount = 2;
 
                   return (
                     <button
@@ -2829,7 +2849,7 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
                       {classCount > 0 && !isSelected && (
                         <div className="flex gap-0.5 mt-1">
                           {Array.from({ length: classCount }).map((_, idx) => (
-                            <div key={idx} className="w-1 h-1 bg-brand-teal/40 rounded-full" />
+                            <div key={idx} className="w-1 h-1 bg-brand-teal/60 rounded-full" />
                           ))}
                         </div>
                       )}
@@ -2897,11 +2917,22 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
 
             <div className="card-gradient p-8 space-y-4">
               <h3 className="text-sm font-bold uppercase tracking-widest text-brand-teal">Location Details</h3>
-              <div className="flex items-start gap-4">
-                <MapPin className="text-brand-coral mt-1" size={18} />
-                <div>
-                  <p className="text-sm font-bold uppercase tracking-tight">FMF Training Lab Miami</p>
-                  <p className="text-xs text-white/40 leading-relaxed">Miami Beach, FL</p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <MapPin className="text-brand-coral mt-1 shrink-0" size={18} />
+                  <div>
+                    <p className="text-sm font-bold uppercase tracking-tight">Grand Beach Hotel Miami Beach</p>
+                    <p className="text-xs text-white/40 leading-relaxed">4835 Collins Ave, Miami Beach, FL 33140</p>
+                    <p className="text-[10px] text-brand-teal uppercase font-bold tracking-widest mt-1">Calisthenics Functional Training · 8:30 AM Daily</p>
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-white/5 flex items-start gap-4">
+                  <MapPin className="text-brand-teal mt-1 shrink-0" size={18} />
+                  <div>
+                    <p className="text-sm font-bold uppercase tracking-tight">Miami Beach Training Zone</p>
+                    <p className="text-xs text-white/40 leading-relaxed">Miami Beach, FL</p>
+                    <p className="text-[10px] text-brand-coral uppercase font-bold tracking-widest mt-1">Family & Friends Beach Training · 10:00 AM Daily</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2909,11 +2940,16 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
 
           {/* Sessions List */}
           <div className="lg:col-span-7 space-y-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold uppercase tracking-tighter">
-                {showMyBookings ? 'My' : 'Available'} <span className="text-brand-coral">Sessions</span>
-              </h2>
-              <span className="text-[10px] uppercase tracking-widest text-white/40">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div>
+                <h2 className="text-2xl font-bold uppercase tracking-tighter">
+                  {showMyBookings ? 'My' : 'Available'} <span className="text-brand-coral">Sessions</span>
+                </h2>
+                <div className="text-[10px] uppercase font-bold tracking-widest text-brand-teal mt-1">
+                  DAILY CLASSES · MONDAY THROUGH SUNDAY
+                </div>
+              </div>
+              <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">
                 {showMyBookings ? 'Your Reserved Spots' : selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </span>
             </div>
@@ -2925,55 +2961,52 @@ const Schedule = ({ showToast }: { showToast: (msg: string, type?: 'success' | '
                     key={session.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={`card-gradient p-6 flex flex-col sm:flex-row justify-between items-center gap-6 group transition-all ${
+                    className={`card-gradient p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 group transition-all ${
                       bookedSessionIds.includes(session.id) ? 'border-brand-teal/40 bg-brand-teal/5' : 'hover:border-brand-teal/30'
                     }`}
                   >
-                    <div className="flex items-center gap-6 w-full sm:w-auto">
-                      <div className="text-center sm:text-left min-w-[80px]">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto">
+                      <div className="text-left min-w-[110px]">
                         <div className="text-xl font-bold text-brand-teal">{session.time}</div>
-                        <div className="text-[9px] uppercase tracking-widest text-white/20">60 Min</div>
+                        <span className="inline-block mt-1 px-2.5 py-0.5 bg-brand-teal/10 border border-brand-teal/20 text-brand-teal text-[9px] uppercase font-bold tracking-widest rounded-full">
+                          {session.badge || 'EVERY DAY'}
+                        </span>
                       </div>
-                      <div className="h-10 w-px bg-white/10 hidden sm:block" />
-                      <div>
-                        <h3 className="text-lg font-bold uppercase tracking-tight mb-1">{session.title}</h3>
-                        <div className="flex flex-wrap gap-4 text-[10px] text-white/40 uppercase tracking-widest">
-                          <span className="flex items-center gap-1.5"><User size={12} className="text-brand-coral" /> {session.trainer}</span>
-                          <span className="flex items-center gap-1.5"><Zap size={12} className="text-brand-teal" /> {session.type}</span>
+                      <div className="h-12 w-px bg-white/10 hidden sm:block" />
+                      <div className="space-y-1.5 max-w-md">
+                        <h3 className="text-lg font-bold uppercase tracking-tight text-white group-hover:text-brand-teal transition-colors">
+                          {session.title}
+                        </h3>
+                        <div className="flex flex-wrap gap-3 text-[10px] text-white/50 uppercase tracking-widest font-semibold">
+                          {session.location && (
+                            <span className="flex items-center gap-1.5"><MapPin size={12} className="text-brand-coral" /> {session.location}</span>
+                          )}
+                          {session.level && (
+                            <span className="flex items-center gap-1.5"><Trophy size={12} className="text-amber-400" /> {session.level}</span>
+                          )}
+                          {session.type && (
+                            <span className="flex items-center gap-1.5"><Zap size={12} className="text-brand-teal" /> {session.type}</span>
+                          )}
                         </div>
+                        {session.description && (
+                          <p className="text-xs text-white/60 font-light leading-relaxed pt-1">
+                            {session.description}
+                          </p>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                      <div className="text-right space-y-2">
-                        <div className="text-xs font-bold text-brand-coral">
-                          {bookedSessionIds.includes(session.id) ? (
-                            <span className="flex items-center gap-1 justify-end"><Check size={12} /> Reserved</span>
-                          ) : (
-                            `${session.spots} spots left`
-                          )}
-                        </div>
-                        <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden ml-auto">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${((20 - session.spots) / 20) * 100}%` }}
-                            className="h-full bg-brand-teal"
-                          />
-                        </div>
-                        <div className="text-[9px] uppercase tracking-widest text-white/20">Limited Capacity</div>
-                      </div>
+                    <div className="flex items-center gap-4 w-full md:w-auto justify-end pt-4 md:pt-0 border-t md:border-t-0 border-white/5">
                       {!bookedSessionIds.includes(session.id) ? (
                         <button 
-                          disabled
-                          onClick={(e) => e.preventDefault()}
-                          className="btn-primary py-3 px-6 text-[10px] opacity-50 cursor-not-allowed"
-                          title="Booking opens when physical location officially launches"
+                          onClick={() => handleBooking(session)}
+                          className="w-full sm:w-auto px-6 py-3 bg-brand-teal text-black font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_15px_rgba(45,212,191,0.3)] transition-all hover:scale-105"
                         >
                           Book Now
                         </button>
                       ) : (
-                        <div className="py-3 px-6 text-[10px] uppercase tracking-widest font-bold text-brand-teal border border-brand-teal/20 rounded-xl">
-                          Confirmed
+                        <div className="w-full sm:w-auto text-center py-3 px-6 text-[10px] uppercase tracking-widest font-bold text-brand-teal border border-brand-teal/20 rounded-xl bg-brand-teal/10">
+                          ✓ Confirmed
                         </div>
                       )}
                     </div>
