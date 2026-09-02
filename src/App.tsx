@@ -1543,8 +1543,8 @@ const Home = () => {
             <img
               src={heroBgImage}
               alt="The Rooftop Movement Social"
-              className="w-full h-auto rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.9)]"
-              style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
+              className="w-auto h-auto rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+              style={{ maxHeight: 'calc(100vh - 200px)', maxWidth: '90%' }}
               referrerPolicy="no-referrer"
             />
           </div>
