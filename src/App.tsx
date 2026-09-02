@@ -1528,7 +1528,7 @@ const Home = () => {
   const heroSecondaryBtnUrl = get('home_hero_secondary_btn_url', '/membership');
 
   return (
-    <div className="pt-20 bg-brand-black min-h-screen pb-32">
+    <div className="pt-20 bg-brand-black min-h-screen">
       {/* 1. HERO — Split layout: full flyer left, event info + CTAs right */}
       <section className="relative bg-brand-black border-b border-brand-teal/20 overflow-hidden">
         <div className="absolute inset-0 z-0">
@@ -1536,14 +1536,15 @@ const Home = () => {
             className="w-full h-full object-cover blur-3xl scale-110 opacity-10" referrerPolicy="no-referrer" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row items-center gap-10 lg:gap-16 min-h-[85vh]">
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row items-center gap-8 lg:gap-12" style={{ minHeight: 'calc(100vh - 80px)' }}>
 
           {/* LEFT — Full portrait flyer, displayed completely without any cropping */}
-          <div className="w-full lg:w-[42%] flex-shrink-0 flex justify-center">
+          <div className="w-full lg:w-[45%] flex-shrink-0 flex justify-center items-center">
             <img
               src={heroBgImage}
               alt="The Rooftop Movement Social"
-              className="w-full max-w-sm lg:max-w-md xl:max-w-lg rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)]"
+              className="w-full h-auto rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.9)]"
+              style={{ maxHeight: 'calc(100vh - 120px)', objectFit: 'contain' }}
               referrerPolicy="no-referrer"
             />
           </div>
