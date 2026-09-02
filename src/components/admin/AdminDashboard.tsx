@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  LayoutDashboard, Users, Trophy, PlayCircle, 
+  LayoutDashboard, Users, Trophy, PlayCircle, Sliders,
   ListChecks, MapPin, MessageSquare, ShoppingBag, 
   ClipboardList, Package as PackageIcon, History, LogOut, ChevronRight,
   ShieldCheck, ArrowUpRight, Plus, Download, Search,
@@ -34,6 +34,7 @@ import { AthletesManager } from './AthletesManager';
 import { AthleteApplicationsManager } from './AthleteApplicationsManager';
 import { ShopManager } from './ShopManager';
 import { CheckInsManager } from './CheckInsManager';
+import { SiteContentManager } from './SiteContentManager';
 
 interface AdminDashboardProps {
   user: UserProfile;
@@ -525,6 +526,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
 
   const sidebarItems = [
     { id: 'overview',              label: 'Dashboard',     icon: LayoutDashboard },
+    { id: 'site-content',          label: 'Hero & Content', icon: Sliders },
     { id: 'users',                 label: 'Users',         icon: Users },
     { id: 'whitelist',             label: 'Whitelist',     icon: Bell },
     { id: 'requests',              label: 'Requests',      icon: Calendar },
@@ -552,6 +554,7 @@ export const AdminDashboard = ({ user, logout, showToast }: AdminDashboardProps)
 
     switch (activeTab) {
       case 'overview': return <AdminOverview stats={stats} onNavigate={setActiveTab} />;
+      case 'site-content': return <SiteContentManager showToast={showToast} />;
       case 'users': return (
         <UsersManager
           users={users}

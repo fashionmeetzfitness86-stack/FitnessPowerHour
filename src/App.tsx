@@ -26,7 +26,7 @@ import { useSiteContent } from './hooks/useSiteContent';
 import { COMING_SOON_EVENT, ComingSoonInfo, RETREATS_COMING_SOON, openComingSoon } from './comingSoon';
 import { 
   Menu, X, Instagram, Twitter, Facebook, ArrowRight, ArrowLeft,
-  Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft,
+  Play, Calendar, ShoppingBag, Info, ChevronRight, ChevronLeft, ChevronDown,
   Dumbbell, Zap, Heart, MapPin, Clock, Star, AlertCircle,
   Filter, Search, User, Quote, Plus, Minus, Upload, Link2, Send, Bell, Trash2,
   Youtube, ExternalLink, Share2, Trophy, Check, Users, Power, Ban, Layout, Globe,
@@ -1512,8 +1512,8 @@ const MembershipGate = ({ isOpen, onClose, navigate }: { isOpen: boolean, onClos
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { get, loading } = useSiteContent();
-  const [isGateOpen, setIsGateOpen] = useState(false);
+  const { get } = useSiteContent();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const isMember = user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete');
 
   const handleProgramClick = () => {
@@ -1521,33 +1521,104 @@ const Home = () => {
     else navigate('/profile#programs');
   };
 
+  const heroBgImage = get('home_hero_bg_image', '/images/rooftop-movement-social.jpg');
+  const heroBtnText = get('home_hero_btn_text', 'REGISTER FOR THE NEXT EVENT');
+  const heroBtnUrl = get('home_hero_btn_url', 'https://events.sweatpals.com/dd913e23');
+  const heroSecondaryBtnText = get('home_hero_secondary_btn_text', 'JOIN FOR FREE');
+  const heroSecondaryBtnUrl = get('home_hero_secondary_btn_url', '/membership');
+  const heroTitle = get('home_hero_title', '');
+  const heroSubtitle = get('home_hero_subtitle', '');
+
   return (
     <div className="pt-20 bg-brand-black min-h-screen pb-32">
       {/* 1. HERO */}
-      <section className="relative h-[90vh] flex items-center justify-center text-center overflow-hidden border-b border-brand-teal/20">
+      <section className="relative min-h-[85vh] flex items-center justify-center text-center overflow-hidden border-b border-brand-teal/20">
         <div className="absolute inset-0 z-0">
           <img
-            src={get('home_hero_bg_image', 'https://picsum.photos/seed/fmf-hero/1920/1080')}
-            alt="Hero"
-            className="w-full h-full object-cover opacity-50"
+            src={heroBgImage}
+            alt="The Rooftop Movement Social"
+            className="w-full h-full object-cover object-center opacity-85"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/40 to-transparent" />
         </div>
         
-        <div className="relative z-10 max-w-4xl mx-auto px-6 space-y-8 fade-in">
-          <h1 className="text-6xl md:text-8xl font-bold uppercase tracking-tighter text-white">
-            {get('home_hero_title', 'Own Your Power').split(' ').map((word, i) => i === 0 ? <span key={i} className="text-brand-coral">{word} </span> : <span key={i}>{word} </span>)}
-          </h1>
-          <p className="text-white/60 text-lg md:text-2xl font-light uppercase tracking-widest">
-            {get('home_hero_subtitle', 'The ultimate membership-based accountability platform.')}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
-            <button onClick={handleProgramClick} className="btn-primary px-12 py-5 text-sm uppercase tracking-widest font-bold">
-              Start Your Program
-            </button>
-            <button onClick={() => navigate('/membership')} className="btn-outline px-12 py-5 text-sm uppercase tracking-widest font-bold border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-black transition-all">
-              Join for Free
+        <div className="relative z-10 max-w-5xl mx-auto px-6 py-24 space-y-8 fade-in flex flex-col items-center">
+          {heroTitle && (
+            <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter text-white drop-shadow-md">
+              {heroTitle.split(' ').map((word, i) => i === 0 ? <span key={i} className="text-brand-coral">{word} </span> : <span key={i}>{word} </span>)}
+            </h1>
+          )}
+          {heroSubtitle && (
+            <p className="text-white/80 text-base md:text-xl font-light uppercase tracking-widest max-w-2xl drop-shadow-md">
+              {heroSubtitle}
+            </p>
+          )}
+
+          {/* Action Buttons Container */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6 w-full max-w-2xl">
+            {/* Selection Dropdown Button */}
+            <div className="relative w-full sm:w-auto">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full sm:w-auto px-8 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_25px_rgba(45,212,191,0.4)] transition-all flex items-center justify-between gap-3 group"
+              >
+                <span className="flex items-center gap-2">
+                  <Calendar size={16} />
+                  {heroBtnText}
+                </span>
+                <ChevronDown size={16} className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {isDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute left-0 right-0 mt-2 bg-brand-black/95 border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
+                  >
+                    <a
+                      href={heroBtnUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all group/item"
+                    >
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-wider">Rooftop Movement Social</div>
+                        <div className="text-[10px] opacity-70">Grand Beach Hotel · SweatPals Link</div>
+                      </div>
+                      <ExternalLink size={14} className="shrink-0" />
+                    </a>
+
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        navigate('/schedules');
+                      }}
+                      className="w-full flex items-center justify-between p-3.5 rounded-lg hover:bg-white/5 text-white/80 hover:text-white transition-all"
+                    >
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-wider">Daily Classes Schedule</div>
+                        <div className="text-[10px] text-white/40">Calisthenics & Beach Training (Mon–Sun)</div>
+                      </div>
+                      <ChevronRight size={14} className="shrink-0 text-white/40" />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Secondary Button */}
+            <button 
+              onClick={() => {
+                if (heroSecondaryBtnUrl.startsWith('/')) navigate(heroSecondaryBtnUrl);
+                else window.location.href = heroSecondaryBtnUrl;
+              }} 
+              className="w-full sm:w-auto px-8 py-4 bg-brand-black/70 border border-brand-teal/40 text-brand-teal hover:bg-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all backdrop-blur-md"
+            >
+              {heroSecondaryBtnText}
             </button>
           </div>
         </div>
