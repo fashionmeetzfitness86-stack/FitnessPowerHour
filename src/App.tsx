@@ -1532,36 +1532,36 @@ const Home = () => {
   return (
     <div className="pt-20 bg-brand-black min-h-screen pb-32">
       {/* 1. HERO */}
-      <section className="relative min-h-[85vh] flex items-center justify-center text-center overflow-hidden border-b border-brand-teal/20">
+      <section className="relative flex items-stretch justify-center overflow-hidden border-b border-brand-teal/20 bg-brand-black">
+        {/* Blurred background fill (for letterbox areas on wide screens) */}
         <div className="absolute inset-0 z-0">
           <img
             src={heroBgImage}
-            alt="The Rooftop Movement Social"
-            className="w-full h-full object-cover object-center opacity-85"
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover blur-2xl scale-110 opacity-30"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-brand-black/60" />
         </div>
-        
-        <div className="relative z-10 max-w-5xl mx-auto px-6 py-24 space-y-8 fade-in flex flex-col items-center">
-          {heroTitle && (
-            <h1 className="text-5xl md:text-7xl font-bold uppercase tracking-tighter text-white drop-shadow-md">
-              {heroTitle.split(' ').map((word, i) => i === 0 ? <span key={i} className="text-brand-coral">{word} </span> : <span key={i}>{word} </span>)}
-            </h1>
-          )}
-          {heroSubtitle && (
-            <p className="text-white/80 text-base md:text-xl font-light uppercase tracking-widest max-w-2xl drop-shadow-md">
-              {heroSubtitle}
-            </p>
-          )}
 
-          {/* Action Buttons Container */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6 w-full max-w-2xl">
+        {/* Main flyer image — full, unclipped */}
+        <div className="relative z-10 w-full flex justify-center items-center py-6 min-h-[80vh]">
+          <img
+            src={heroBgImage}
+            alt="The Rooftop Movement Social"
+            className="max-h-[88vh] w-auto max-w-full object-contain drop-shadow-2xl"
+            referrerPolicy="no-referrer"
+            style={{ maxWidth: 'min(100%, 900px)' }}
+          />
+
+          {/* Overlay action buttons — centered at the bottom of the flyer */}
+          <div className="absolute bottom-10 left-0 right-0 z-20 flex flex-col sm:flex-row gap-4 justify-center items-center px-6">
             {/* Selection Dropdown Button */}
-            <div className="relative w-full sm:w-auto">
+            <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full sm:w-auto px-8 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_25px_rgba(45,212,191,0.4)] transition-all flex items-center justify-between gap-3 group"
+                className="px-8 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_25px_rgba(45,212,191,0.5)] transition-all flex items-center justify-between gap-3"
               >
                 <span className="flex items-center gap-2">
                   <Calendar size={16} />
@@ -1576,14 +1576,14 @@ const Home = () => {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute left-0 right-0 mt-2 bg-brand-black/95 border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
+                    className="absolute bottom-full left-0 mb-2 bg-brand-black/95 border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
                   >
                     <a
                       href={heroBtnUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all group/item"
+                      className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all"
                     >
                       <div>
                         <div className="text-xs font-bold uppercase tracking-wider">Rooftop Movement Social</div>
@@ -1611,12 +1611,12 @@ const Home = () => {
             </div>
 
             {/* Secondary Button */}
-            <button 
+            <button
               onClick={() => {
                 if (heroSecondaryBtnUrl.startsWith('/')) navigate(heroSecondaryBtnUrl);
                 else window.location.href = heroSecondaryBtnUrl;
-              }} 
-              className="w-full sm:w-auto px-8 py-4 bg-brand-black/70 border border-brand-teal/40 text-brand-teal hover:bg-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all backdrop-blur-md"
+              }}
+              className="px-8 py-4 bg-brand-black/70 border border-brand-teal/40 text-brand-teal hover:bg-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all backdrop-blur-md"
             >
               {heroSecondaryBtnText}
             </button>
