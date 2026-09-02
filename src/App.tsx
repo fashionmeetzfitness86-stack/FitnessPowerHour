@@ -1529,78 +1529,117 @@ const Home = () => {
 
   return (
     <div className="pt-20 bg-brand-black min-h-screen pb-32">
-      {/* 1. HERO */}
-      <section className="relative h-[92vh] flex flex-col items-center justify-end overflow-hidden border-b border-brand-teal/20">
-        {/* Full-bleed flyer background — anchored top so title stays visible */}
-        <img
-          src={heroBgImage}
-          alt="The Rooftop Movement Social"
-          className="absolute inset-0 w-full h-full object-cover object-top"
-          referrerPolicy="no-referrer"
-        />
+      {/* 1. HERO — Split layout: full flyer left, event info + CTAs right */}
+      <section className="relative bg-brand-black border-b border-brand-teal/20 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img src={heroBgImage} alt="" aria-hidden="true"
+            className="w-full h-full object-cover blur-3xl scale-110 opacity-10" referrerPolicy="no-referrer" />
+        </div>
 
-        {/* Gradient fade — dark at bottom for button legibility, transparent at top so flyer shows */}
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/30 to-transparent" />
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row items-center gap-10 lg:gap-16 min-h-[85vh]">
 
-        {/* Action buttons — bottom center over the gradient */}
-        <div className="relative z-10 w-full pb-12 px-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
-          {/* Selection Dropdown Button */}
-          <div className="relative">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="px-8 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_30px_rgba(45,212,191,0.5)] transition-all flex items-center gap-3"
-            >
-              <Calendar size={16} />
-              {heroBtnText}
-              <ChevronDown size={16} className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            <AnimatePresence>
-              {isDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-full left-0 mb-2 bg-brand-black/95 border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
-                >
-                  <a
-                    href={heroBtnUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all"
-                  >
-                    <div>
-                      <div className="text-xs font-bold uppercase tracking-wider">Rooftop Movement Social</div>
-                      <div className="text-[10px] opacity-70">Grand Beach Hotel · SweatPals Link</div>
-                    </div>
-                    <ExternalLink size={14} className="shrink-0" />
-                  </a>
-                  <button
-                    onClick={() => { setIsDropdownOpen(false); navigate('/schedules'); }}
-                    className="w-full flex items-center justify-between p-3.5 rounded-lg hover:bg-white/5 text-white/80 hover:text-white transition-all"
-                  >
-                    <div>
-                      <div className="text-xs font-bold uppercase tracking-wider">Daily Classes Schedule</div>
-                      <div className="text-[10px] text-white/40">Calisthenics & Beach Training (Mon–Sun)</div>
-                    </div>
-                    <ChevronRight size={14} className="shrink-0 text-white/40" />
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* LEFT — Full portrait flyer, displayed completely without any cropping */}
+          <div className="w-full lg:w-[42%] flex-shrink-0 flex justify-center">
+            <img
+              src={heroBgImage}
+              alt="The Rooftop Movement Social"
+              className="w-full max-w-sm lg:max-w-md xl:max-w-lg rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.8)]"
+              referrerPolicy="no-referrer"
+            />
           </div>
 
-          {/* Secondary Button */}
-          <button
-            onClick={() => {
-              if (heroSecondaryBtnUrl.startsWith('/')) navigate(heroSecondaryBtnUrl);
-              else window.location.href = heroSecondaryBtnUrl;
-            }}
-            className="px-8 py-4 bg-black/60 border border-white/30 text-white hover:bg-brand-teal hover:border-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all backdrop-blur-sm"
-          >
-            {heroSecondaryBtnText}
-          </button>
+          {/* RIGHT — Event info + CTAs */}
+          <div className="w-full lg:w-[58%] flex flex-col items-center lg:items-start text-center lg:text-left space-y-7">
+            <div className="space-y-3">
+              <span className="text-brand-teal text-[10px] uppercase font-bold tracking-[0.4em]">September 2026 · Miami Beach, FL</span>
+              <h1 className="text-4xl md:text-5xl xl:text-6xl font-black uppercase tracking-tighter text-white leading-none">
+                The Rooftop<br /><span className="text-brand-teal">Movement</span> Social
+              </h1>
+              <p className="text-white/50 text-sm uppercase tracking-wider font-light">Move / Recover / Connect</p>
+            </div>
+
+            <div className="space-y-3 w-full">
+              <div className="flex items-start gap-3">
+                <MapPin size={16} className="text-brand-coral shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-white">Grand Beach Hotel</p>
+                  <p className="text-xs text-white/50">4835 Collins Ave, Miami Beach, FL</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <Clock size={16} className="text-brand-coral shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-white">10:00 AM – 1:30 PM</p>
+                  <p className="text-xs text-white/50">Event starts 10:30 AM · Rooftop Venue</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+              {['Run Club', 'Rooftop Fitness', 'Yoga', 'Recovery', 'Community', 'Good Vibes'].map(tag => (
+                <span key={tag} className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider bg-white/5 border border-white/10 rounded-full text-white/50">{tag}</span>
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="px-7 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_30px_rgba(45,212,191,0.4)] transition-all flex items-center gap-3"
+                >
+                  <Calendar size={15} />
+                  {heroBtnText}
+                  <ChevronDown size={15} className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      className="absolute top-full left-0 mt-2 bg-brand-black border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
+                    >
+                      <a
+                        href={heroBtnUrl} target="_blank" rel="noopener noreferrer"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all"
+                      >
+                        <div>
+                          <div className="text-xs font-bold uppercase tracking-wider">Rooftop Movement Social</div>
+                          <div className="text-[10px] opacity-70">Grand Beach Hotel · SweatPals Link</div>
+                        </div>
+                        <ExternalLink size={14} className="shrink-0" />
+                      </a>
+                      <button
+                        onClick={() => { setIsDropdownOpen(false); navigate('/schedules'); }}
+                        className="w-full flex items-center justify-between p-3.5 rounded-lg hover:bg-white/5 text-white/80 hover:text-white transition-all"
+                      >
+                        <div>
+                          <div className="text-xs font-bold uppercase tracking-wider">Daily Classes Schedule</div>
+                          <div className="text-[10px] text-white/40">Calisthenics & Beach Training · Mon–Sun</div>
+                        </div>
+                        <ChevronRight size={14} className="shrink-0 text-white/40" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (heroSecondaryBtnUrl.startsWith('/')) navigate(heroSecondaryBtnUrl);
+                  else window.location.href = heroSecondaryBtnUrl;
+                }}
+                className="px-7 py-4 bg-transparent border border-brand-teal/50 text-brand-teal hover:bg-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all"
+              >
+                {heroSecondaryBtnText}
+              </button>
+            </div>
+
+            <p className="text-[10px] text-white/25 uppercase tracking-widest">Hosted by Fashion Meetz Fitness</p>
+          </div>
+
         </div>
       </section>
 
