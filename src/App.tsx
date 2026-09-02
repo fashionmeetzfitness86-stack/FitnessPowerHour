@@ -1526,101 +1526,81 @@ const Home = () => {
   const heroBtnUrl = get('home_hero_btn_url', 'https://events.sweatpals.com/dd913e23');
   const heroSecondaryBtnText = get('home_hero_secondary_btn_text', 'JOIN FOR FREE');
   const heroSecondaryBtnUrl = get('home_hero_secondary_btn_url', '/membership');
-  const heroTitle = get('home_hero_title', '');
-  const heroSubtitle = get('home_hero_subtitle', '');
 
   return (
     <div className="pt-20 bg-brand-black min-h-screen pb-32">
       {/* 1. HERO */}
-      <section className="relative flex items-stretch justify-center overflow-hidden border-b border-brand-teal/20 bg-brand-black">
-        {/* Blurred background fill (for letterbox areas on wide screens) */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src={heroBgImage}
-            alt=""
-            aria-hidden="true"
-            className="w-full h-full object-cover blur-2xl scale-110 opacity-30"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-brand-black/60" />
-        </div>
+      <section className="relative h-[92vh] flex flex-col items-center justify-end overflow-hidden border-b border-brand-teal/20">
+        {/* Full-bleed flyer background — anchored top so title stays visible */}
+        <img
+          src={heroBgImage}
+          alt="The Rooftop Movement Social"
+          className="absolute inset-0 w-full h-full object-cover object-top"
+          referrerPolicy="no-referrer"
+        />
 
-        {/* Main flyer image — full, unclipped */}
-        <div className="relative z-10 w-full flex justify-center items-center py-6 min-h-[80vh]">
-          <img
-            src={heroBgImage}
-            alt="The Rooftop Movement Social"
-            className="max-h-[88vh] w-auto max-w-full object-contain drop-shadow-2xl"
-            referrerPolicy="no-referrer"
-            style={{ maxWidth: 'min(100%, 900px)' }}
-          />
+        {/* Gradient fade — dark at bottom for button legibility, transparent at top so flyer shows */}
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-brand-black/30 to-transparent" />
 
-          {/* Overlay action buttons — centered at the bottom of the flyer */}
-          <div className="absolute bottom-10 left-0 right-0 z-20 flex flex-col sm:flex-row gap-4 justify-center items-center px-6">
-            {/* Selection Dropdown Button */}
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="px-8 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_25px_rgba(45,212,191,0.5)] transition-all flex items-center justify-between gap-3"
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  {heroBtnText}
-                </span>
-                <ChevronDown size={16} className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              <AnimatePresence>
-                {isDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute bottom-full left-0 mb-2 bg-brand-black/95 border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
-                  >
-                    <a
-                      href={heroBtnUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all"
-                    >
-                      <div>
-                        <div className="text-xs font-bold uppercase tracking-wider">Rooftop Movement Social</div>
-                        <div className="text-[10px] opacity-70">Grand Beach Hotel · SweatPals Link</div>
-                      </div>
-                      <ExternalLink size={14} className="shrink-0" />
-                    </a>
-
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        navigate('/schedules');
-                      }}
-                      className="w-full flex items-center justify-between p-3.5 rounded-lg hover:bg-white/5 text-white/80 hover:text-white transition-all"
-                    >
-                      <div>
-                        <div className="text-xs font-bold uppercase tracking-wider">Daily Classes Schedule</div>
-                        <div className="text-[10px] text-white/40">Calisthenics & Beach Training (Mon–Sun)</div>
-                      </div>
-                      <ChevronRight size={14} className="shrink-0 text-white/40" />
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Secondary Button */}
+        {/* Action buttons — bottom center over the gradient */}
+        <div className="relative z-10 w-full pb-12 px-6 flex flex-col sm:flex-row gap-4 justify-center items-center">
+          {/* Selection Dropdown Button */}
+          <div className="relative">
             <button
-              onClick={() => {
-                if (heroSecondaryBtnUrl.startsWith('/')) navigate(heroSecondaryBtnUrl);
-                else window.location.href = heroSecondaryBtnUrl;
-              }}
-              className="px-8 py-4 bg-brand-black/70 border border-brand-teal/40 text-brand-teal hover:bg-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all backdrop-blur-md"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="px-8 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_30px_rgba(45,212,191,0.5)] transition-all flex items-center gap-3"
             >
-              {heroSecondaryBtnText}
+              <Calendar size={16} />
+              {heroBtnText}
+              <ChevronDown size={16} className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute bottom-full left-0 mb-2 bg-brand-black/95 border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
+                >
+                  <a
+                    href={heroBtnUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all"
+                  >
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wider">Rooftop Movement Social</div>
+                      <div className="text-[10px] opacity-70">Grand Beach Hotel · SweatPals Link</div>
+                    </div>
+                    <ExternalLink size={14} className="shrink-0" />
+                  </a>
+                  <button
+                    onClick={() => { setIsDropdownOpen(false); navigate('/schedules'); }}
+                    className="w-full flex items-center justify-between p-3.5 rounded-lg hover:bg-white/5 text-white/80 hover:text-white transition-all"
+                  >
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wider">Daily Classes Schedule</div>
+                      <div className="text-[10px] text-white/40">Calisthenics & Beach Training (Mon–Sun)</div>
+                    </div>
+                    <ChevronRight size={14} className="shrink-0 text-white/40" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          {/* Secondary Button */}
+          <button
+            onClick={() => {
+              if (heroSecondaryBtnUrl.startsWith('/')) navigate(heroSecondaryBtnUrl);
+              else window.location.href = heroSecondaryBtnUrl;
+            }}
+            className="px-8 py-4 bg-black/60 border border-white/30 text-white hover:bg-brand-teal hover:border-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all backdrop-blur-sm"
+          >
+            {heroSecondaryBtnText}
+          </button>
         </div>
       </section>
 
