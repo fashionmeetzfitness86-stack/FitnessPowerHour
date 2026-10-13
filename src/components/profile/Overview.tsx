@@ -9,6 +9,7 @@ import {
 import { UserProfile, CalendarSession } from '../../types';
 import { supabase } from '../../supabase';
 import { InAppWaiverPopup } from '../legal/InAppWaiverPopup';
+import { PartnerEventProfileCard } from '../PartnerEvent';
 
 export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; showToast: any; onTabChange?: (tab: string) => void }) => {
   const [loading, setLoading] = useState(true);
@@ -449,6 +450,9 @@ export const Overview = ({ user, showToast, onTabChange }: { user: UserProfile; 
           </motion.button>
         ))}
       </div>
+
+      {/* =================== PARTNER EVENT =================== */}
+      <PartnerEventProfileCard />
 
       {/* =================== WEEK CALENDAR STRIP =================== */}
       <div className="card-gradient rounded-[2.5rem] border border-white/5 p-8 space-y-6">
