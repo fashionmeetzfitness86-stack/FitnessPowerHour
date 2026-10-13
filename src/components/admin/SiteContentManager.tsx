@@ -10,11 +10,11 @@ export const SiteContentManager = ({ showToast }: SiteContentManagerProps) => {
   const { get, updateMultiple, loading } = useSiteContent();
 
   const [form, setForm] = useState({
-    home_hero_bg_image: '/images/rooftop-movement-social.jpg',
+    home_hero_bg_image: '/events/runwave-afterwave-2026-10-17.webp',
     home_hero_title: '',
     home_hero_subtitle: '',
     home_hero_btn_text: 'REGISTER FOR THE NEXT EVENT',
-    home_hero_btn_url: 'https://events.sweatpals.com/dd913e23',
+    home_hero_btn_url: 'https://sweatpals.com/event/runwave-afterwave-by-fitwave/2026-10-17?aff=fasionmeetzfitness',
     home_hero_secondary_btn_text: 'JOIN FOR FREE',
     home_hero_secondary_btn_url: '/membership'
   });
@@ -23,11 +23,11 @@ export const SiteContentManager = ({ showToast }: SiteContentManagerProps) => {
 
   useEffect(() => {
     setForm({
-      home_hero_bg_image: get('home_hero_bg_image', '/images/rooftop-movement-social.jpg'),
+      home_hero_bg_image: get('home_hero_bg_image', '/events/runwave-afterwave-2026-10-17.webp'),
       home_hero_title: get('home_hero_title', ''),
       home_hero_subtitle: get('home_hero_subtitle', ''),
       home_hero_btn_text: get('home_hero_btn_text', 'REGISTER FOR THE NEXT EVENT'),
-      home_hero_btn_url: get('home_hero_btn_url', 'https://events.sweatpals.com/dd913e23'),
+      home_hero_btn_url: get('home_hero_btn_url', 'https://sweatpals.com/event/runwave-afterwave-by-fitwave/2026-10-17?aff=fasionmeetzfitness'),
       home_hero_secondary_btn_text: get('home_hero_secondary_btn_text', 'JOIN FOR FREE'),
       home_hero_secondary_btn_url: get('home_hero_secondary_btn_url', '/membership')
     });
@@ -49,15 +49,15 @@ export const SiteContentManager = ({ showToast }: SiteContentManagerProps) => {
 
   const handleResetToDefault = () => {
     setForm({
-      home_hero_bg_image: '/images/rooftop-movement-social.jpg',
+      home_hero_bg_image: '/events/runwave-afterwave-2026-10-17.webp',
       home_hero_title: '',
       home_hero_subtitle: '',
       home_hero_btn_text: 'REGISTER FOR THE NEXT EVENT',
-      home_hero_btn_url: 'https://events.sweatpals.com/dd913e23',
+      home_hero_btn_url: 'https://sweatpals.com/event/runwave-afterwave-by-fitwave/2026-10-17?aff=fasionmeetzfitness',
       home_hero_secondary_btn_text: 'JOIN FOR FREE',
       home_hero_secondary_btn_url: '/membership'
     });
-    showToast('Form reset to Rooftop Movement Social defaults', 'info');
+    showToast('Form reset to event defaults', 'info');
   };
 
   return (
