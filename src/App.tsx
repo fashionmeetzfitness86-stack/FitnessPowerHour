@@ -34,6 +34,7 @@ import {
   LayoutDashboard, PlayCircle, ListChecks, MessageSquare, ClipboardList, Package as PackageIcon, History, TrendingUp, Download, ShieldCheck, Award, Shield, Bookmark, CheckCircle
 } from 'lucide-react';
 import { AthletesDirectory } from './components/athletes/AthletesDirectory';
+import { PartnerEventSection } from './components/PartnerEvent';
 import { AthleteApplicationPage } from './components/athletes/AthleteApplicationPage';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
 import { createPortal } from 'react-dom';
@@ -1643,6 +1644,8 @@ const Home = () => {
 
         </div>
       </section>
+
+      <PartnerEventSection />
 
       {/* 2. WHAT FMF IS */}
       <section className="py-32 px-6 border-b border-white/5">
@@ -5495,6 +5498,7 @@ const RunClub = () => {
           </div>
         </div>
       </div>
+      <div className="-mx-6 mt-16"><PartnerEventSection /></div>
     </div>
   );
 };
