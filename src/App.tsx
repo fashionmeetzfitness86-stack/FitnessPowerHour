@@ -1522,9 +1522,9 @@ const Home = () => {
     else navigate('/profile#programs');
   };
 
-  const heroBgImage = get('home_hero_bg_image', '/images/rooftop-movement-social.jpg');
+  const heroBgImage = get('home_hero_bg_image', '/events/runwave-afterwave-2026-10-17.webp');
   const heroBtnText = get('home_hero_btn_text', 'REGISTER FOR THE NEXT EVENT');
-  const heroBtnUrl = get('home_hero_btn_url', 'https://events.sweatpals.com/dd913e23');
+  const heroBtnUrl = get('home_hero_btn_url', 'https://sweatpals.com/event/runwave-afterwave-by-fitwave/2026-10-17?aff=fasionmeetzfitness');
   const heroSecondaryBtnText = get('home_hero_secondary_btn_text', 'JOIN FOR FREE');
   const heroSecondaryBtnUrl = get('home_hero_secondary_btn_url', '/membership');
 
@@ -1543,7 +1543,7 @@ const Home = () => {
           <div className="w-full lg:w-[45%] flex-shrink-0 flex justify-center items-center">
             <img
               src={heroBgImage}
-              alt="The Rooftop Movement Social"
+              alt="FITWAVE featuring Fashion Meetz Fitness"
               className="w-auto h-auto rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.9)]"
               style={{ maxHeight: 'calc(100vh - 200px)', maxWidth: '90%' }}
               referrerPolicy="no-referrer"
@@ -1553,9 +1553,9 @@ const Home = () => {
           {/* RIGHT — Event info + CTAs */}
           <div className="w-full lg:w-[58%] flex flex-col items-center lg:items-start text-center lg:text-left space-y-7">
             <div className="space-y-3">
-              <span className="text-brand-teal text-[10px] uppercase font-bold tracking-[0.4em]">September 2026 · Miami Beach, FL</span>
+              <span className="text-brand-teal text-[10px] uppercase font-bold tracking-[0.4em]">October 17, 2026 · Miami Beach, FL</span>
               <h1 className="text-4xl md:text-5xl xl:text-6xl font-black uppercase tracking-tighter text-white leading-none">
-                The Rooftop<br /><span className="text-brand-teal">Movement</span> Social
+                FITWAVE<br /><span className="text-brand-teal">featuring</span> Fashion Meetz Fitness
               </h1>
               <p className="text-white/50 text-sm uppercase tracking-wider font-light">Move / Recover / Connect</p>
             </div>
@@ -1571,10 +1571,15 @@ const Home = () => {
               <div className="flex items-start gap-3">
                 <Clock size={16} className="text-brand-coral shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-white">10:00 AM – 1:30 PM</p>
-                  <p className="text-xs text-white/50">Event starts 10:30 AM · Rooftop Venue</p>
+                  <p className="text-sm font-bold text-white">5:00 PM – 8:00 PM</p>
+                  <p className="text-xs text-white/50">Rooftop Venue</p>
                 </div>
               </div>
+            </div>
+
+            <div className="w-full sm:w-auto border border-dashed border-brand-teal/40 rounded-xl px-5 py-3 bg-brand-teal/5">
+              <p className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">Promo code · 20% off</p>
+              <p className="text-base sm:text-lg font-black tracking-wider text-white">FASHIONMEETZFITNESS</p>
             </div>
 
             <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
@@ -1608,7 +1613,7 @@ const Home = () => {
                         className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all"
                       >
                         <div>
-                          <div className="text-xs font-bold uppercase tracking-wider">Rooftop Movement Social</div>
+                          <div className="text-xs font-bold uppercase tracking-wider">FITWAVE x Fashion Meetz Fitness</div>
                           <div className="text-[10px] opacity-70">Grand Beach Hotel · SweatPals Link</div>
                         </div>
                         <ExternalLink size={14} className="shrink-0" />
@@ -1644,8 +1649,6 @@ const Home = () => {
 
         </div>
       </section>
-
-      <PartnerEventSection />
 
       {/* 2. WHAT FMF IS */}
       <section className="py-32 px-6 border-b border-white/5">
