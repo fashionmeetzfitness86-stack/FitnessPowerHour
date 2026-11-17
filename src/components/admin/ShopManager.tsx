@@ -299,6 +299,24 @@ export const ShopManager = ({ products, onEdit, onDelete, memberDiscountValue = 
                             </div>
 
 
+                            {/* ── PRODUCT LINK ──────────────────────────── */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Product Link (Optional)</label>
+                                <input
+                                    type="url"
+                                    inputMode="url"
+                                    value={editingProduct.external_link || ''}
+                                    onChange={e => setEditingProduct({ ...editingProduct, external_link: e.target.value })}
+                                    onBlur={e => {
+                                        const v = e.target.value.trim();
+                                        if (v && !/^https?:\/\//i.test(v)) setEditingProduct({ ...editingProduct, external_link: `https://${v}` });
+                                    }}
+                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand-coral text-white"
+                                    placeholder="https://..."
+                                />
+                                <p className="text-[9px] uppercase tracking-widest text-white/30">Shown as a "View Link" button on the product page</p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Category</label>

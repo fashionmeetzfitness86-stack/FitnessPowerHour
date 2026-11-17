@@ -3839,6 +3839,11 @@ const Store = () => {
                   </div>
 
                   <div className="space-y-4 pt-8 border-t border-white/5">
+                    {selectedProduct.external_link && (
+                      <a href={selectedProduct.external_link} target="_blank" rel="noopener noreferrer" className="w-full border border-white/20 py-5 rounded-full font-bold text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:border-brand-teal hover:text-brand-teal transition-all">
+                        <ExternalLink size={16} /> View Link
+                      </a>
+                    )}
                     <button 
                       onClick={() => {
                         if (selectedProduct) {
@@ -5356,6 +5361,11 @@ const ProductDetail = () => {
               )}
 
               <button onClick={() => addToCart(product)} className="btn-primary w-full py-6 text-lg">Add to Cart</button>
+              {product.external_link && (
+                <a href={product.external_link} target="_blank" rel="noopener noreferrer" className="w-full border border-white/20 py-5 rounded-full font-bold text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:border-brand-teal hover:text-brand-teal transition-all">
+                  <ExternalLink size={16} /> View Link
+                </a>
+              )}
             </div>
 
             <div className="pt-12 border-t border-white/10 space-y-6">
