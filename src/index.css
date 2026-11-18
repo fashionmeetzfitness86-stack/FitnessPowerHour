@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,400;1,500&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Montserrat", sans-serif;
+  --font-serif-display: "Playfair Display", ui-serif, Georgia, serif;
   
   --color-brand-teal: #008080;
   --color-brand-coral: #FF7F50;
