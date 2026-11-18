@@ -22,36 +22,6 @@ const LotusIcon = ({ size = 30 }: { size?: number }) => (
   </svg>
 );
 
-// Stopwatch with a flexed arm (left logo of the flyer).
-const StopwatchLogo = () => (
-  <svg viewBox="0 0 120 130" className="w-full h-full" fill="none" stroke="currentColor" aria-hidden="true">
-    <rect x="52" y="2" width="16" height="9" rx="2" strokeWidth="5" />
-    <path d="M60 11v8" strokeWidth="6" />
-    <path d="M94 26l7-7" strokeWidth="6" strokeLinecap="round" />
-    <circle cx="60" cy="74" r="52" strokeWidth="5" />
-    {Array.from({ length: 12 }).map((_, i) => {
-      const a = (i * 30 * Math.PI) / 180;
-      return (
-        <line key={i} x1={60 + Math.sin(a) * 42} y1={74 - Math.cos(a) * 42} x2={60 + Math.sin(a) * 47} y2={74 - Math.cos(a) * 47} strokeWidth="3.5" strokeLinecap="round" />
-      );
-    })}
-    <g transform="translate(26 40) scale(2.85)" fill="currentColor" stroke="none">
-      <path d="M2.5 15.5c0-3 1.5-5.5 4-7l1.8-3.8c.4-.9 1.3-1.4 2.3-1.2l1.6.3c.8.2 1.2 1 .9 1.8l-.7 1.6c-.3.7-1 1.1-1.8 1l-.9-.1-.9 2.4c2.4-1.2 5.6-.9 7.6 1 2.3 2.1 2.2 5.6-.2 7.5-2.2 1.8-5.4 1.6-7.6.4-1.3 1-3 1.4-4.6 1-1.4-.4-2.3-1.8-2.3-3.2z" />
-    </g>
-  </svg>
-);
-
-// Circle with a figure in a plank / push-up start (right logo of the flyer).
-const PlankLogo = () => (
-  <svg viewBox="0 0 120 120" className="w-full h-full" fill="none" stroke="currentColor" aria-hidden="true">
-    <circle cx="60" cy="60" r="55" strokeWidth="5" />
-    <g fill="currentColor" stroke="none">
-      <circle cx="40" cy="46" r="6" />
-      <path d="M45 52c6-2 14-1 22 2l14 6c3 1 4 4 2 6l-1 1 10 10c1.5 1.5.5 4-1.6 4H86l-9-9-5 3 2 6h-6l-3-8 0 0-9-3-6 11h-6l5-13-8 4 1 9h-5l-2-12c-.3-1.5.4-3 1.8-3.7L45 52z" />
-    </g>
-  </svg>
-);
-
 const SERVICES = [
   { label: ['Strength', 'Training'], icon: <Dumbbell size={30} strokeWidth={1.5} /> },
   { label: ['Conditioning', '& Athletic'], icon: <RunnerIcon /> },
@@ -112,9 +82,9 @@ export const HomeHero = ({ bgImage, ctaText, ctaUrl }: HomeHeroProps) => {
 
         {/* Logos */}
         <div className="mt-14 flex items-center justify-center gap-8 sm:gap-14 text-white">
-          <div className="w-28 h-28 sm:w-40 sm:h-40"><StopwatchLogo /></div>
+          <img src="/logos/fph-stopwatch.png" alt="Fitness Power Hour" className="h-28 sm:h-40 w-auto" />
           <span className="text-3xl sm:text-4xl font-extralight" aria-hidden="true">×</span>
-          <div className="w-28 h-28 sm:w-40 sm:h-40"><PlankLogo /></div>
+          <img src="/logos/fmf-plank.png" alt="Fashion Meetz Fitness" className="h-28 sm:h-40 w-auto" />
         </div>
 
         {/* CTA */}
