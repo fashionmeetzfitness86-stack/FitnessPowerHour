@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { AthletesDirectory } from './components/athletes/AthletesDirectory';
 import { PartnerEventSection } from './components/PartnerEvent';
+import { HomeHero } from './components/HomeHero';
 import { AthleteApplicationPage } from './components/athletes/AthleteApplicationPage';
 import React, { useState, useEffect, useMemo, useRef, FormEvent, createContext, useContext, ReactNode, Component } from 'react';
 import { createPortal } from 'react-dom';
@@ -1514,7 +1515,6 @@ const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { get } = useSiteContent();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const isMember = user && (user.tier === 'Basic' || user.role === 'admin' || user.role === 'super_admin' || user.role === 'athlete');
 
   const handleProgramClick = () => {
@@ -1522,133 +1522,14 @@ const Home = () => {
     else navigate('/profile#programs');
   };
 
-  const heroBgImage = get('home_hero_bg_image', '/events/runwave-afterwave-2026-10-17.webp');
-  const heroBtnText = get('home_hero_btn_text', 'REGISTER FOR THE NEXT EVENT');
-  const heroBtnUrl = get('home_hero_btn_url', 'https://sweatpals.com/event/runwave-afterwave-by-fitwave/2026-10-17?aff=fasionmeetzfitness');
-  const heroSecondaryBtnText = get('home_hero_secondary_btn_text', 'JOIN FOR FREE');
-  const heroSecondaryBtnUrl = get('home_hero_secondary_btn_url', '/membership');
+  const heroBgImage = get('home_hero_bg_image', '/images/hero-miami-collective.jpg');
+  const heroBtnText = get('home_hero_btn_text', 'INQUIRE NOW');
+  const heroBtnUrl = get('home_hero_btn_url', 'https://wa.me/13057642406');
 
   return (
     <div className="pt-20 bg-brand-black min-h-screen">
-      {/* 1. HERO — Split layout: full flyer left, event info + CTAs right */}
-      <section className="relative bg-brand-black border-b border-brand-teal/20 overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img src={heroBgImage} alt="" aria-hidden="true"
-            className="w-full h-full object-cover blur-3xl scale-110 opacity-10" referrerPolicy="no-referrer" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row items-center gap-8 lg:gap-12" style={{ minHeight: 'calc(100vh - 80px)' }}>
-
-          {/* LEFT — Full portrait flyer, displayed completely without any cropping */}
-          <div className="w-full lg:w-[45%] flex-shrink-0 flex justify-center items-center">
-            <img
-              src={heroBgImage}
-              alt="FITWAVE featuring Fashion Meetz Fitness"
-              className="w-auto h-auto rounded-2xl shadow-[0_0_80px_rgba(0,0,0,0.9)]"
-              style={{ maxHeight: 'calc(100vh - 200px)', maxWidth: '90%' }}
-              referrerPolicy="no-referrer"
-            />
-          </div>
-
-          {/* RIGHT — Event info + CTAs */}
-          <div className="w-full lg:w-[58%] flex flex-col items-center lg:items-start text-center lg:text-left space-y-7">
-            <div className="space-y-3">
-              <span className="text-brand-teal text-[10px] uppercase font-bold tracking-[0.4em]">October 17, 2026 · Miami Beach, FL</span>
-              <h1 className="text-4xl md:text-5xl xl:text-6xl font-black uppercase tracking-tighter text-white leading-none">
-                FITWAVE<br /><span className="text-brand-teal">featuring</span> Fashion Meetz Fitness
-              </h1>
-              <p className="text-white/50 text-sm uppercase tracking-wider font-light">Move / Recover / Connect</p>
-            </div>
-
-            <div className="space-y-3 w-full">
-              <div className="flex items-start gap-3">
-                <MapPin size={16} className="text-brand-coral shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold text-white">Grand Beach Hotel</p>
-                  <p className="text-xs text-white/50">4835 Collins Ave, Miami Beach, FL</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Clock size={16} className="text-brand-coral shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold text-white">5:00 PM – 8:00 PM</p>
-                  <p className="text-xs text-white/50">Rooftop Venue</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="w-full sm:w-auto border border-dashed border-brand-teal/40 rounded-xl px-5 py-3 bg-brand-teal/5">
-              <p className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">Promo code · 20% off</p>
-              <p className="text-base sm:text-lg font-black tracking-wider text-white">FASHIONMEETZFITNESS</p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-              {['Run Club', 'Rooftop Fitness', 'Yoga', 'Recovery', 'Community', 'Good Vibes'].map(tag => (
-                <span key={tag} className="px-3 py-1 text-[10px] uppercase font-bold tracking-wider bg-white/5 border border-white/10 rounded-full text-white/50">{tag}</span>
-              ))}
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <div className="relative">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="px-7 py-4 bg-brand-teal text-black font-extrabold text-xs uppercase tracking-widest rounded-xl hover:bg-brand-teal/90 shadow-[0_0_30px_rgba(45,212,191,0.4)] transition-all flex items-center gap-3"
-                >
-                  <Calendar size={15} />
-                  {heroBtnText}
-                  <ChevronDown size={15} className={`transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                </button>
-                <AnimatePresence>
-                  {isDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                      className="absolute top-full left-0 mt-2 bg-brand-black border border-brand-teal/30 rounded-xl p-2 shadow-2xl backdrop-blur-xl z-50 space-y-1 text-left min-w-[280px]"
-                    >
-                      <a
-                        href={heroBtnUrl} target="_blank" rel="noopener noreferrer"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="flex items-center justify-between p-3.5 rounded-lg bg-brand-teal/10 border border-brand-teal/20 text-brand-teal hover:bg-brand-teal hover:text-black transition-all"
-                      >
-                        <div>
-                          <div className="text-xs font-bold uppercase tracking-wider">FITWAVE x Fashion Meetz Fitness</div>
-                          <div className="text-[10px] opacity-70">Grand Beach Hotel · SweatPals Link</div>
-                        </div>
-                        <ExternalLink size={14} className="shrink-0" />
-                      </a>
-                      <button
-                        onClick={() => { setIsDropdownOpen(false); navigate('/schedules'); }}
-                        className="w-full flex items-center justify-between p-3.5 rounded-lg hover:bg-white/5 text-white/80 hover:text-white transition-all"
-                      >
-                        <div>
-                          <div className="text-xs font-bold uppercase tracking-wider">Daily Classes Schedule</div>
-                          <div className="text-[10px] text-white/40">Calisthenics & Beach Training · Mon–Sun</div>
-                        </div>
-                        <ChevronRight size={14} className="shrink-0 text-white/40" />
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <button
-                onClick={() => {
-                  if (heroSecondaryBtnUrl.startsWith('/')) navigate(heroSecondaryBtnUrl);
-                  else window.location.href = heroSecondaryBtnUrl;
-                }}
-                className="px-7 py-4 bg-transparent border border-brand-teal/50 text-brand-teal hover:bg-brand-teal hover:text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all"
-              >
-                {heroSecondaryBtnText}
-              </button>
-            </div>
-
-            <p className="text-[10px] text-white/25 uppercase tracking-widest">Hosted by Fashion Meetz Fitness</p>
-          </div>
-
-        </div>
-      </section>
+      {/* 1. HERO — Miami Training Collective */}
+      <HomeHero bgImage={heroBgImage} ctaText={heroBtnText} ctaUrl={heroBtnUrl} />
 
       {/* 2. WHAT FMF IS */}
       <section className="py-32 px-6 border-b border-white/5">
